@@ -1,0 +1,494 @@
+/* ---------------------------------------------------------------------------
+   Landing / login screen.
+
+   Three phases, driven by [data-phase] on the root:
+     idle   → static splash, no form in the DOM at all
+     swing  → bat/ball animation plays over the splash
+     login  → login card mounted and focusable
+
+   Contact happens 420ms into a 1060ms swing; the sound is scheduled against
+   the same number in SplashScreen.jsx (SWING.contactMs).
+--------------------------------------------------------------------------- */
+
+.splash {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--c-bg);
+}
+
+/* --- Ambient background ------------------------------------------------ */
+
+.splash__bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% 0%, var(--c-glow) 0%, var(--c-glow-fade) 55%),
+    radial-gradient(80% 60% at 85% 100%, var(--c-accent-softer) 0%, transparent 60%),
+    var(--c-bg);
+}
+
+/* Oversized stitching arcs, barely there — the "understated" seam motif. */
+.splash__seams {
+  position: absolute;
+  inset: -10% -5%;
+  width: 110%;
+  height: 120%;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.splash__seams path {
+  fill: none;
+  stroke: var(--c-line-strong);
+  stroke-width: 1.5;
+}
+
+.splash__seams .stitch {
+  stroke: var(--c-seam);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 7 22;
+  opacity: 0.28;
+}
+
+/* --- Content column ---------------------------------------------------- */
+
+.splash__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-7);
+  padding: var(--s-6);
+  width: 100%;
+  max-width: 460px;
+}
+
+.splash__mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  text-align: center;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+.splash__wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 0.28em;
+  font-size: clamp(2.5rem, 8vw, var(--t-4xl));
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  color: var(--c-text);
+  transition: font-size var(--dur-slow) var(--ease-out);
+}
+
+.splash__wordmark .dim {
+  color: var(--c-accent);
+  font-weight: 300;
+}
+
+.splash__tagline {
+  font-size: var(--t-md);
+  color: var(--c-text-muted);
+  max-width: 34ch;
+}
+
+/* Once the card is up, the wordmark steps back and lets the form lead. */
+.splash[data-phase='login'] .splash__wordmark {
+  font-size: clamp(1.75rem, 5vw, var(--t-2xl));
+}
+
+.splash[data-phase='login'] .splash__content {
+  gap: var(--s-6);
+}
+
+/* --- The "click to start" trigger -------------------------------------- */
+
+.splash__trigger {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: clamp(var(--s-7), 14vh, 160px);
+  color: var(--c-text-faint);
+}
+
+.splash__trigger:focus-visible {
+  box-shadow: inset 0 0 0 3px var(--c-accent-soft), inset 0 0 0 5px var(--c-focus);
+  border-radius: 0;
+}
+
+.splash__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-5);
+  border-radius: var(--r-pill);
+  background: var(--c-glass);
+  border: 1px solid var(--c-line);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(6px);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--c-text-muted);
+  animation: hint-breathe 3.4s var(--ease-in-out) infinite;
+  transition: opacity var(--dur-med) var(--ease-out), transform var(--dur-med) var(--ease-out);
+}
+
+.splash__trigger:hover .splash__hint {
+  color: var(--c-text);
+  border-color: var(--c-accent-soft);
+}
+
+.splash[data-phase='swing'] .splash__hint {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: none;
+}
+
+@keyframes hint-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.92;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.splash__hint-key {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: var(--c-surface-sunken);
+  border: 1px solid var(--c-line-strong);
+  font-size: var(--t-xs);
+  color: var(--c-text-faint);
+}
+
+/* --- Swing stage -------------------------------------------------------
+   Fixed 640x360 coordinate space, scaled to fit. All geometry below is in
+   those units.
+
+     hands (bat pivot)  (215, 300)
+     contact point      (343, 167)   → bat at -46deg, barrel tip on the ball
+
+   Direction matters here. A ball only leaves perpendicular to the bat's long
+   axis — i.e. along whichever way the barrel is travelling at contact. With
+   the bat pointing up-right at contact, the barrel is moving up-LEFT (the
+   rotation runs +12deg → -46deg → -128deg, decreasing), so the ball has to
+   depart up-left: back out roughly the way the pitch came in.
+
+   Sweeping the bat the other way would drive the ball onward in the same
+   direction it arrived, which reads as a foul ball rather than a hit.
+------------------------------------------------------------------------ */
+
+.swing {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  width: 640px;
+  height: 360px;
+  margin: -180px 0 0 -320px;
+  pointer-events: none;
+}
+
+/* The stage is a fixed 640x360 coordinate space, so it is scaled rather than
+   reflowed on narrow viewports. (Don't be tempted by
+   `scale(min(1, calc(100vw / 700)))` — mixing a unitless number with a length
+   is invalid CSS and the whole declaration gets dropped.) */
+@media (max-width: 700px) {
+  .swing {
+    transform: scale(0.78);
+  }
+}
+
+@media (max-width: 520px) {
+  .swing {
+    transform: scale(0.58);
+  }
+}
+
+.swing__arc {
+  position: absolute;
+  inset: 0;
+  width: 640px;
+  height: 360px;
+  fill: none;
+}
+
+.swing__arc path {
+  stroke: var(--c-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 460;
+  stroke-dashoffset: 460;
+  opacity: 0.35;
+  animation: arc-draw 1060ms var(--ease-in-out) both;
+}
+
+@keyframes arc-draw {
+  0% {
+    stroke-dashoffset: 460;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.35;
+  }
+  62% {
+    stroke-dashoffset: 0;
+    opacity: 0.3;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+/* Bat pivots around the hands at stage (215, 300). */
+.swing__bat {
+  position: absolute;
+  left: 205px;
+  top: 287px;
+  width: 200px;
+  height: 26px;
+  transform-origin: 5% 50%;
+  animation: bat-swing 1060ms both;
+}
+
+@keyframes bat-swing {
+  /* Cocked low and out front, then whipped up and back over the shoulder.
+     The barrel is travelling up-left through contact — that is what sends the
+     ball back the way it came. */
+  0% {
+    transform: rotate(12deg);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.9, 0.6);
+  }
+  8% {
+    opacity: 1;
+  }
+  /* contact at 420ms = 39.6% */
+  39.6% {
+    transform: rotate(-46deg);
+    animation-timing-function: cubic-bezier(0.15, 0.6, 0.4, 1);
+  }
+  78% {
+    transform: rotate(-122deg);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-128deg);
+    opacity: 0;
+  }
+}
+
+.swing__bat > svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 10px var(--c-drop));
+}
+
+/* Ball is positioned at the contact point; the keyframes move it in and out. */
+.swing__ball {
+  position: absolute;
+  left: 343px;
+  top: 167px;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  animation: ball-flight 1060ms both;
+}
+
+@keyframes ball-flight {
+  /* In from off the left, descending slightly — a pitch. */
+  0% {
+    transform: translate(-420px, -70px) scale(0.55) rotate(0deg);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.75, 0.5);
+  }
+  6% {
+    opacity: 1;
+  }
+  /* contact at 420ms = 39.6% */
+  39.6% {
+    transform: translate(0, 0) scale(1) rotate(140deg);
+    animation-timing-function: cubic-bezier(0.05, 0.7, 0.3, 1);
+  }
+  /* Off the bat: x reverses, and the spin flips to backspin. */
+  44% {
+    transform: translate(-48px, -31px) scale(1.16) rotate(66deg);
+  }
+  92% {
+    opacity: 1;
+  }
+  /* Back out the way it came in, climbing ~30deg — off the top-left corner. */
+  100% {
+    transform: translate(-520px, -300px) scale(0.22) rotate(-640deg);
+    opacity: 0;
+  }
+}
+
+.swing__ball > svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 8px var(--c-drop));
+}
+
+/* Impact: a ring and a hot core, both fired at the contact frame. */
+.swing__impact {
+  position: absolute;
+  left: 343px;
+  top: 167px;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  border: 2px solid var(--c-seam);
+  animation: impact-ring 520ms var(--ease-out) 420ms both;
+}
+
+.swing__impact--core {
+  border: none;
+  background: radial-gradient(circle, #fff 0%, var(--c-leather) 45%, rgba(233, 217, 193, 0) 70%);
+  animation: impact-core 260ms var(--ease-out) 420ms both;
+}
+
+@keyframes impact-ring {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(3.4);
+    opacity: 0;
+  }
+}
+
+@keyframes impact-core {
+  0% {
+    transform: scale(0.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* --- Login card -------------------------------------------------------- */
+
+.splash__card {
+  width: 100%;
+  padding: var(--s-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg);
+  animation: card-rise var(--dur-slow) var(--ease-out) both;
+}
+
+@keyframes card-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.splash__card-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  margin-bottom: var(--s-2);
+}
+
+.splash__card-head h2 {
+  font-size: var(--t-lg);
+}
+
+.splash__card-head p {
+  font-size: var(--t-sm);
+  color: var(--c-text-muted);
+}
+
+.splash__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  font-size: var(--t-sm);
+  color: var(--c-text-muted);
+}
+
+.splash__check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  cursor: pointer;
+}
+
+.splash__check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--c-accent);
+}
+
+.splash__error {
+  font-size: var(--t-sm);
+  color: var(--c-seam);
+  min-height: 1.2em;
+}
+
+.splash__alt {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  color: var(--c-text-faint);
+  font-size: var(--t-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.splash__alt::before,
+.splash__alt::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--c-line);
+}
+
+.splash__foot {
+  text-align: center;
+  font-size: var(--t-xs);
+  color: var(--c-text-faint);
+}
+
+@media (max-width: 520px) {
+  .splash__content {
+    gap: var(--s-6);
+  }
+}

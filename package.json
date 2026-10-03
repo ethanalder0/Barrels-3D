@@ -1,0 +1,24 @@
+{
+  "name": "barrels-3d",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Every MLB at-bat, rebuilt in 3D — live, pitch by pitch.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "selftest": "node src/replay/ball/selftest.js",
+    "selftest:parks": "node src/replay/field/selftest.js",
+    "selftest:follow": "node src/replay/follow.selftest.js"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.7"
+  }
+}

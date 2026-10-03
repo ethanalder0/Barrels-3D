@@ -1,0 +1,3828 @@
+/* ---------------------------------------------------------------------------
+   Application shell: header, screen layouts, panels.
+   Desktop-first; the breakpoints below collapse to a single column.
+--------------------------------------------------------------------------- */
+
+.shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(90% 60% at 50% -10%, var(--c-glow) 0%, var(--c-glow-fade) 60%),
+    var(--c-bg);
+}
+
+.shell__body {
+  width: 100%;
+  max-width: var(--shell-max);
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-6) var(--s-9);
+  flex: 1;
+}
+
+/* --- Header ------------------------------------------------------------ */
+
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: var(--header-h);
+  background: var(--c-appbar-bg);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.appbar__inner {
+  height: 100%;
+  max-width: var(--shell-max);
+  margin: 0 auto;
+  padding: 0 var(--s-6);
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+}
+
+.appbar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+}
+
+.appbar__brand .dim {
+  color: var(--c-accent);
+  font-weight: 300;
+}
+
+.appbar__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-left: var(--s-4);
+}
+
+.navlink {
+  position: relative;
+  height: 34px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-pill);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--c-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.navlink:hover {
+  background: var(--c-accent-softer);
+  color: var(--c-text);
+}
+
+.navlink[aria-current='page'] {
+  background: var(--c-accent-soft);
+  color: var(--c-text);
+}
+
+.appbar__spacer {
+  flex: 1;
+}
+
+.appbar__game {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  height: 38px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--c-line);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-xs);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--c-text);
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.appbar__game:hover {
+  border-color: var(--c-accent-soft);
+  box-shadow: var(--shadow-sm);
+}
+
+.appbar__game .sep {
+  color: var(--c-text-faint);
+  font-weight: 400;
+}
+
+.appbar__inning {
+  font-size: var(--t-xs);
+  color: var(--c-accent);
+  font-weight: 700;
+}
+
+/* --- Game switcher menu ----------------------------------------------------- */
+
+.gamemenu {
+  position: relative;
+}
+
+.appbar__game[aria-expanded='true'] {
+  border-color: var(--c-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.appbar__game:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.gamemenu__chev {
+  display: grid;
+  color: var(--c-text-muted);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.gamemenu__chev[data-open='true'] {
+  transform: rotate(180deg);
+}
+
+.gamemenu__pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: 244px;
+  padding: var(--s-1);
+  background: var(--c-surface-raised);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  animation: gamemenu-in var(--dur-fast) var(--ease-out);
+  transform-origin: top right;
+}
+
+@keyframes gamemenu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.gamemenu__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+}
+
+.gamemenu__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: 6px var(--s-2);
+  border-radius: var(--r-sm);
+  text-align: left;
+  color: var(--c-text);
+}
+
+.gamemenu__item:hover,
+.gamemenu__item:focus-visible {
+  background: var(--c-accent-softer);
+  outline: none;
+}
+
+.gamemenu__item[data-current='true'] {
+  background: var(--c-accent-soft);
+}
+
+.gamemenu__teams {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.gamemenu__team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-sm);
+  line-height: 1.25;
+}
+
+.gamemenu__abbr {
+  font-weight: 650;
+  flex: 1;
+}
+
+.gamemenu__runs {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.gamemenu__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 52px;
+  justify-content: flex-end;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  padding-left: var(--s-2);
+  border-left: 1px solid var(--c-line);
+  align-self: stretch;
+}
+
+.gamemenu__status[data-status='live'] {
+  color: var(--c-live);
+  font-weight: 700;
+}
+
+.gamemenu__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-live);
+}
+
+.gamemenu__empty {
+  padding: var(--s-3);
+  font-size: var(--t-sm);
+  color: var(--c-text-faint);
+}
+
+.gamemenu__all {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--s-1);
+  padding: var(--s-2);
+  border-top: 1px solid var(--c-line);
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--c-accent);
+}
+
+.gamemenu__all:hover,
+.gamemenu__all:focus-visible {
+  background: var(--c-accent-softer);
+  outline: none;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--c-accent-soft);
+  color: var(--c-text);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  border: 1px solid var(--c-line-strong);
+}
+
+/* --- Page furniture ----------------------------------------------------- */
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-5);
+  margin-bottom: var(--s-5);
+}
+
+.page-head h2 {
+  font-size: var(--t-2xl);
+}
+
+.page-head p {
+  color: var(--c-text-muted);
+  font-size: var(--t-md);
+  margin-top: var(--s-1);
+}
+
+/* --- Scoreboard date picker ----------------------------------------------- */
+
+.datebar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-shrink: 0;
+}
+
+.datebar__step,
+.datebar__today {
+  font: inherit;
+  font-size: var(--t-sm);
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  padding: var(--s-1) var(--s-3);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.datebar__step {
+  min-width: 2rem;
+  font-size: var(--t-lg);
+  padding: 0 var(--s-2);
+}
+
+.datebar__step:hover:not(:disabled),
+.datebar__today:hover {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+
+.datebar__step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.datebar__input {
+  font: inherit;
+  font-size: var(--t-sm);
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  padding: var(--s-1) var(--s-2);
+}
+
+.datebar__input:focus-visible,
+.datebar__step:focus-visible,
+.datebar__today:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .page-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.panel__title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.panel__title h3 {
+  font-size: var(--t-md);
+  font-weight: 650;
+}
+
+.panel__body {
+  padding: var(--s-5);
+}
+
+.panel__body--flush {
+  padding: 0;
+}
+
+/* Inline notice: backend unreachable, connecting, etc. */
+.notice {
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-accent-softer);
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-text-muted);
+  font-size: var(--t-sm);
+}
+
+.notice code {
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
+  font-size: var(--t-xs);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  padding: 1px 5px;
+}
+
+/* A one-pixel seam: dashed stitch line used as a divider accent. */
+.seam-rule {
+  height: 1px;
+  background-image: linear-gradient(90deg, var(--c-line-strong) 40%, transparent 0);
+  background-size: 8px 1px;
+  background-repeat: repeat-x;
+}
+
+/* --- Live screen grid ---------------------------------------------------- */
+
+.live {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  min-width: 0;
+}
+
+/* Under the replay: play picker and game leaders on the left, box score on
+   the right taking the rest. */
+.live__lower {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  gap: var(--s-5);
+  align-items: start;
+}
+
+.live__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .live__lower {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Scorebug ------------------------------------------------------------ */
+
+.scorebug {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto minmax(0, 1.1fr);
+  gap: var(--s-5);
+  align-items: center;
+  padding: var(--s-5);
+}
+
+.scorebug__teams {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.scoreteam {
+  display: grid;
+  grid-template-columns: 26px 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  /* Deliberately not transitioned. The club wash comes from custom properties
+     that React rewrites on every snapshot, and transitioning a property across
+     a changing var() substitution leaves the computed value stuck a flip
+     behind -- the row keeps the previous batting team's colour. A scorebug
+     should snap when the side changes anyway. */
+}
+
+/* The side at bat wears its club colour: a wash plus a spine on the left edge.
+   Falls back to the generic accent when we have no colours for the team. */
+.scoreteam[data-batting='true'] {
+  background-color: var(--team-wash, var(--c-accent-softer));
+  box-shadow: inset 3px 0 0 var(--team, var(--c-accent));
+}
+
+.scoreteam__abbr {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-sunken);
+  border: 1px solid var(--c-line);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.scoreteam__name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scoreteam__record {
+  font-size: var(--t-xs);
+  color: var(--c-text-faint);
+  font-weight: 500;
+  margin-left: var(--s-2);
+}
+
+.scoreteam__runs {
+  font-size: var(--t-xl);
+  font-weight: 700;
+  min-width: 1.6ch;
+  text-align: right;
+}
+
+.scorebug__matchup {
+  margin-top: var(--s-2);
+  padding: 0 var(--s-3);
+  font-size: var(--t-sm);
+  color: var(--c-text-muted);
+}
+
+.scorebug__matchup .u-eyebrow {
+  margin-right: var(--s-2);
+}
+
+.scorebug__detail {
+  font-size: var(--t-sm);
+  color: var(--c-text-muted);
+  margin-top: var(--s-1);
+}
+
+.scorebug__state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 0 var(--s-5);
+  border-left: 1px solid var(--c-line);
+  border-right: 1px solid var(--c-line);
+  align-self: stretch;
+  justify-content: center;
+}
+
+.scorebug__inning {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-weight: 700;
+  font-size: var(--t-md);
+}
+
+.scorebug__half {
+  color: var(--c-accent);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.count {
+  display: flex;
+  gap: var(--s-4);
+  font-size: var(--t-xs);
+  color: var(--c-text-muted);
+}
+
+.count__group {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.count__label {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.pips {
+  display: flex;
+  gap: 3px;
+}
+
+.pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--c-line-strong);
+  background: transparent;
+}
+
+.pip[data-on='true'] {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+}
+
+.pip--out[data-on='true'] {
+  background: var(--c-seam);
+  border-color: var(--c-seam);
+}
+
+/* Bases, laid out the way they sit on a field seen from behind home: second at
+   the top, first to the right, third to the left, home plate at the bottom.
+   Each base is a square turned 45deg. Rotating the *container* instead drags
+   the bases off the diamond's points and they read as a cross. */
+.diamond {
+  position: relative;
+  width: 64px;
+  height: 60px;
+  flex: none;
+}
+
+/* Positioned by centre — the negative margins do the centring so `transform`
+   is free to carry the 45deg turn on its own. */
+.diamond__base {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 3px;
+  border: 1.5px solid var(--c-line-strong);
+  background: var(--c-surface-sunken);
+  transform: rotate(45deg);
+  transition: background var(--dur-med) var(--ease-out), border-color var(--dur-med) var(--ease-out);
+}
+
+.diamond__base[data-occupied='true'] {
+  background: var(--c-accent);
+  border-color: var(--c-accent-hover);
+}
+
+.diamond__base--second {
+  left: 32px;
+  top: 13px;
+}
+
+.diamond__base--first {
+  left: 48px;
+  top: 29px;
+}
+
+.diamond__base--third {
+  left: 16px;
+  top: 29px;
+}
+
+/* Home plate: orientation only, never occupied, so it stays quiet. */
+.diamond__home {
+  position: absolute;
+  left: 32px;
+  top: 45px;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 2px;
+  border: 1.5px solid var(--c-line);
+  transform: rotate(45deg);
+}
+
+/* Line score table */
+.linescore {
+  overflow-x: auto;
+}
+
+.linescore table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--t-sm);
+}
+
+.linescore th,
+.linescore td {
+  padding: var(--s-2) 0;
+  text-align: center;
+  min-width: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+.linescore thead th {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--c-text-faint);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.linescore tbody th {
+  text-align: left;
+  font-weight: 700;
+  font-size: var(--t-xs);
+  letter-spacing: 0.04em;
+  padding-right: var(--s-3);
+}
+
+.linescore .total {
+  font-weight: 700;
+  border-left: 1px solid var(--c-line);
+}
+
+.linescore .empty {
+  color: var(--c-line-strong);
+}
+
+/* --- Replay viewport ------------------------------------------------------ */
+
+/* The banner wraps rather than clipping follow-live off a phone screen. */
+.viewport__head {
+  flex-wrap: wrap;
+  row-gap: var(--s-2);
+}
+
+.viewport__stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  /* Never taller than the window can show under the sticky header, with the
+     panel's banner (~55px) and closing rail (16px) above and below it and a
+     little air. On a wide window 16:9 at full width does not fit — the bottom
+     of the replay sat below the fold — so the height gives first and the stage
+     goes a touch wider than 16:9 instead. The engine sizes itself from the
+     mount, so a wider stage is simply more field at the sides. The floor keeps
+     a very short window from squashing it to a letterbox. */
+  max-height: max(320px, calc(100dvh - var(--header-h) - 96px));
+  background:
+    radial-gradient(70% 80% at 50% 110%, var(--c-accent-softer) 0%, rgba(242, 231, 214, 0) 60%),
+    var(--c-surface-sunken);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* The closing rail under the stage. Same surface and hairline as .panel__head
+   above the stage, at half its vertical padding and with nothing in it — it is
+   a border, not a second banner, so it carries no text and never grows to fit
+   any. Keep the two in step if the head's padding changes. */
+.viewport__foot {
+  height: var(--s-4);
+  border-top: 1px solid var(--c-line);
+  background: var(--c-surface);
+}
+
+/* The mount node. Deliberately empty — the replay engine owns everything
+   inside it. It fills the stage, so a canvas at 100%/100% just works. */
+#replay-viewport {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.viewport__placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  text-align: center;
+  padding: var(--s-6);
+  pointer-events: none;
+}
+
+/* The engine sets stage.dataset.engine = 'ready' to take the space over. */
+.viewport__stage[data-engine='ready'] .viewport__placeholder {
+  display: none;
+}
+
+.viewport__grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.5;
+  background-image: linear-gradient(var(--c-line) 1px, transparent 0),
+    linear-gradient(90deg, var(--c-line) 1px, transparent 0);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(70% 70% at 50% 50%, #000 20%, transparent 100%);
+  mask-image: radial-gradient(70% 70% at 50% 50%, #000 20%, transparent 100%);
+}
+
+.viewport__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-pill);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  box-shadow: var(--shadow-sm);
+  color: var(--c-accent);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.viewport__title {
+  font-size: var(--t-lg);
+  font-weight: 650;
+}
+
+.viewport__note {
+  font-size: var(--t-sm);
+  color: var(--c-text-muted);
+  max-width: 46ch;
+}
+
+.viewport__mountid {
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
+  font-size: var(--t-xs);
+  color: var(--c-text-faint);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  padding: 2px 6px;
+}
+
+/* Full screen: the stage drops its 16:9 box and fills the display. The engine
+   sizes from a ResizeObserver, so the canvas simply follows. */
+.viewport__stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: auto;
+  max-height: none;
+  background: #000;
+}
+
+.viewport__stage:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: auto;
+  max-height: none;
+  background: #000;
+}
+
+/* The fallback where the browser refuses real full screen: fill the window. */
+.viewport__stage[data-expanded='true'] {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  aspect-ratio: auto;
+  max-height: none;
+  background: #000;
+}
+
+.panel__iconbtn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-line);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.panel__iconbtn:hover {
+  background: var(--c-accent-softer);
+  color: var(--c-text);
+}
+
+.panel__iconbtn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* --- Replay HUD -------------------------------------------------------------
+   Drawn over a 3D scene that looks the same in either theme, so it carries a
+   fixed dark-glass palette rather than the page tokens. Sizes are in container
+   units of the stage, so the same HUD reads in the panel and at full screen. */
+
+.viewport__stage {
+  container-type: inline-size;
+}
+
+.hud {
+  --hud-bg: rgba(10, 14, 18, 0.64);
+  --hud-line: rgba(255, 255, 255, 0.12);
+  --hud-text: #f5f3ee;
+  --hud-muted: rgba(245, 243, 238, 0.62);
+  --hud-accent: #ffd34d;
+  --hud-pad: clamp(8px, 1.6cqw, 28px);
+
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--hud-pad);
+  pointer-events: none;
+  color: var(--hud-text);
+  font-size: clamp(10px, 1.3cqw, 21px);
+  line-height: 1.2;
+}
+
+.hud__top,
+.hud__bottom {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--hud-pad);
+}
+
+.hud__bottom {
+  align-items: flex-end;
+}
+
+.hud__panel {
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-line);
+  border-radius: 0.6em;
+  backdrop-filter: blur(8px) saturate(1.2);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  box-shadow: 0 0.4em 1.4em -0.6em rgba(0, 0, 0, 0.5);
+}
+
+/* Score bug */
+.hud__bug {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.hud__teams {
+  display: flex;
+  flex-direction: column;
+}
+
+.hud__team {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.3em 0.7em 0.3em 0.55em;
+  border-left: 0.2em solid transparent;
+}
+
+.hud__team + .hud__team {
+  border-top: 1px solid var(--hud-line);
+}
+
+.hud__team[data-batting='true'] {
+  border-left-color: var(--hud-accent);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.hud__logo {
+  width: 1.35em !important;
+  height: 1.35em !important;
+  object-fit: contain;
+}
+
+.hud__abbr {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  min-width: 2.4em;
+}
+
+.hud__runs {
+  font-weight: 800;
+  font-size: 1.2em;
+  min-width: 1.2em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud__state {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0 0.85em;
+  border-left: 1px solid var(--hud-line);
+}
+
+.hud__inning {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  font-weight: 700;
+  font-size: 1.05em;
+  white-space: nowrap;
+}
+
+.hud__inning [aria-hidden] {
+  color: var(--hud-accent);
+  font-size: 0.75em;
+}
+
+.hud__diamond {
+  width: 2.3em;
+  height: auto;
+}
+
+.hud__diamond rect {
+  fill: transparent;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 1.4;
+}
+
+.hud__diamond rect[data-on='true'] {
+  fill: var(--hud-accent);
+  stroke: var(--hud-accent);
+}
+
+.hud__count {
+  font-weight: 800;
+  font-size: 1.15em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud__outs {
+  display: inline-flex;
+  gap: 0.25em;
+}
+
+.hud__out {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+.hud__out[data-on='true'] {
+  background: #ff6b5a;
+  border-color: #ff6b5a;
+}
+
+/* Tools, top right */
+.hud__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.hud__tag {
+  padding: 0.3em 0.7em;
+  border-radius: 999px;
+  background: var(--hud-accent);
+  color: #1b1405;
+  font-size: 0.8em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hud__btn {
+  pointer-events: auto;
+  width: 2.3em;
+  height: 2.3em;
+  min-width: 28px;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 0.5em;
+  color: var(--hud-text);
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-line);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.hud__btn:hover {
+  background: rgba(10, 14, 18, 0.85);
+}
+
+.hud__btn:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}
+
+.hud__btn svg {
+  width: 55%;
+  height: 55%;
+}
+
+/* Matchup strip, bottom left */
+.hud__matchup {
+  display: grid;
+  gap: 0.2em;
+  padding: 0.5em 0.8em;
+  max-width: 42%;
+  min-width: 0;
+}
+
+.hud__row {
+  display: grid;
+  grid-template-columns: 4.6em minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.5em;
+}
+
+.hud__row dt {
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+
+.hud__row dd {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  min-width: 0;
+}
+
+.hud__row[data-strong='true'] dd {
+  font-weight: 700;
+  font-size: 1.08em;
+}
+
+.hud__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hud__hand {
+  font-size: 0.7em;
+  font-weight: 700;
+  color: var(--hud-muted);
+  border: 1px solid var(--hud-line);
+  border-radius: 0.3em;
+  padding: 0 0.3em;
+}
+
+/* Play card, bottom right */
+.hud__play {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45em;
+  padding: 0.6em 0.85em 0.7em;
+  min-width: 13em;
+  max-width: 46%;
+}
+
+.hud__playhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7em;
+  min-width: 0;
+}
+
+.hud__who {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--hud-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hud__result {
+  flex-shrink: 0;
+  padding: 0.15em 0.55em;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 0.78em;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  animation: hud-in var(--dur-med) var(--ease-out);
+}
+
+.hud__result[data-kind='hit'],
+.hud__result[data-kind='hr'] {
+  background: var(--hud-accent);
+  color: #1b1405;
+}
+
+.hud__result--pending {
+  background: transparent;
+  color: var(--hud-muted);
+}
+
+.hud__eyebrow {
+  display: block;
+  font-size: 0.68em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+
+/* Each readout mounts at its moment, so the entrance is a mount animation. */
+.hud__pitch,
+.hud__hit {
+  animation: hud-in var(--dur-med) var(--ease-out);
+}
+
+.hud__incoming {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.hud__pulse {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: var(--hud-accent);
+  animation: hud-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes hud-pulse {
+  from {
+    opacity: 0.25;
+  }
+}
+
+.hud__sub--muted {
+  color: var(--hud-muted);
+}
+
+.hud__big {
+  display: block;
+  font-size: 1.9em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.hud__big small,
+.hud__statval small {
+  font-size: 0.5em;
+  font-weight: 600;
+  color: var(--hud-muted);
+  margin-left: 0.2em;
+}
+
+.hud__sub {
+  display: block;
+  font-size: 0.85em;
+  color: var(--hud-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hud__hit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.2em 1em;
+  padding-top: 0.45em;
+  border-top: 1px solid var(--hud-line);
+}
+
+.hud__statval {
+  display: block;
+  font-size: 1.25em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud__traj {
+  font-size: 0.75em;
+  color: var(--hud-muted);
+  text-transform: capitalize;
+  padding-bottom: 0.2em;
+}
+
+/* --- Interlude: between half innings, and the final ---------------------
+   Replaces the HUD while there is nothing to play (ReplayInterlude.jsx). The
+   same dark glass and container-relative sizing as the HUD, so it reads the
+   same in the panel and at full screen. The scene stays visible, dimmed,
+   behind it. */
+.interlude {
+  --hud-text: #f5f3ee;
+  --hud-muted: rgba(245, 243, 238, 0.62);
+  --hud-line: rgba(255, 255, 255, 0.12);
+  --hud-accent: #ffd34d;
+
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: clamp(8px, 1.6cqw, 28px);
+  color: var(--hud-text);
+  font-size: clamp(10px, 1.3cqw, 21px);
+  line-height: 1.2;
+  background: radial-gradient(80% 90% at 50% 50%, rgba(6, 9, 12, 0.5), rgba(6, 9, 12, 0.82));
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: fade-in 0.35s ease-out both;
+}
+
+.interlude__fs {
+  position: absolute;
+  top: clamp(8px, 1.6cqw, 28px);
+  right: clamp(8px, 1.6cqw, 28px);
+}
+
+.interlude__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1em;
+  min-width: min(30em, 100%);
+  padding: 1.6em 2.6em 1.8em;
+  background: rgba(10, 14, 18, 0.7);
+  border: 1px solid var(--hud-line);
+  border-radius: 0.9em;
+  box-shadow: 0 1em 3em -1em rgba(0, 0, 0, 0.6);
+  text-align: center;
+  animation: hud-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.interlude__eyebrow {
+  font-family: var(--font-card-display);
+  font-weight: 700;
+  font-size: 1.05em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hud-accent);
+}
+
+.interlude[data-kind='final'] .interlude__eyebrow,
+.interlude[data-kind='off'] .interlude__eyebrow {
+  font-size: 1.7em;
+  letter-spacing: 0.1em;
+}
+
+.interlude__score {
+  display: flex;
+  align-items: center;
+  gap: 1.4em;
+}
+
+.interlude__side {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.8em;
+  transition: opacity 0.3s ease;
+}
+
+.interlude__side[data-dim='true'] {
+  opacity: 0.5;
+}
+
+.interlude__logo {
+  grid-row: 1 / 3;
+  width: 3.4em !important;
+  height: 3.4em !important;
+  object-fit: contain;
+}
+
+.interlude__side[data-end='true'] .interlude__logo {
+  grid-column: 2;
+}
+
+.interlude__abbr {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--hud-muted);
+}
+
+.interlude__runs {
+  font-family: var(--font-card-display);
+  font-weight: 800;
+  font-size: 3.6em;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.interlude__dash {
+  font-size: 2em;
+  color: var(--hud-muted);
+}
+
+/* Before the game: the club and its record where the runs would be. */
+.interlude__side[data-record='true'] .interlude__abbr {
+  font-family: var(--font-card-display);
+  font-size: 1.7em;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--hud-text);
+}
+
+.interlude__record {
+  font-weight: 600;
+  color: var(--hud-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.interlude__wait {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding-top: 1em;
+  border-top: 1px solid var(--hud-line);
+  font-size: 1.05em;
+  color: var(--hud-text);
+}
+
+.interlude__ball {
+  width: 1.6em;
+  height: 1.6em;
+  flex: none;
+  animation: interlude-spin 1.6s linear infinite;
+  filter: drop-shadow(0 0.1em 0.25em rgba(0, 0, 0, 0.5));
+}
+
+@keyframes interlude-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.interlude__rhe {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  border-top: 1px solid var(--hud-line);
+}
+
+.interlude__rhe th,
+.interlude__rhe td {
+  padding: 0.35em 0.9em;
+  text-align: center;
+}
+
+.interlude__rhe thead th {
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--hud-muted);
+}
+
+.interlude__rhe tbody th {
+  text-align: left;
+  font-weight: 700;
+}
+
+.interlude__rhe td {
+  font-weight: 700;
+}
+
+.interlude__rhe tbody tr + tr {
+  border-top: 1px solid var(--hud-line);
+}
+
+@container (max-width: 520px) {
+  .interlude {
+    font-size: 9px;
+  }
+  .interlude__card {
+    padding: 1.2em 1.4em 1.4em;
+    min-width: 0;
+  }
+}
+
+@keyframes hud-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.25em);
+  }
+}
+
+/* Narrow stages (a phone, a squeezed panel): keep the essentials. */
+@container (max-width: 520px) {
+  .hud {
+    font-size: 9px;
+    --hud-pad: 6px;
+  }
+  .hud__diamond,
+  .hud__row:not([data-strong='true']),
+  .hud__row dt,
+  .hud__sub,
+  .hud__traj,
+  .hud__tag {
+    display: none;
+  }
+  .hud__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hud__matchup {
+    max-width: 38%;
+  }
+  .hud__play {
+    min-width: 0;
+    max-width: 58%;
+  }
+  .hud__big {
+    font-size: 1.5em;
+  }
+}
+
+@media (max-width: 560px) {
+  .chip.viewport__status {
+    display: none;
+  }
+}
+
+/* --- Shared panel bits ----------------------------------------------------- */
+
+.chip--muted {
+  opacity: 0.55;
+}
+
+/* Panels that stack a fixed head over a scrolling body. */
+.panel--column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Empty state inside a panel. The name predates the panels that use it. */
+.atbats__empty {
+  padding: var(--s-6);
+  text-align: center;
+  color: var(--c-text-faint);
+  font-size: var(--t-sm);
+}
+
+.chip--score {
+  background: var(--c-seam-soft);
+  color: var(--c-seam);
+}
+
+.chip--warn {
+  background: var(--c-warn-soft);
+  color: var(--c-warn-ink);
+}
+
+/* --- Select ---------------------------------------------------------------- */
+
+.select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.select__input {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 calc(var(--s-4) + 18px) 0 var(--s-4);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.select__input:hover {
+  background: var(--c-accent-softer);
+}
+
+.select__input:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+.select__input option,
+.select__input optgroup {
+  background: var(--c-surface);
+  color: var(--c-text);
+}
+
+.select__chevron {
+  position: absolute;
+  right: var(--s-3);
+  display: grid;
+  place-items: center;
+  color: var(--c-text-faint);
+  pointer-events: none;
+}
+
+.select--sm .select__input {
+  height: 30px;
+  padding-left: var(--s-3);
+  border-radius: var(--r-pill);
+  font-size: var(--t-xs);
+}
+
+/* --- Action replay (play picker) ------------------------------------------- */
+
+.actionreplay__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+}
+
+.actionreplay .panel__head,
+.gameleaders .panel__head {
+  padding-top: var(--s-3);
+  padding-bottom: var(--s-3);
+}
+
+.actionreplay__steps {
+  display: flex;
+  gap: var(--s-1);
+}
+
+.actionreplay__step {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 50%;
+  color: var(--c-text-muted);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.actionreplay__step:hover:not(:disabled) {
+  background: var(--c-accent-softer);
+  color: var(--c-text);
+}
+
+.actionreplay__step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.actionreplay__step:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+.actionreplay__detail {
+  font-size: var(--t-sm);
+  color: var(--c-text-muted);
+  line-height: 1.45;
+}
+
+.actionreplay__inning {
+  display: inline-block;
+  margin-right: var(--s-2);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  color: var(--c-text-faint);
+}
+
+.actionreplay__empty,
+.gameleaders__empty {
+  color: var(--c-text-faint);
+  font-size: var(--t-sm);
+  text-align: center;
+}
+
+/* --- Game leaders ------------------------------------------------------------ */
+
+.gameleaders__empty {
+  padding: var(--s-6) var(--s-5);
+}
+
+/* Five rows on show, the rest a scroll away (GameLeaders.jsx sizes it). The
+   scroll stays in the list rather than handing off to the page at its ends. */
+.gameleaders__list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+}
+
+.gameleaders__row {
+  display: grid;
+  grid-template-columns: 16px 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-3) var(--s-5);
+  border-bottom: 1px solid var(--c-line);
+  text-align: left;
+  /* The player's club colour as a hairline, same as the league boards. */
+  box-shadow: inset 3px 0 0 var(--team, transparent);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.gameleaders__list li:last-child .gameleaders__row {
+  border-bottom: none;
+}
+
+.gameleaders__row:hover {
+  background: var(--c-surface-sunken);
+}
+
+.gameleaders__row[aria-current='true'] {
+  background: var(--c-accent-softer);
+}
+
+.gameleaders__row:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: -2px;
+}
+
+.gameleaders__rank {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  color: var(--c-text-faint);
+}
+
+.gameleaders__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gameleaders__name,
+.gameleaders__context {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gameleaders__name {
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.gameleaders__context {
+  font-size: var(--t-xs);
+  color: var(--c-text-faint);
+}
+
+.gameleaders__value {
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.gameleaders__value small {
+  margin-left: 2px;
+  font-size: var(--t-xs);
+  font-weight: 500;
+  color: var(--c-text-faint);
+}
+
+/* --- Box score ------------------------------------------------------------ */
+
+.tabs {
+  display: flex;
+  gap: var(--s-1);
+  padding: var(--s-2);
+  background: var(--c-surface-sunken);
+  border-radius: var(--r-pill);
+}
+
+.tabs__btn {
+  height: 28px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-pill);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--c-text-muted);
+}
+
+.tabs__btn[aria-selected='true'] {
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: var(--shadow-xs);
+}
+
+.statable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+}
+
+.statable th,
+.statable td {
+  padding: var(--s-3) var(--s-4);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.statable th:first-child,
+.statable td:first-child {
+  text-align: left;
+}
+
+.statable thead th {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  border-bottom: 1px solid var(--c-line);
+  position: sticky;
+  top: 0;
+  background: var(--c-surface);
+}
+
+.statable tbody tr {
+  border-bottom: 1px solid var(--c-line);
+}
+
+.statable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.statable tbody tr:hover {
+  background: var(--c-surface-sunken);
+}
+
+.statable__name {
+  font-weight: 600;
+}
+
+.statable__pos {
+  color: var(--c-text-faint);
+  font-weight: 500;
+  margin-left: var(--s-2);
+  font-size: var(--t-xs);
+}
+
+.linkish {
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.linkish:hover {
+  color: var(--c-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- Game list ------------------------------------------------------------ */
+
+.gamegrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--s-5);
+}
+
+.gamecard {
+  text-align: left;
+  padding: var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-med) var(--ease-out), box-shadow var(--dur-med) var(--ease-out),
+    border-color var(--dur-med) var(--ease-out);
+}
+
+.gamecard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--c-accent-soft);
+}
+
+.gamecard[aria-current='true'] {
+  border-color: var(--c-accent);
+  box-shadow: var(--shadow-md);
+}
+
+.gamecard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.gamecard__venue {
+  font-size: var(--t-xs);
+  color: var(--c-text-faint);
+}
+
+/* A followed club's game. The venue takes the flexible middle of the head row,
+   so the star sits hard against the right edge whatever the venue is called. */
+.gamecard__venue {
+  margin-right: auto;
+}
+
+.gamecard__fav {
+  display: grid;
+  place-items: center;
+  color: var(--c-accent);
+}
+
+.gamecard[data-favorite] {
+  border-color: var(--c-line-strong);
+}
+
+.gamecard__teams {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.gamecard__row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.gamecard__row[data-leading='true'] .gamecard__runs {
+  color: var(--c-text);
+}
+
+.gamecard__runs {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  color: var(--c-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.gamecard__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--t-sm);
+  color: var(--c-text-muted);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--c-line);
+}
+
+.gamelist__section + .gamelist__section {
+  margin-top: var(--s-7);
+}
+
+.gamelist__section h3 {
+  margin-bottom: var(--s-4);
+}
+
+/* --- Settings ------------------------------------------------------------- */
+
+.settings {
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.setting:last-child {
+  border-bottom: none;
+}
+
+.setting__label {
+  font-weight: 600;
+}
+
+.setting__hint {
+  font-size: var(--t-sm);
+  color: var(--c-text-muted);
+  margin-top: 2px;
+  max-width: 52ch;
+}
+
+/* Right-hand control cluster of a settings row (test buttons + a switch). */
+.setting__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: none;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--c-surface-sunken);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--c-line);
+  flex: none;
+}
+
+.segmented button {
+  height: 28px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-pill);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: var(--shadow-xs);
+}
+
+.switch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border-radius: var(--r-pill);
+  background: var(--c-line-strong);
+  border: none;
+  flex: none;
+  transition: background var(--dur-med) var(--ease-out);
+}
+
+.switch[aria-checked='true'] {
+  background: var(--c-accent);
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--c-knob);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--dur-med) var(--ease-out);
+}
+
+.switch[aria-checked='true']::after {
+  transform: translateX(20px);
+}
+
+/* A range input dressed to match the switch: the same accent for the part
+   that is "on", the same track grey for the rest, the same knob. `--fill` is
+   set inline from the value, because only Firefox can colour the filled side
+   of a range on its own. */
+.slider {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: none;
+}
+
+.slider input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 180px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(
+    to right,
+    var(--c-accent) 0 var(--fill, 50%),
+    var(--c-line-strong) var(--fill, 50%) 100%
+  );
+  cursor: pointer;
+}
+
+.slider input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--c-knob);
+  border: 1px solid var(--c-line-strong);
+  box-shadow: var(--shadow-xs);
+}
+
+.slider input[type='range']::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--c-knob);
+  border: 1px solid var(--c-line-strong);
+  box-shadow: var(--shadow-xs);
+}
+
+.slider input[type='range']:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 4px;
+}
+
+.slider__value {
+  min-width: 5ch;
+  text-align: right;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text-muted);
+}
+
+@media (max-width: 640px) {
+  .slider input[type='range'] {
+    width: 120px;
+  }
+}
+
+/* --- Player card modal ----------------------------------------------------- */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--s-5);
+}
+
+.modal__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--c-scrim);
+  backdrop-filter: blur(3px);
+  animation: fade-in var(--dur-med) var(--ease-out) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal__card {
+  position: relative;
+  width: min(620px, 100%);
+  max-height: calc(100vh - var(--s-7));
+  overflow-y: auto;
+  background: var(--c-surface-raised);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg);
+  animation: card-rise var(--dur-med) var(--ease-out) both;
+}
+
+.modal__close {
+  position: absolute;
+  top: var(--s-4);
+  right: var(--s-4);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--c-text-muted);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+}
+
+.modal__close:hover {
+  background: var(--c-accent-softer);
+}
+
+/* --- The player card -------------------------------------------------------
+   A perforated stamp, front and back.
+
+   This is the one component that does not follow the app's cream palette or
+   flip with the theme. It reads as a physical object laid on top of the app —
+   a printed card is navy-and-gold in a dark room too — so every colour comes
+   from the `--card-*` tokens and there is deliberately no dark variant.
+
+   Fixed 388x606, the proportions the design was drawn at. The face is where
+   the layout lives; the modal around it is now just a scrim and a focus trap,
+   because the close control belongs on the card itself.
+--------------------------------------------------------------------------- */
+
+/* Sized against the VIEWPORT, not against a percentage.
+   `max-width: 100%` does not clamp here: the modal centres its child in an
+   auto-sized grid track, the track grows to fit a 388px card, and 100% then
+   resolves to that same 388px — so on a 375px phone the card sat 19px wider
+   than the screen and took the page with it. */
+.modal__card--player {
+  position: relative;
+  width: min(388px, calc(100vw - 2 * var(--s-5)));
+  /* The card must NOT clip its own 3D transform, so it does none of the
+     scrolling the app's other dialogs do — each face scrolls on its own. */
+  overflow: visible;
+  animation: card-rise var(--dur-med) var(--ease-out) both;
+}
+
+.pcard {
+  /* Three ceilings: the designed height, the viewport, and whatever keeps the
+     388:606 proportions once width is the binding constraint. A card that goes
+     tall and thin on a phone stops looking like a card. */
+  height: min(
+    606px,
+    calc(100vh - 2 * var(--s-5)),
+    calc((100vw - 2 * var(--s-5)) * 606 / 388)
+  );
+  perspective: 1800px;
+}
+
+.pcard__faces {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.72s cubic-bezier(0.55, 0.05, 0.25, 1);
+}
+
+.pcard[data-face='back'] .pcard__faces {
+  transform: rotateY(180deg);
+}
+
+.pcard__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: var(--card-stock);
+  box-shadow: 0 22px 44px -22px rgba(28, 25, 23, 0.5);
+  color: var(--c-text);
+
+  /* Second line of defence, and the one that actually guarantees it.
+     `backface-visibility` alone is not enough (see the note below), so the
+     face pointing away is also taken out of painting entirely. The delay
+     holds it on screen until the card is edge-on, so the swap happens at the
+     invisible midpoint of the flip rather than as a pop. */
+  visibility: hidden;
+  transition: visibility 0s linear 0.36s;
+}
+
+.pcard__face:not([inert]) {
+  visibility: visible;
+}
+
+.pcard__face--back {
+  transform: rotateY(180deg);
+}
+
+/* `backface-visibility` is NOT an inherited property: every element carries
+   its own, and the default is `visible`. A descendant that establishes its own
+   rendering context is composited separately and then judged on ITS value
+   rather than the face's -- which is how a drop-shadowed portrait ends up
+   painting through the back of the card, mirrored, on top of the stats. */
+.pcard__photo,
+.pcard__shot,
+.pcard__ovr,
+.pcard__backinner {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* With motion reduced the flip is a jump cut, so the face must swap at once
+   rather than sitting invisible for a third of a second. The global
+   reduce-motion rules collapse transition DURATION only, which leaves a delay
+   standing. */
+@media (prefers-reduced-motion: reduce) {
+  .pcard__face {
+    transition-delay: 0s;
+  }
+}
+
+:root[data-reduce-motion='always'] .pcard__face {
+  transition-delay: 0s;
+}
+
+/* --- Perforated edge -------------------------------------------------------
+   Half-circles punched along each side. They are painted in the colour BEHIND
+   the card rather than cut out of it: a real cut needs a mask, and the card
+   sits on a known ground, so paint is cheaper and lands sharper.
+--------------------------------------------------------------------------- */
+
+.cardedge__strip {
+  position: absolute;
+  z-index: 3;
+  background-repeat: repeat-x;
+}
+
+.cardedge__strip--top,
+.cardedge__strip--bottom {
+  left: 0;
+  right: 0;
+  height: 8px;
+  background-size: 12px 8px;
+}
+
+.cardedge__strip--top {
+  top: -1px;
+  background-image: radial-gradient(
+    circle 6px at 6px 0,
+    var(--card-perf) 5.6px,
+    rgba(236, 234, 223, 0.5) 6px,
+    rgba(0, 0, 0, 0) 6.4px
+  );
+}
+
+.cardedge__strip--bottom {
+  bottom: -1px;
+  background-image: radial-gradient(
+    circle 6px at 6px 8px,
+    var(--card-perf) 5.6px,
+    rgba(236, 234, 223, 0.5) 6px,
+    rgba(0, 0, 0, 0) 6.4px
+  );
+}
+
+.cardedge__strip--left,
+.cardedge__strip--right {
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background-size: 8px 12px;
+  background-repeat: repeat-y;
+}
+
+.cardedge__strip--left {
+  left: -1px;
+  background-image: radial-gradient(
+    circle 6px at 0 6px,
+    var(--card-perf) 5.6px,
+    rgba(236, 234, 223, 0.5) 6px,
+    rgba(0, 0, 0, 0) 6.4px
+  );
+}
+
+.cardedge__strip--right {
+  right: -1px;
+  background-image: radial-gradient(
+    circle 6px at 8px 6px,
+    var(--card-perf) 5.6px,
+    rgba(236, 234, 223, 0.5) 6px,
+    rgba(0, 0, 0, 0) 6.4px
+  );
+}
+
+.cardedge__frame {
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(28, 25, 23, 0.09);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* --- Front ---------------------------------------------------------------- */
+
+.pcard__front {
+  position: relative;
+  height: 100%;
+  padding: 15px 15px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pcard__photo {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(217, 164, 65, 0.45);
+  background: linear-gradient(
+    180deg,
+    var(--card-photo-top) 0%,
+    var(--card-photo-mid) 60%,
+    var(--card-photo-bottom) 100%
+  );
+}
+
+/* Repeating club text on the diagonal, the way a stamp's security tint runs
+   under the image. Every third row is nudged left so the columns never line up
+   into a grid, which is what keeps it reading as print rather than a table. */
+.pcard__pattern {
+  position: absolute;
+  left: -14%;
+  top: -10%;
+  width: 130%;
+  height: 124%;
+  transform: rotate(-11deg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.pcard__pattern span {
+  white-space: nowrap;
+  font-family: var(--font-card-label);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 0.14em;
+  color: rgba(217, 164, 65, 0.17);
+}
+
+.pcard__glow {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  width: 290px;
+  height: 290px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(247, 244, 236, 0.16) 0%, rgba(247, 244, 236, 0) 68%);
+}
+
+/* Scoped to its parent on purpose. `.headshot` sets `position: relative` and
+   is defined further down this file, so at equal specificity it would win and
+   the portrait would ignore `bottom` and float at the top of the panel. */
+.pcard__photo > .pcard__shot {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.pcard__vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(18, 19, 20, 0) 55%, rgba(12, 13, 14, 0.7) 100%);
+  pointer-events: none;
+}
+
+/* The overall, as a rotated diamond plate. The digits are counter-rotated so
+   only the plate turns. */
+.pcard__ovr {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  z-index: 2;
+  width: 52px;
+  height: 52px;
+  transform: rotate(45deg);
+  background: linear-gradient(145deg, #1e4a7d, var(--card-navy-deep));
+  border: 1.5px solid rgba(217, 164, 65, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(10, 12, 16, 0.5);
+}
+
+.pcard__ovrval {
+  transform: rotate(-45deg);
+  font-family: var(--font-card-label);
+  font-weight: 800;
+  font-size: 21px;
+  line-height: 1;
+  color: var(--card-gold-pale);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcard__ovr[data-empty='true'] .pcard__ovrval {
+  color: rgba(242, 220, 174, 0.45);
+}
+
+.pcard__year {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-card-display);
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 0.86;
+  color: rgba(217, 164, 65, 0.68);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.pcard__poslabel {
+  position: absolute;
+  left: 13px;
+  bottom: 12px;
+  z-index: 2;
+  font-family: var(--font-card-label);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(247, 244, 236, 0.8);
+}
+
+.pcard__close {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 4;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(242, 220, 174, 0.45);
+  background: rgba(12, 13, 14, 0.5);
+  color: var(--card-gold-pale);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.pcard__close:hover {
+  background: var(--card-navy);
+  border-color: var(--card-gold);
+}
+
+.pcard__flip {
+  font-family: var(--font-card-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.pcard__flip--front {
+  position: absolute;
+  right: 12px;
+  bottom: 11px;
+  z-index: 2;
+  border: 1px solid rgba(217, 164, 65, 0.6);
+  background: rgba(12, 13, 14, 0.45);
+  color: var(--card-gold-pale);
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  padding: 7px 11px;
+}
+
+.pcard__flip--front:hover {
+  background: var(--card-navy);
+  border-color: var(--card-gold);
+}
+
+/* The name plate sits inset from the card's edges, so the stock shows around
+   it the way a printed panel would. */
+.pcard__platewrap {
+  flex: none;
+  margin: 0 -15px;
+  padding: 0 15px 15px;
+  background: var(--card-stock);
+}
+
+.pcard__plate {
+  background: linear-gradient(180deg, var(--card-navy), var(--card-navy-deep));
+  border-top: 2px solid var(--card-gold);
+  padding: 13px 14px 0;
+  text-align: center;
+}
+
+.pcard__name {
+  font-family: var(--font-card-display);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--card-stock);
+  text-wrap: balance;
+}
+
+.pcard__team {
+  font-family: var(--font-card-label);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(242, 220, 174, 0.92);
+  margin-top: 5px;
+}
+
+.pcard__ratings {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 11px;
+  border-top: 1px solid rgba(242, 220, 174, 0.3);
+}
+
+.pcard__rating {
+  padding: 9px 2px 11px;
+  border-right: 1px solid rgba(242, 220, 174, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.pcard__rating:last-child {
+  border-right: none;
+}
+
+.pcard__ratingval {
+  font-family: var(--font-card-display);
+  font-weight: 800;
+  font-size: 25px;
+  line-height: 1;
+  color: var(--card-stock);
+  font-variant-numeric: tabular-nums;
+}
+
+.pcard__ratinglabel {
+  font-family: var(--font-card-label);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(242, 220, 174, 0.85);
+  text-align: center;
+}
+
+/* --- Back ------------------------------------------------------------------ */
+
+.pcard__back {
+  position: relative;
+  height: 100%;
+  padding: 15px;
+}
+
+.pcard__backinner {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(217, 164, 65, 0.45);
+  background: var(--card-stock-2);
+  overflow: hidden;
+}
+
+.pcard__backhead {
+  flex: none;
+  background: linear-gradient(180deg, var(--card-navy), var(--card-navy-deep));
+  border-bottom: 2px solid var(--card-gold);
+  padding: 12px 13px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* The header's diamond is the same plate at a smaller size, so it overrides
+   only what changes. */
+.pcard__ovr--sm {
+  position: static;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  background: rgba(9, 26, 48, 0.5);
+  box-shadow: none;
+}
+
+.pcard__ovr--sm .pcard__ovrval {
+  font-size: 15px;
+}
+
+.pcard__backid {
+  min-width: 0;
+  flex: 1;
+}
+
+.pcard__backname {
+  font-family: var(--font-card-display);
+  font-weight: 800;
+  font-size: 23px;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--card-stock);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pcard__backsub {
+  font-family: var(--font-card-label);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--card-gold-pale);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pcard__close--head {
+  position: static;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-color: rgba(242, 220, 174, 0.5);
+  background: rgba(9, 26, 48, 0.35);
+}
+
+.pcard__close--head:hover {
+  background: rgba(9, 26, 48, 0.8);
+}
+
+.pcard__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 13px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pcard__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pcard__body::-webkit-scrollbar-thumb {
+  background: rgba(28, 25, 23, 0.16);
+  border-radius: 99px;
+}
+
+.pcard__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Section heading with a gold rule running out to the edge — the separating
+   that generous padding would otherwise have to do. */
+.pcard__rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.pcard__rule > span {
+  font-family: var(--font-card-label);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--card-gold-dark);
+}
+
+.pcard__rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(217, 164, 65, 0.45);
+}
+
+.pcard__note {
+  margin-top: 6px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--card-label);
+  text-wrap: pretty;
+}
+
+/* Bio: label and value on ONE line, two pairs per row, hung on a dotted rule
+   the way a printed form is. */
+.biogrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+}
+
+.biogrid__cell {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--card-rule-dot);
+}
+
+/* Birthplace and debut span both columns; a city and country will not fit in
+   half a card at a readable size. */
+.biogrid__cell--wide {
+  grid-column: 1 / -1;
+}
+
+.biogrid dt {
+  flex: none;
+  font-family: var(--font-card-label);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--card-label);
+  white-space: nowrap;
+}
+
+.biogrid dd {
+  font-family: var(--font-card-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--card-navy-ink-2);
+  text-align: right;
+  min-width: 0;
+}
+
+/* --- Stat tiles ------------------------------------------------------------ */
+
+/* Flex rather than grid so a count that does not divide by four -- six
+   defensive stats, seven season ones -- stretches to fill the last row instead
+   of leaving a hole where the fourth column should be. */
+.tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tiles__cell {
+  flex: 1 1 21%;
+  border: 1px solid rgba(23, 69, 111, 0.12);
+  padding: 7px 3px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* The season line is filled, the expected line outlined, so the two read as
+   different kinds of number at a glance. */
+.tiles--tinted .tiles__cell {
+  border-color: rgba(23, 69, 111, 0.16);
+  background: var(--card-stock-3);
+}
+
+.tiles__val {
+  font-family: var(--font-card-display);
+  font-weight: 800;
+  font-size: 19px;
+  line-height: 1;
+  color: var(--card-navy-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.tiles__label {
+  font-family: var(--font-card-label);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--card-label);
+  text-align: center;
+}
+
+/* The unit, hung under the label in the gold the section rules use. */
+.tiles__unit {
+  font-family: var(--font-card-label);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--card-gold-dark);
+}
+
+/* --- Pitch arsenal --------------------------------------------------------- */
+
+.arsenal__head,
+.arsenal__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 52px 46px 46px 46px;
+  align-items: center;
+  gap: 7px;
+}
+
+.arsenal__head {
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(23, 69, 111, 0.2);
+}
+
+.arsenal__head span {
+  font-family: var(--font-card-label);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--card-label);
+  text-align: right;
+}
+
+.arsenal__head span:first-child {
+  text-align: left;
+}
+
+.arsenal__row {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--card-rule);
+}
+
+.arsenal__row > span {
+  font-family: var(--font-card-display);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--card-navy-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.arsenal__name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.arsenal__name > span:first-child {
+  font-family: var(--font-card-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--card-navy-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Usage as a bar under the pitch name: the mix of an arsenal is the first
+   thing a scouting line is read for, and four percentages in a column do not
+   show it. */
+.arsenal__bar {
+  display: block;
+  height: 4px;
+  background: #e7e2d5;
+  overflow: hidden;
+}
+
+.arsenal__bar > span {
+  display: block;
+  height: 100%;
+  background: var(--card-gold);
+}
+
+.arsenal__rv {
+  color: var(--card-gold-dark) !important;
+  font-family: var(--font-card-label) !important;
+  font-size: 11px !important;
+}
+
+/* --- Spray chart ----------------------------------------------------------- */
+
+.pcard__section .spray__field {
+  position: relative;
+  margin-top: 8px;
+  border: 1px solid rgba(23, 69, 111, 0.12);
+  overflow: hidden;
+}
+
+.pcard__section .spray__field svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 128px;
+  margin: 0 auto;
+}
+
+.pcard__section .spray__note {
+  position: absolute;
+  inset: auto 0 6px 0;
+  text-align: center;
+  font-family: var(--font-card-label);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--card-label);
+}
+
+/* --- Back footer ----------------------------------------------------------- */
+
+.pcard__backfoot {
+  flex: none;
+  border-top: 1px solid rgba(217, 164, 65, 0.45);
+  background: var(--card-stock-3);
+  padding: 10px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pcard__updated {
+  font-family: var(--font-card-label);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--card-label);
+}
+
+.pcard__flip--back {
+  border: 0;
+  background: var(--card-navy);
+  color: var(--card-gold-pale);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  padding: 9px 14px;
+  white-space: nowrap;
+}
+
+.pcard__flip--back:hover {
+  background: var(--card-navy-deep);
+}
+
+.pcard__foothint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -26px;
+  text-align: center;
+  font-size: var(--t-xs);
+  color: var(--c-warn);
+}
+
+/* --- Headshots ------------------------------------------------------------- */
+
+.headshot {
+  position: relative;
+  display: block;
+  flex: none;
+}
+
+.headshot img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  /* Cut-outs are framed head-and-shoulders with the crop at the chest, so
+     anchoring to the bottom keeps every player's eyeline in the same place. */
+  object-position: bottom center;
+}
+
+.headshot--spot {
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--c-surface-sunken);
+}
+
+.headshot--spot img {
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* Reserves the final size while the photo loads, so nothing reflows under the
+   reader. Carries `.skeleton` for the shimmer itself. */
+.headshot__shimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  opacity: 0.25;
+}
+
+.headshot--initials {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--team-wash, var(--c-accent-softer));
+  border: 1px solid var(--team-line, var(--c-line-strong));
+  color: var(--c-text-muted);
+  font-size: var(--t-2xl);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* On the card the portrait sits on a dark panel, so the fallback monogram has
+   to switch grounds with it. */
+.pcard__shot.headshot--initials {
+  background: rgba(247, 244, 236, 0.06);
+  border: 1px solid rgba(217, 164, 65, 0.35);
+  color: rgba(242, 220, 174, 0.65);
+  font-family: var(--font-card-display);
+  font-size: 84px;
+  font-weight: 800;
+}
+
+/* --- Player name control ---------------------------------------------------- */
+
+.playername {
+  cursor: pointer;
+}
+
+
+/* --- Responsive ------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .scorebug {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-4);
+  }
+
+  .scorebug__state {
+    border: none;
+    border-top: 1px solid var(--c-line);
+    border-bottom: 1px solid var(--c-line);
+    padding: var(--s-4) 0;
+    flex-direction: row;
+    justify-content: space-around;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell__body,
+  .appbar__inner {
+    padding-left: var(--s-4);
+    padding-right: var(--s-4);
+  }
+
+  .appbar__inner {
+    gap: var(--s-3);
+  }
+
+  /* Narrow header: the ball mark carries the brand on its own. */
+  .appbar__brand > span {
+    display: none;
+  }
+
+  .appbar__nav {
+    margin-left: 0;
+  }
+
+  .navlink {
+    padding: 0 var(--s-3);
+  }
+
+  .appbar__game {
+    display: none;
+  }
+
+  .page-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-3);
+  }
+}
+
+/* --- Team identity -------------------------------------------------------
+   Club colours arrive as CSS variables set inline (see data/teamStyle.js), so
+   every rule below has a neutral fallback and the cream palette still leads.
+------------------------------------------------------------------------- */
+
+.teamlogo {
+  flex: none;
+  object-fit: contain;
+  display: block;
+  /* The supplied marks are 32-34px PNGs; rendering them smaller keeps them
+     crisp, and this stops a dark logo disappearing into a dark tint. */
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* Fallback when a logo is missing or fails to load. */
+.teamlogo--mono {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* Hairline of club colour along the top of a panel. */
+.panel--team {
+  position: relative;
+}
+
+.panel__accent {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--team, var(--c-accent)),
+    var(--team-2, var(--c-accent-soft))
+  );
+}
+
+.tabs--team .tabs__btn--team {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding-left: var(--s-2);
+}
+
+.tabs__btn--team[aria-selected='true'] {
+  background: var(--c-surface);
+  color: var(--team-ink, var(--c-text));
+  box-shadow: inset 0 0 0 1px var(--team-line, var(--c-line)), var(--shadow-xs);
+}
+
+/* Table head takes the club wash. The opaque base matters: the head is sticky,
+   so a translucent background alone would let rows scroll through it. */
+.statable--team thead th {
+  background-color: var(--c-surface);
+  background-image: linear-gradient(var(--team-wash), var(--team-wash));
+}
+
+/* Both clubs along the top edge of a game card. */
+.gamecard {
+  position: relative;
+  overflow: hidden;
+}
+
+.gamecard__edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--away, var(--c-accent)) 0 50%,
+    var(--home, var(--c-accent-soft)) 50% 100%
+  );
+}
+
+.gamecard__row {
+  min-width: 0;
+}
+
+/* Scoreboard is cached because the upstream feed is unreachable — say so
+   rather than quietly showing stale scores as if they were current. */
+.stale-note {
+  color: var(--c-warn);
+  font-weight: 600;
+}
+
+/* Team colour, dark theme.
+   The club variables are set inline by teamStyle.js, which emits both a light
+   and a dark value for anything that cannot survive the background flipping.
+   Only these three rules actually consume them. */
+
+:root[data-theme='dark'] .scoreteam[data-batting='true'] {
+  background-color: var(--team-wash-dark, var(--c-accent-softer));
+}
+
+:root[data-theme='dark'] .tabs__btn--team[aria-selected='true'] {
+  color: var(--team-ink-dark, var(--c-text));
+  box-shadow: inset 0 0 0 1px var(--team-line-dark, var(--c-line)), var(--shadow-xs);
+}
+
+:root[data-theme='dark'] .statable--team thead th {
+  background-image: linear-gradient(var(--team-wash-dark), var(--team-wash-dark));
+}
+
+/* --- Home / landing ------------------------------------------------------- */
+
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-7);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+  gap: var(--s-6);
+  align-items: center;
+  padding: var(--s-7) var(--s-6);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+/* A single seam arc, the same understated motif as the splash. */
+.hero::after {
+  content: '';
+  position: absolute;
+  right: -120px;
+  top: -80px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  border: 2px dashed var(--c-line-strong);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.hero__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  min-width: 0;
+}
+
+.hero__title {
+  font-size: clamp(1.75rem, 3.4vw, var(--t-3xl));
+  letter-spacing: -0.035em;
+  max-width: 18ch;
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+
+.hero__slate {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-3);
+  padding: var(--s-5);
+  background: var(--c-surface-sunken);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  position: relative;
+  z-index: 1;
+}
+
+.slate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+}
+
+.slate__value {
+  font-size: var(--t-2xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.slate__value--live {
+  color: var(--c-live);
+}
+
+.slate__label {
+  font-size: var(--t-xs);
+  color: var(--c-text-muted);
+}
+
+/* --- Favourite teams (Settings) ------------------------------------------- */
+
+.favteams__hint {
+  margin-bottom: var(--s-4);
+}
+
+.favteams__picked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.favteams__chip {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 5px var(--s-3) 5px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--team, var(--c-line-strong));
+  background: var(--team-wash, var(--c-accent-softer));
+  color: var(--c-text);
+  font-size: var(--t-sm);
+  font-weight: 650;
+}
+
+.favteams__chip small {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--c-text-muted);
+  font-weight: 700;
+}
+
+.favteams__remove {
+  color: var(--c-text-faint);
+  font-size: var(--t-md);
+  line-height: 1;
+}
+
+.favteams__chip:hover .favteams__remove {
+  color: var(--c-text);
+}
+
+/* Thirty clubs. Wide enough for the longest short name to fit without an
+   ellipsis — White Sox, Guardians, Nationals — and no wider, so the grid still
+   comes out five or six across on a desktop window. */
+.favteams__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+  gap: var(--s-2);
+}
+
+.favteams__team {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  text-align: left;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.favteams__team:hover {
+  border-color: var(--c-line-strong);
+  background: var(--c-surface-sunken);
+}
+
+/* Followed: the club's own colour, so the grid reads at a glance. */
+.favteams__team[aria-pressed='true'] {
+  border-color: var(--team, var(--c-accent));
+  background: var(--team-wash, var(--c-accent-softer));
+}
+
+.favteams__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.favteams__star {
+  margin-left: auto;
+  color: var(--c-text-faint);
+  display: grid;
+  place-items: center;
+}
+
+.favteams__team[aria-pressed='true'] .favteams__star {
+  color: var(--team-ink, var(--c-accent));
+}
+
+/* Dark theme reads the other half of the pair teamVars emits. A 6% wash and a
+   navy primary are both invisible on espresso — see the note in teamStyle.js. */
+:root[data-theme='dark'] .favteams__team[aria-pressed='true'] {
+  border-color: var(--team-line-dark, var(--c-accent));
+  background: var(--team-wash-dark, var(--c-accent-softer));
+}
+
+:root[data-theme='dark'] .favteams__team[aria-pressed='true'] .favteams__star {
+  color: var(--team-ink-dark, var(--c-accent));
+}
+
+:root[data-theme='dark'] .favteams__chip {
+  border-color: var(--team-line-dark, var(--c-line-strong));
+  background: var(--team-wash-dark, var(--c-accent-softer));
+}
+
+/* --- Today's games (landing page tiles) ---------------------------------- */
+
+.todaygames__title {
+  font-size: var(--t-xl);
+}
+
+.tilegrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: var(--s-4);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs);
+  text-align: left;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.tile:hover {
+  border-color: var(--team-line, var(--c-line-strong));
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.tile__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-bottom: var(--s-1);
+}
+
+.tile__fav {
+  display: grid;
+  place-items: center;
+  color: var(--c-accent);
+}
+
+/* A followed club's game, in that club's own colour along the top. */
+.tile[data-favorite] {
+  border-color: var(--team-line, var(--c-line-strong));
+  background:
+    linear-gradient(var(--team-wash), var(--team-wash)),
+    var(--c-surface);
+}
+
+.tile__row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.tile__team {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--c-text-muted);
+}
+
+.tile__runs {
+  font-size: var(--t-md);
+  font-weight: 650;
+  color: var(--c-text-muted);
+}
+
+/* The side that is ahead reads as ahead — the only emphasis on the tile. */
+.tile__row[data-leading='true'] .tile__team,
+.tile__row[data-leading='true'] .tile__runs {
+  color: var(--c-text);
+  font-weight: 750;
+}
+
+:root[data-theme='dark'] .tile[data-favorite] {
+  background:
+    linear-gradient(var(--team-wash-dark), var(--team-wash-dark)),
+    var(--c-surface);
+  border-color: var(--team-line-dark, var(--c-line-strong));
+}
+
+/* --- Leaderboards --------------------------------------------------------- */
+
+.leaders__title {
+  font-size: var(--t-xl);
+}
+
+.leaders__group + .leaders__group {
+  margin-top: var(--s-6);
+}
+
+.leaders__group > .u-eyebrow {
+  display: block;
+  margin-bottom: var(--s-3);
+}
+
+.leaders__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--s-5);
+}
+
+.board {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+
+.board__head {
+  padding: var(--s-4) var(--s-5) var(--s-3);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.board__stat {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.board__desc {
+  font-size: var(--t-xs);
+  color: var(--c-text-muted);
+  margin-top: 2px;
+}
+
+.board__row {
+  display: grid;
+  grid-template-columns: 18px 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-5);
+  border-bottom: 1px solid var(--c-line);
+  /* A hairline of the player's club colour, so the board is scannable by team
+     without tinting six panels. */
+  box-shadow: inset 3px 0 0 var(--team, transparent);
+}
+
+.board__row:last-child {
+  border-bottom: none;
+}
+
+.board__rank {
+  font-size: var(--t-xs);
+  color: var(--c-text-faint);
+  font-weight: 700;
+}
+
+.board__name {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.board__value {
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Expand a top-five board into its full page. Sits under the last row as a
+   footer rather than beside the heading, so the eye reaches it after reading
+   the five rather than before. */
+.board__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-3);
+  border-top: 1px solid var(--c-line);
+  background: var(--c-surface-sunken);
+  color: var(--c-text-muted);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.board__more:hover {
+  background: var(--c-accent-softer);
+  color: var(--c-accent);
+}
+
+/* --- Full leaderboard page ------------------------------------------------ */
+
+.leaderpage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+  padding-left: var(--s-2);
+}
+
+.backlink__icon {
+  display: inline-flex;
+}
+
+.leaderpage__title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  font-size: var(--t-2xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.leaderpage__group {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.leaderpage__desc {
+  margin-top: var(--s-2);
+  color: var(--c-text-muted);
+  font-size: var(--t-sm);
+}
+
+.leaderpage__polarity {
+  color: var(--c-warn);
+  font-weight: 600;
+}
+
+.leaderpage__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.leaderpage__foot {
+  font-size: var(--t-xs);
+  color: var(--c-text-faint);
+}
+
+/* Two columns on a wide screen: fifty rows in one column is a lot of scrolling
+   past the point where the ranks stop being interesting. */
+.leaderfull {
+  display: grid;
+  /* `min(360px, 100%)` rather than a bare 360px: a hard minimum wider than the
+     column itself cannot shrink, so on a phone the grid forced a 360px track
+     inside a 327px page and pushed the whole document sideways. */
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+  gap: 0 var(--s-5);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+  padding: var(--s-2) 0;
+}
+
+.leaderfull__row {
+  display: grid;
+  grid-template-columns: 26px 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-5);
+  box-shadow: inset 3px 0 0 var(--team, transparent);
+}
+
+.leaderfull__row + .leaderfull__row {
+  border-top: 1px solid var(--c-line);
+}
+
+.leaderfull__rank {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--c-text-faint);
+  text-align: right;
+}
+
+.leaderfull__shot {
+  border: 1px solid var(--c-line);
+}
+
+.leaderfull__id {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.leaderfull__name {
+  font-size: var(--t-md);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.leaderfull__team {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-xs);
+  color: var(--c-text-faint);
+}
+
+.leaderfull__value {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* The two-column grid puts an odd number of rows out of step, so the column
+   rule has to come off the first row of the second column too. */
+@media (min-width: 780px) {
+  .leaderfull__row:nth-child(2) {
+    border-top: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--s-6) var(--s-5);
+  }
+
+  .hero::after {
+    display: none;
+  }
+}
+
+:root[data-theme='dark'] .board__row {
+  box-shadow: inset 3px 0 0 var(--team-2, var(--team, transparent));
+}
+
+/* Loading / error state of the player card, before we know how tall it is. */
+.modal__card--slim {
+  width: min(380px, 100%);
+  min-height: 120px;
+}

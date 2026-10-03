@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.capture/
+__pycache__/
+*.pyc
+*.blend1
+.DS_Store
+Thumbs.db
+# Raw Mixamo downloads: kept locally, not redistributable (see README credits)
+assets/animations/*.fbx
+

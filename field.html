@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Barrels 3D — replay lab</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #14171c; color: #e8e6e1;
+             font: 13px/1.5 ui-sans-serif, system-ui, sans-serif; }
+      #replay-viewport { position: fixed; inset: 0; }
+      #layout { position: fixed; inset: 0; display: none; place-items: center;
+                background: #14171c; overflow: auto; z-index: 20; }
+      #layout canvas { width: min(96vh, 96vw); height: min(96vh, 96vw); }
+      body[data-mode='layout'] #layout { display: grid; }
+
+      #panel { position: fixed; left: 14px; top: 14px; z-index: 10; width: 310px;
+               background: rgba(12, 14, 18, 0.86); border: 1px solid #333a44;
+               border-radius: 10px; padding: 12px 13px; backdrop-filter: blur(8px); }
+      h1 { font-size: 13px; margin: 0 0 10px; color: #f6c85f; letter-spacing: .02em; }
+      label { display: block; font-size: 11px; text-transform: uppercase;
+              letter-spacing: .07em; color: #8a94a3; margin: 10px 0 4px; }
+      select, button { font: inherit; color: #e8e6e1; background: #222932;
+                       border: 1px solid #3a424d; border-radius: 6px; padding: 5px 8px; }
+      select { width: 100%; }
+      button { cursor: pointer; }
+      button:hover { background: #2c343f; }
+      .row { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+      .row input[type='range'] { flex: 1; min-width: 0; }
+      .check { display: flex; gap: 7px; align-items: center; margin-top: 12px;
+               font-size: 12px; color: #cdd4dd; }
+      #feed-note { font-size: 11px; color: #79828f; margin-top: 5px; min-height: 14px; }
+      #feed-note.bad { color: #e08a7a; }
+      #park-note { font-size: 11px; color: #79828f; margin-top: 5px; line-height: 1.6; }
+      #park-note b { color: #cdd4dd; font-weight: 600; }
+      #park-note .warn { color: #e0b57a; }
+      input[type='date'] { font: inherit; color: #e8e6e1; background: #222932;
+                           border: 1px solid #3a424d; border-radius: 6px; padding: 4px 7px; }
+      #facts { margin-top: 12px; padding-top: 10px; border-top: 1px solid #2b323b;
+               font-size: 12px; color: #aab3bf; }
+      #facts b { color: #e8e6e1; font-weight: 600; }
+      #facts .mode { color: #f6c85f; }
+      kbd { background: #262c34; border: 1px solid #3a424d; border-bottom-width: 2px;
+            border-radius: 4px; padding: 0 4px; font: inherit; font-size: 11px; }
+      #keys { margin-top: 10px; font-size: 11px; color: #79828f; line-height: 1.8; }
+    </style>
+  </head>
+  <body>
+    <!-- Same id the app uses, so the engine attaches with no special case. -->
+    <div id="replay-viewport"></div>
+    <div id="layout"></div>
+
+    <div id="panel">
+      <h1>Replay lab</h1>
+
+      <label for="date">Real MLB game</label>
+      <div class="row" style="margin-top:0">
+        <input id="date" type="date" style="flex:1;min-width:0" />
+        <button id="fetch">Load</button>
+      </div>
+      <select id="game-select" style="margin-top:6px"></select>
+      <div id="feed-note"></div>
+
+      <label for="park-select">Ballpark</label>
+      <select id="park-select"></select>
+      <div id="park-note"></div>
+
+      <label for="play-select">At-bat</label>
+      <select id="play-select"></select>
+
+      <div class="row">
+        <button id="replay">▶ Replay</button>
+        <input id="scrub" type="range" min="0" max="1000" value="0" />
+        <span id="clock" style="min-width: 52px; text-align: right">0.00s</span>
+      </div>
+
+      <div style="margin-top:8px;font-size:12px">
+        state: <span id="phase" style="color:#79828f">waiting</span>
+      </div>
+
+      <label class="check">
+        <input type="checkbox" id="lock" checked />
+        Lock to catcher's view
+      </label>
+
+      <div id="facts"></div>
+
+      <div id="keys">
+        <kbd>1</kbd> catcher <kbd>2</kbd> high home <kbd>3</kbd> broadcast
+        <kbd>4</kbd> first base <kbd>5</kbd> top-down<br />
+        <kbd>space</kbd> replay · <kbd>l</kbd> toggle lock · <kbd>t</kbd> layout texture<br />
+        <span style="color:#5f6875">◆ live shape (has spray) · ○ stub shape (dead center)</span>
+      </div>
+    </div>
+
+    <script type="module">
+      import { startReplayEngine } from '/src/replay/index.js';
+      import { fieldCanvas } from '/src/replay/field/layout.js';
+      import { allParks } from '/src/replay/field/park.js';
+      import { atBats } from '/src/data/stubs.js';
+      import { liveAtBats } from '/src/replay/ball/fixtures.js';
+
+      startReplayEngine();
+      const engine = window.__replay;
+
+      const $ = (id) => document.getElementById(id);
+
+      /* Two sources. The built-in fixtures are hand-made and always available;
+         a real game comes from the same backend the app uses, so an at-bat
+         picked here is byte-for-byte what the live feed would hand the engine.
+         Both go through engine.load() unchanged — no special case for either. */
+      const FIXTURES = [...liveAtBats, ...atBats.filter((a) => a.exitVelo != null)];
+      let playable = FIXTURES;
+
+      const label = (a) => {
+        const mark = a.hit ? '◆' : a.pitches?.length || a.pitch ? '·' : '○';
+        const line = a.exitVelo != null
+          ? `${a.exitVelo} mph, ${a.launchAngle}°, ${a.distance} ft`
+          : (a.pitches?.[a.pitches.length - 1]?.velo ?? a.pitch?.velo ?? '') + ' mph pitch';
+        return `${mark} ${a.inningLabel ?? ''} ${a.batter ?? ''} — ${a.result} · ${line}`.trim();
+      };
+
+      function setSource(list, note = '') {
+        playable = list;
+        $('play-select').innerHTML = list
+          .map((a, i) => `<option value="${i}">${label(a)}</option>`)
+          .join('');
+        $('feed-note').textContent = note;
+        $('feed-note').className = '';
+        if (list.length) select(0);
+      }
+
+      const select = (i) => engine.load(playable[i]);
+      $('play-select').addEventListener('change', (e) => select(+e.target.value));
+
+      /* --- Real games ---------------------------------------------------- */
+
+      const fail = (msg) => {
+        $('feed-note').textContent = msg;
+        $('feed-note').className = 'bad';
+      };
+
+      // Yesterday, in the browser's own timezone.
+      const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+      $('date').value = yesterday;
+
+      async function loadGames() {
+        $('feed-note').textContent = 'loading scoreboard…';
+        $('feed-note').className = '';
+        try {
+          const res = await fetch(`/api/games?date=${$('date').value}`);
+          if (!res.ok) throw new Error(`scoreboard ${res.status}`);
+          const { games = [] } = await res.json();
+          // Only games that have actually been played carry tracked at-bats.
+          const played = games.filter((g) => g.status === 'final' || g.status === 'live');
+          $('game-select').innerHTML =
+            `<option value="">— built-in fixtures —</option>` +
+            played
+              .map(
+                (g) =>
+                  // The scoreboard calls the score `runs`, not `score`.
+                  `<option value="${g.gamePk}">${g.away.abbr} ${g.away.runs ?? ''} @ ` +
+                  `${g.home.abbr} ${g.home.runs ?? ''}${g.status === 'live' ? ' (live)' : ''}</option>`,
+              )
+              .join('');
+          $('feed-note').textContent = `${played.length} played of ${games.length} games`;
+        } catch (e) {
+          fail(`no backend — run: python server/app.py  (${e.message})`);
+        }
+      }
+
+      async function loadGame(gamePk) {
+        if (!gamePk) return setSource(FIXTURES);
+        $('feed-note').textContent = 'loading at-bats…';
+        try {
+          const res = await fetch(`/api/game/${gamePk}`);
+          if (!res.ok) throw new Error(`game ${res.status}`);
+          const snap = await res.json();
+          /* Keep anything the engine can build a play from: a batted ball, or
+             just a pitch with a plate location. Everything else (a walk with no
+             tracked pitch) would come back as an empty play. */
+          const list = (snap.atBats ?? []).filter(
+            (a) => a.hasReplay || Number.isFinite(a.pitches?.[a.pitches.length - 1]?.plate?.x),
+          );
+          if (!list.length) return fail('no tracked at-bats in this game');
+          setSource(list.reverse(), `${list.length} at-bats · ${snap.game?.venue ?? ''}`);
+        } catch (e) {
+          fail(`could not load game (${e.message})`);
+        }
+      }
+
+      $('fetch').addEventListener('click', loadGames);
+      $('date').addEventListener('change', loadGames);
+      $('game-select').addEventListener('change', (e) => loadGame(e.target.value));
+      $('replay').addEventListener('click', () => {
+        engine.seek(0);
+        engine.play();
+      });
+      $('scrub').addEventListener('input', (e) => {
+        const { duration } = engine.status();
+        engine.pause();
+        engine.seek((e.target.value / 1000) * duration);
+      });
+      $('lock').addEventListener('change', (e) => engine.setCameraLock(e.target.checked));
+
+      /* The engine is the source of truth for playback and camera state; the
+         panel only reflects it, so keyboard shortcuts and clicks cannot
+         disagree with each other. */
+      let scrubbing = false;
+      $('scrub').addEventListener('pointerdown', () => (scrubbing = true));
+      addEventListener('pointerup', () => (scrubbing = false));
+
+      const PHASE = { idle: 'waiting for the next pitch', play: 'playing',
+                      paused: 'paused', dwell: 'holding' };
+
+      engine.subscribe((s) => {
+        $('lock').checked = s.locked;
+        $('phase').textContent =
+          (PHASE[s.phase] ?? s.phase) + (s.queued ? ` · ${s.queued} queued` : '');
+        $('phase').style.color = s.phase === 'idle' ? '#79828f' : '#f6c85f';
+        $('clock').textContent = `${s.t.toFixed(2)}s`;
+        if (!scrubbing && s.duration) $('scrub').value = (s.t / s.duration) * 1000;
+        $('replay').textContent = s.playing ? '⏸ Pause' : '▶ Replay';
+        const pitchLine = s.path?.pitch
+          ? `<b>${s.path.pitch.veloMph ?? '—'} mph</b> ${s.path.pitch.code ?? ''} ·
+             plate ${s.path.pitch.crossing.x.toFixed(2)} / ${s.path.pitch.crossing.y.toFixed(2)} ft ·
+             ${s.path.pitch.flightTime.toFixed(3)}s to the plate<br />`
+          : '';
+        $('facts').innerHTML = s.path
+          ? (s.path.ball ? pitchLine + `<span class="mode">${s.path.mode}</span> · tracked to
+             <b>${s.path.trackedDistance.toFixed(0)} ft</b>
+             at <b>${s.path.endHeight.toFixed(1)} ft</b> up<br />
+             apex ${s.path.apexHeight.toFixed(0)} ft ·
+             hang ${(s.path.hangTime - s.path.contactTime).toFixed(2)}s ·
+             backspin ${Math.round(s.path.spinRpm)} rpm<br />
+             ${s.path.rollDistance > 1
+               ? `then rolls <b>${s.path.rollDistance.toFixed(0)} ft</b> to
+                  ${s.path.endDistance.toFixed(0)} ft`
+               : 'no roll'}
+             <br />wind-up ${s.path.releaseTime.toFixed(2)}s · whole play
+             <b>${s.path.duration.toFixed(2)}s</b>
+             ${s.path.solved ? '' : ' · <b>UNSOLVED</b>'}`
+            : pitchLine + (s.path.foul
+                ? '<span class="mode">foul</span> — fouled back, camera holds on the zone'
+                : `<span class="mode">pitch only</span> — ${s.path.swing === 'miss' ? 'swing and a miss' : 'not put in play'}`))
+          : 'Nothing to replay on this at-bat.';
+      });
+
+      /* The clock only ticks inside the engine's own loop, so poll it for the
+         readout rather than adding a second animation frame here. */
+      setInterval(() => {
+        const s = engine.status();
+        $('clock').textContent = `${s.t.toFixed(2)}s`;
+        if (!scrubbing && s.duration) $('scrub').value = (s.t / s.duration) * 1000;
+      }, 50);
+
+      /* The painted layout canvas, built on demand by the `t` toggle below and
+         dropped whenever the park changes — it is a picture of one park. */
+      let canvas = null;
+
+      /* --- Ballparks ----------------------------------------------------
+         Every park the sheet describes, retired ones included. They never come
+         up in a live game but they are the most interesting things in the file
+         to look at, and the picker is the only place they can be seen. */
+      const PARKS = allParks();
+      $('park-select').innerHTML =
+        '<option value="generic">Generic ballpark</option>' +
+        PARKS.map(
+          (p) =>
+            `<option value="${p.key}">${p.name}${p.retired ? ' (retired)' : ''}</option>`,
+        ).join('');
+
+      const pct = (built, listed) =>
+        listed ? `${(((built - listed) / listed) * 100).toFixed(1)}%` : 'n/a';
+
+      function describe(park) {
+        if (park.key === 'generic') {
+          $('park-note').innerHTML = 'Symmetric 330 / 365 / 400. Not a real park.';
+          return;
+        }
+        const fair = pct(park.fairArea, park.listedFairArea);
+        const off = Math.abs(park.fairArea - park.listedFairArea) / park.listedFairArea > 0.04;
+        $('park-note').innerHTML =
+          `wall <b>${park.fenceDistance(-45).toFixed(0)}</b> /` +
+          ` ${park.fenceDistance(-22.5).toFixed(0)} /` +
+          ` <b>${park.fenceDistance(0).toFixed(0)}</b> /` +
+          ` ${park.fenceDistance(22.5).toFixed(0)} /` +
+          ` <b>${park.fenceDistance(45).toFixed(0)}</b> ft<br />` +
+          `height ${park.fenceHeight(-45).toFixed(0)} / ${park.fenceHeight(0).toFixed(0)} /` +
+          ` ${park.fenceHeight(45).toFixed(0)} ft · backstop ${park.backstop.toFixed(0)} ft` +
+          ` · CF ${park.bearing || '?'}<br />` +
+          `foul ground <b>${(park.foulArea / 1000).toFixed(1)}k</b> sq ft,` +
+          ` walls set back ${park.setback.toFixed(0)} ft<br />` +
+          `fair <b>${(park.fairArea / 1000).toFixed(1)}k</b> vs ${(park.listedFairArea / 1000).toFixed(1)}k listed` +
+          ` <span class="${off ? 'warn' : ''}">(${fair})</span>` +
+          (park.authored ? '<br /><b>hand-authored outline</b>' : '');
+      }
+
+      $('park-select').onchange = (e) => {
+        const park = PARKS.find((p) => p.key === e.target.value);
+        describe(engine.setPark(park || null));
+        canvas = null; // the painted layout is this park's; drop it
+        $('layout').replaceChildren();
+      };
+      describe(engine.currentPark());
+
+      // `t` swaps to the raw painted layout texture — the fastest way to check
+      // the field against a photograph.
+      addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() !== 't' || e.target.tagName === 'SELECT') return;
+        if (!canvas) {
+          $('layout').append((canvas = fieldCanvas(2048, undefined, engine.currentPark())));
+        }
+        document.body.dataset.mode = document.body.dataset.mode === 'layout' ? '' : 'layout';
+      });
+
+      setSource(FIXTURES);
+      loadGames();
+    </script>
+  </body>
+</html>
