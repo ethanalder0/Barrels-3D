@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useLiveData } from '../state/LiveDataProvider.jsx';
 import { createFollowTracker } from '../replay/follow.js';
 import { IconCube } from './Icons.jsx';
-import ReplayHud from './ReplayHud.jsx';
+import ReplayHud, { CameraToast } from './ReplayHud.jsx';
 import ReplayInterlude from './ReplayInterlude.jsx';
 import { interludeFor } from '../replay/interlude.js';
 
@@ -68,6 +68,8 @@ import { interludeFor } from '../replay/interlude.js';
                            on mount and whenever the game changes. The venue is
                            a property of the GAME, not of an at-bat, which is
                            why it needs an event of its own.
+       · 'barrels:cyclecamera'  no detail — the HUD's camera button: move to
+                           the next camera mode, exactly as the L key does.
 
      Events the engine sends back (also on the mount, bubbling):
        · 'barrels:moment'  detail = { pitch, contact, landed, awaiting, id,
@@ -76,6 +78,9 @@ import { interludeFor } from '../replay/interlude.js';
                            anything is still playing or waiting its turn. The
                            HUD holds each readout until its moment, so the
                            result is not printed before the ball arrives.
+       · 'barrels:cameramode'  detail = { mode, tracking } — the camera mode,
+                           'catcher' | 'centerfield' | 'free', and whether free
+                           roam is following the ball. Sent when either changes.
 
    The stage (not the mount) goes full screen, so the HUD overlay — a sibling
    of the mount — comes with it.
@@ -252,6 +257,8 @@ export default function ReplayViewport({
   homeTeam,
   followLatest,
   onFollowLatest,
+  highlights,
+  onHighlightNext,
 }) {
   const stageRef = useRef(null);
   const mountRef = useRef(null);
@@ -270,6 +277,7 @@ export default function ReplayViewport({
      would be deciding on the previous play. */
   const momentRef = useRef(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [cameraMode, setCameraMode] = useState(null);
 
   const live = useLiveData();
   const following = followLatest !== false;
@@ -315,8 +323,17 @@ export default function ReplayViewport({
       momentRef.current = e.detail;
       setMoment(e.detail);
     };
+    const onCamera = (e) => setCameraMode(e.detail);
     mount.addEventListener('barrels:moment', onMoment);
-    return () => mount.removeEventListener('barrels:moment', onMoment);
+    mount.addEventListener('barrels:cameramode', onCamera);
+    return () => {
+      mount.removeEventListener('barrels:moment', onMoment);
+      mount.removeEventListener('barrels:cameramode', onCamera);
+    };
+  }, []);
+
+  const cycleCamera = useCallback(() => {
+    mountRef.current?.dispatchEvent(new CustomEvent('barrels:cyclecamera', { bubbles: true }));
   }, []);
 
   /* Native full screen where the browser allows it. Where it does not — an
@@ -425,6 +442,25 @@ export default function ReplayViewport({
      happened. Instead each new pitch goes over once, when it is complete, and
      the at-bat in progress is STAGED: its batter stands in, waiting. */
   const { atBats: feedAtBats, game: feedGame, players: feedPlayers, ready: feedReady } = live;
+
+  /* The eventId a picked play goes out under. Minted when the pick changes —
+     not on every poll, or the engine would restart it each time — and, while
+     highlights run, unique to that run: starting highlights on the play that
+     is already on screen has to play it again, and the engine only replays a
+     play it is handed under a new id. Stopping them keeps the id, so the play
+     on screen carries on rather than starting over. */
+  const pickRef = useRef({ id: null, run: null, eventId: null });
+  if (!following && atBat) {
+    const p = pickRef.current;
+    if (p.id !== atBat.id || (highlights && p.run !== highlights)) {
+      pickRef.current = {
+        id: atBat.id,
+        run: highlights ?? null,
+        eventId: highlights ? `pick:${atBat.id}#${highlights}` : `pick:${atBat.id}`,
+      };
+    }
+  }
+
   useEffect(() => {
     const send = (type, detail) =>
       mountRef.current?.dispatchEvent(new CustomEvent(type, { detail, bubbles: true }));
@@ -435,7 +471,7 @@ export default function ReplayViewport({
       stageKeyRef.current = '';
       if (heldRef.current) hold(null);
       if (!atBat) return;
-      const picked = { ...atBat, eventId: `pick:${atBat.id}` };
+      const picked = { ...atBat, eventId: pickRef.current.eventId };
       eventsRef.current.set(picked.eventId, { atBat: picked, after: null });
       send('barrels:atbat', picked);
       return;
@@ -472,7 +508,43 @@ export default function ReplayViewport({
       send('barrels:stage', current);
     }
     prevHudRef.current = hudRef.current;
-  }, [following, atBat, feedAtBats, feedGame, feedPlayers, feedReady]);
+  }, [following, atBat, highlights, feedAtBats, feedGame, feedPlayers, feedReady]);
+
+  /* --- Highlights --------------------------------------------------------
+     Every play in the picker, oldest first, each one played to its end before
+     the next is picked. "Its end" is the engine's word for it: the moment
+     that names this play's eventId and says nothing is busy any more — so a
+     pause pauses the highlights too, and a play with nothing to draw moves
+     straight on. The list is read fresh each time, so in a live game plays
+     that happen while the highlights run are reached as well.
+
+     onHighlightNext gets the next play's id, or null after the newest one —
+     where the screen decides between following live and simply stopping.
+
+     The timer is for an engine that never takes the play up at all (no
+     WebGL, or a play still waiting on its tracked data): rather than stall,
+     the highlights move on. */
+  const advancedRef = useRef(null);
+  const atBatId = atBat?.id ?? null;
+  useEffect(() => {
+    if (!highlights || following || !atBatId) return undefined;
+    const expected = pickRef.current.eventId;
+    const next = () => {
+      if (advancedRef.current === expected) return;
+      advancedRef.current = expected;
+      const at = feedAtBats.findIndex((ab) => ab.id === atBatId);
+      onHighlightNext?.(at > 0 ? feedAtBats[at - 1].id : null);
+    };
+    const m = momentRef.current;
+    if (m?.id === expected) {
+      if (!m.busy && !m.awaiting) next();
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      if (momentRef.current?.id !== expected) next();
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [highlights, following, atBatId, moment, feedAtBats, onHighlightNext]);
 
   /* Let the HUD move on as the picture does: to the state after each play once
      that play has reached its result, and back to live once there is nothing
@@ -560,6 +632,7 @@ export default function ReplayViewport({
      following live. */
   const picked = !following && shown?.situation ? situationView(shown, reveal, live) : null;
   const hud = picked ?? (following && held ? held : hudRef.current);
+  const highlightAt = highlights && atBat ? live.atBats.findIndex((ab) => ab.id === atBat.id) : -1;
 
   useEffect(() => {
     mountRef.current?.dispatchEvent(
@@ -610,8 +683,13 @@ export default function ReplayViewport({
         <div className="panel__title">
           {/* Only for a play picked by hand: following live, what is on screen
               is simply the game, and the HUD already names the batter. */}
-          {!following && atBat?.hasReplay && (
-            <span className="chip viewport__status">Tracked data ready</span>
+          {highlights && highlightAt >= 0 ? (
+            <span className="chip viewport__status u-num">
+              Highlights {live.atBats.length - highlightAt} / {live.atBats.length}
+            </span>
+          ) : (
+            !following &&
+            atBat?.hasReplay && <span className="chip viewport__status">Tracked data ready</span>
           )}
           {followLatest ? (
             <span className="chip chip--live chip--dot">Following live</span>
@@ -649,7 +727,9 @@ export default function ReplayViewport({
           )}
         </div>
 
-        {interlude ? (
+        {/* Free roam is for looking round the park, break or not: the card
+            would sit in the middle of the view and swallow every drag. */}
+        {interlude && cameraMode?.mode !== 'free' ? (
           <ReplayInterlude
             interlude={interlude}
             game={liveGame}
@@ -662,13 +742,25 @@ export default function ReplayViewport({
             atBat={shown}
             waiting={following ? (stagedRef.current ?? null) : null}
             view={hud}
-            tag={!following && !!atBat && live.atBats[0]?.id !== atBat.id ? atBat.inningLabel : null}
+            tag={
+              highlights && atBat
+                ? `Highlights · ${atBat.inningLabel}`
+                : !following && !!atBat && live.atBats[0]?.id !== atBat.id
+                  ? `Replay · ${atBat.inningLabel}`
+                  : null
+            }
+            camera={cameraMode}
+            onCycleCamera={cycleCamera}
             moment={reveal}
             units={units}
             fullscreen={fullscreen || expanded}
             onToggleFullscreen={toggleFullscreen}
           />
         )}
+
+        <div className="hud hud--toasts">
+          <CameraToast camera={cameraMode} />
+        </div>
       </div>
 
       {/* A closing rail under the stage, matching the banner above it: the same

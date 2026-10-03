@@ -1011,9 +1011,17 @@ ball, narrowing its field of view as the ball gets further out.
 The zoom is a real zoom. The camera stops moving once it reaches its anchor and
 changes focal length instead, which is what a camera operator does and what
 keeps the shot stable; flying the camera alongside the ball looks like a video
-game and destroys any sense of how far the ball actually went. Unlocking hands
-the pivot to the orbit controls at whatever the director was watching, so it
-never jumps. Toggle with <kbd>L</kbd> anywhere, or the checkbox in the lab.
+game and destroys any sense of how far the ball actually went.
+
+<kbd>L</kbd> cycles three camera modes: `catcher` and `centerfield` (both
+driven by the director) and **free roam** (`src/replay/freeroam.js`), a fly
+camera rather than an orbit — WASD/arrows move level with the ground, drag
+looks (grab-the-world), Space/Shift+Space go up and down, the wheel zooms the
+lens, and <kbd>B</kbd> keeps the camera turned on the ball from wherever it is
+until a drag or another B. Free roam starts from wherever the director had the
+camera, so switching never jumps; its input listeners only act while it is on,
+so the director modes keep Space for play/pause and the page keeps its wheel.
+The lab's lock checkbox is director (checked) vs free roam.
 
 It aims at the strike zone, not down the field. Aiming at the rubber looks like
 the right idea and is not: the camera sits above a zone only eight feet away, so
@@ -1089,8 +1097,8 @@ games that have been played carry tracked at-bats, so the list is filtered to
 final and live ones. Markers in the at-bat list: **◆** has a batted ball, **·**
 is a pitch only (a walk or a strikeout), **○** is a fixture with no coordinates.
 
-<kbd>1</kbd>–<kbd>5</kbd> camera presets · <kbd>space</kbd> replay ·
-<kbd>L</kbd> lock · <kbd>T</kbd> the raw painted layout texture, which is the
+<kbd>1</kbd>–<kbd>5</kbd> camera presets (2–5 start free roam there) ·
+<kbd>space</kbd> replay · <kbd>L</kbd> next camera mode · <kbd>T</kbd> the raw painted layout texture, which is the
 fastest way to check the field against a photograph since everything except the
 mound is decided in that one image.
 

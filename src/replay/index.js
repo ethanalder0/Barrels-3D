@@ -19,6 +19,7 @@ let engine = null;
 let attached = null;
 let stopMoments = null;
 let stopContact = null;
+let stopStatus = null;
 
 /* ---------------------------------------------------------------------------
    CONTACT SOUND
@@ -83,6 +84,10 @@ function onZoom(e) {
 function onNight(e) {
   engine?.setNight(e.detail);
 }
+/* The camera button on the HUD: the same as pressing L. */
+function onCycleCamera() {
+  engine?.cycleCamera();
+}
 /* The venue is on the game, so this arrives separately from the at-bat and can
    arrive either side of it. setPark() re-solves whatever play is loaded, so the
    order does not matter. */
@@ -102,6 +107,7 @@ function attach(mount) {
   mount.addEventListener('barrels:park', onPark);
   mount.addEventListener('barrels:sound', onSound);
   mount.addEventListener('barrels:follow', onFollow);
+  mount.addEventListener('barrels:cyclecamera', onCycleCamera);
   attached = mount;
 
   stopContact = engine.onContact(onContactCue);
@@ -110,6 +116,21 @@ function attach(mount) {
      can hold a pitch's result until the ball actually gets there. */
   stopMoments = engine.onMoment((detail) => {
     mount.dispatchEvent(new CustomEvent('barrels:moment', { detail, bubbles: true }));
+  });
+
+  /* And which camera mode it is in, so the HUD can say so. Status fires on
+     every playback change; only a change of camera goes out. */
+  let cameraKey = '';
+  stopStatus = engine.subscribe((s) => {
+    const key = `${s.camera}|${s.tracking}`;
+    if (key === cameraKey) return;
+    cameraKey = key;
+    mount.dispatchEvent(
+      new CustomEvent('barrels:cameramode', {
+        detail: { mode: s.camera, tracking: s.tracking },
+        bubbles: true,
+      }),
+    );
   });
 
   /* The at-bat and the park that were already selected: both events fire from
@@ -149,10 +170,13 @@ function detach() {
   attached?.removeEventListener('barrels:park', onPark);
   attached?.removeEventListener('barrels:sound', onSound);
   attached?.removeEventListener('barrels:follow', onFollow);
+  attached?.removeEventListener('barrels:cyclecamera', onCycleCamera);
   stopMoments?.();
   stopMoments = null;
   stopContact?.();
   stopContact = null;
+  stopStatus?.();
+  stopStatus = null;
   cancelContact?.();
   cancelContact = null;
   engine?.detach();

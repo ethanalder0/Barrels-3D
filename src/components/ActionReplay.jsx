@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAppState } from '../state/AppState.jsx';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
-import { IconChevron } from './Icons.jsx';
+import { IconChevron, IconPlay } from './Icons.jsx';
 import { scrollReplayIntoView } from './ReplayViewport.jsx';
 
 /**
@@ -15,6 +15,10 @@ import { scrollReplayIntoView } from './ReplayViewport.jsx';
  * Picking a play turns off follow-live, same as choosing one anywhere else;
  * the replay banner offers it back. It also scrolls the replay back into view,
  * because the replay starts the moment you pick and this panel sits below it.
+ *
+ * Highlights play the whole list, from the first pitch of the game to now, one
+ * after another (ReplayViewport runs them). For catching up on a game you
+ * joined late, or watching back one that is over.
  */
 export default function ActionReplay() {
   const { state, actions } = useAppState();
@@ -42,6 +46,16 @@ export default function ActionReplay() {
     scrollReplayIntoView();
   };
 
+  const highlights = state.highlights != null;
+  const toggleHighlights = () => {
+    if (highlights) {
+      actions.stopHighlights();
+      return;
+    }
+    actions.startHighlights(atBats[atBats.length - 1].id); // newest first: the last is the first
+    scrollReplayIntoView();
+  };
+
   return (
     <section className="panel actionreplay" aria-label="Action replay">
       <div className="panel__head">
@@ -52,6 +66,20 @@ export default function ActionReplay() {
 
         {atBats.length > 0 && (
           <div className="actionreplay__steps">
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm actionreplay__highlights"
+              onClick={toggleHighlights}
+              aria-pressed={highlights}
+              title={
+                highlights
+                  ? 'Stop the highlights here'
+                  : 'Play every play of the game in order, from the first inning to now'
+              }
+            >
+              <IconPlay stop={highlights} />
+              {highlights ? 'Stop' : 'Highlights'}
+            </button>
             <button
               type="button"
               className="actionreplay__step"

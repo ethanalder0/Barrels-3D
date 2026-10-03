@@ -1069,6 +1069,82 @@
   text-transform: uppercase;
 }
 
+/* Above the between-innings card (z-index 4) as well as the HUD. */
+.hud--toasts {
+  z-index: 5;
+}
+
+.hud__tag--camera {
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  border: 1px solid var(--hud-line);
+}
+
+/* Camera mode, for a moment after it changes (ReplayHud CameraToast). Top
+   centre, clear of the score bug and the tools. */
+.hud__toast {
+  position: absolute;
+  top: var(--hud-pad);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(92%, 34em);
+  padding: 0.6em 0.9em;
+  border-radius: 0.6em;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-line);
+  backdrop-filter: blur(6px);
+  text-align: center;
+  animation: hud-toast 1.6s var(--ease-out) both;
+}
+
+.hud__toast:has(.hud__toast-keys) {
+  animation-duration: 5s;
+}
+
+.hud__toast-title {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.85em;
+  color: var(--hud-accent);
+}
+
+.hud__toast-keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3em 0.9em;
+  margin-top: 0.45em;
+  font-size: 0.78em;
+}
+
+.hud__toast-keys div {
+  display: flex;
+  gap: 0.35em;
+  white-space: nowrap;
+}
+
+.hud__toast-keys dt {
+  font-weight: 700;
+}
+
+.hud__toast-keys dd {
+  color: var(--hud-muted);
+}
+
+@keyframes hud-toast {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud__toast {
+    animation: none;
+  }
+}
+
 .hud__btn {
   pointer-events: auto;
   width: 2.3em;
@@ -1628,7 +1704,20 @@
 
 .actionreplay__steps {
   display: flex;
+  align-items: center;
   gap: var(--s-1);
+}
+
+.actionreplay__highlights {
+  height: 30px;
+  margin-right: var(--s-1);
+  gap: var(--s-1);
+  padding: 0 var(--s-3);
+}
+
+.actionreplay__highlights[aria-pressed='true'] {
+  background: var(--c-accent-softer);
+  color: var(--c-text);
 }
 
 .actionreplay__step {

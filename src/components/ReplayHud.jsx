@@ -1,6 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
 import TeamLogo from './TeamLogo.jsx';
-import { IconFullscreen } from './Icons.jsx';
+import { IconCamera, IconFullscreen } from './Icons.jsx';
 
 /* ---------------------------------------------------------------------------
    REPLAY HUD — the broadcast furniture drawn over the 3D stage.
@@ -41,8 +42,11 @@ export default function ReplayHud({
   units,
   fullscreen,
   onToggleFullscreen,
+  camera,
+  onCycleCamera,
 }) {
   const live = useLiveData();
+  const mode = CAMERA_MODES[camera?.mode] ?? null;
   const { game, bases, matchup } = view ?? live;
   const card = atBat ?? waiting;
 
@@ -51,7 +55,23 @@ export default function ReplayHud({
       <div className="hud__top">
         {game && <Bug game={game} bases={bases} />}
         <div className="hud__tools">
-          {tag && <span className="hud__tag">Replay · {tag}</span>}
+          {tag && <span className="hud__tag">{tag}</span>}
+          {camera?.mode === 'free' && (
+            <span className="hud__tag hud__tag--camera">
+              Free roam{camera.tracking ? ' · Tracking ball' : ''}
+            </span>
+          )}
+          {mode && (
+            <button
+              type="button"
+              className="hud__btn"
+              onClick={onCycleCamera}
+              aria-label={`Camera: ${mode.label}. Switch camera`}
+              title={`Camera: ${mode.label} — switch (L)`}
+            >
+              <IconCamera />
+            </button>
+          )}
           <button
             type="button"
             className="hud__btn"
@@ -72,6 +92,73 @@ export default function ReplayHud({
           <Waiting atBat={waiting} />
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/* --- Camera mode ---------------------------------------------------------
+   L (or the camera button) cycles home plate -> broadcast -> free roam. Each
+   change says where it landed for a moment; entering free roam also says how
+   to drive it, since none of those keys do anything anywhere else. The first
+   report, when the replay comes up, is not a change and shows nothing.
+
+   ReplayViewport draws the toast in a layer of its own, above the HUD and the
+   between-innings card alike, so it outlives either being swapped out. */
+const CAMERA_MODES = {
+  catcher: { label: 'Home plate' },
+  centerfield: { label: 'Broadcast' },
+  free: {
+    label: 'Free roam',
+    keys: [
+      ['WASD / ←↑↓→', 'move'],
+      ['Drag', 'look'],
+      ['Space / ⇧ Space', 'up / down'],
+      ['Scroll', 'zoom'],
+      ['B', 'track the ball'],
+      ['L', 'next camera'],
+    ],
+  },
+};
+
+export function CameraToast({ camera }) {
+  const [toast, setToast] = useState(null);
+  const prev = useRef(null);
+
+  useEffect(() => {
+    if (!camera) return undefined;
+    const before = prev.current;
+    prev.current = camera;
+    if (!before) return undefined;
+    let next = null;
+    if (before.mode !== camera.mode) {
+      next = { ...CAMERA_MODES[camera.mode], key: `${camera.mode}` };
+    } else if (before.tracking !== camera.tracking) {
+      next = { label: camera.tracking ? 'Tracking the ball' : 'Tracking off', key: `t${camera.tracking}` };
+    }
+    if (next) setToast(next);
+    return undefined;
+  }, [camera]);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = setTimeout(() => setToast(null), toast.keys ? 5000 : 1600);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  if (!toast) return null;
+  return (
+    <div className="hud__toast" role="status" key={toast.key}>
+      <p className="hud__toast-title">{toast.label}</p>
+      {toast.keys && (
+        <dl className="hud__toast-keys">
+          {toast.keys.map(([k, what]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{what}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </div>
   );
 }

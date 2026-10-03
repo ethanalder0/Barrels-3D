@@ -74,10 +74,13 @@ palette, and team logos switch to versions drawn for dark backgrounds.
   the ball actually is, and left-handed hitters are mirrored.
 - A camera director that works the play like a broadcast: the catcher's view
   through contact, then a high camera that follows and zooms with the ball.
-  There's also a centre-field broadcast shot, or you can free-orbit.
+  There's also a centre-field broadcast shot, and free roam to watch from
+  anywhere in the park.
 - Every park's own outfield wall distances and heights.
 - Pre-game, between-innings and final screens, taken from the game's own
   state.
+- Highlights play every play of the game in order, from the first inning to
+  now. Joined late? They catch you up, then switch back to following live.
 - Pick any earlier play and the on-screen score box goes back in time with
   it: the score, count, outs and runners as they stood before that pitch,
   updating as the play lands.
@@ -182,7 +185,19 @@ game in a couple of minutes. The frontend also runs without the backend, using
 demo data (the header says "Demo data").
 
 **While watching:** <kbd>F</kbd> toggles full screen and <kbd>Space</kbd>
-pauses or replays the play on screen.
+pauses or replays the play on screen. <kbd>L</kbd> (or the camera button on the
+replay) cycles the camera: home plate → broadcast → free roam.
+
+**In free roam:** <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the
+arrow keys move, click and drag to look around, <kbd>Space</kbd> goes up and
+<kbd>Shift</kbd>+<kbd>Space</kbd> down, and the scroll wheel zooms.
+<kbd>B</kbd> turns to the ball and keeps following it from where you are, until
+you drag or press <kbd>B</kbd> again.
+
+**Highlights:** the **Highlights** button on Action Replay plays every play in
+its list, oldest first. In a game that is still going it switches back to
+following live after the newest one; in a finished game it stops on the last
+play. Picking a play, pressing **Follow live** or **Stop** ends it early.
 
 **Offline checks.** The replay engine:
 

@@ -11,10 +11,10 @@
 --------------------------------------------------------------------------- */
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { buildField } from './field/field.js';
 import { createPark, parkFor } from './field/park.js';
 import { createStrikeZone } from './strikezone.js';
+import { createFreeRoam } from './freeroam.js';
 import { createBall } from './ball/ball.js';
 import { PITCH_VELOCITY } from './tuning.js';
 import { sampleAt } from './ball/trajectory.js';
@@ -157,9 +157,10 @@ const smoothstep = (u) => u * u * (3 - 2 * u);
    position is meaningful rather than decorative — behind the plate at a
    crouching catcher's eye height, framing the strike zone with the pitcher
    beyond it. Letting the mouse drift it turns a calibrated view into an
-   arbitrary one, so orbiting is off until it is unlocked deliberately.
+   arbitrary one, so the mouse does nothing until you switch to free roam.
 
-   The rest are free-orbit. `top` is how you check the field layout. */
+   The rest are starting points for free roam (see freeroam.js). `top` is how
+   you check the field layout. */
 export const VIEWS = {
   /* Aimed at the zone itself, not at the rubber. Aiming down the field looks
      like the right idea and does not work: the camera sits above a zone only
@@ -241,7 +242,7 @@ export function createEngine() {
   const ball = createBall();
   scene.add(field, zone.group, ball.group);
 
-  let controls = null;
+  let roam = null;
   let observer = null;
   let mount = null;
   let frame = 0;
@@ -445,15 +446,7 @@ export function createEngine() {
 
   /* --- Camera ----------------------------------------------------------- */
 
-  function applyLock() {
-    if (controls) controls.enabled = !locked;
-  }
-
-  /**
-   * Place the camera for the current instant. Only runs while locked.
-   * Returns the point it is looking at, so unlocking can hand the orbit
-   * controls a sensible pivot instead of snapping back to the field centre.
-   */
+  /** Place the camera for the current instant. Only runs while locked. */
   function direct() {
     const shot = VIEWS[shotName];
     if (camera.up.y !== 1) camera.up.set(0, 1, 0);
@@ -510,7 +503,19 @@ export function createEngine() {
       camera.near = near;
       camera.updateProjectionMatrix();
     }
-    return scratch.target;
+  }
+
+  /**
+   * Where free roam's B points: the ball while it is in the picture, the
+   * pitcher's hand before it is thrown, and the strike zone between plays —
+   * where the next one is coming.
+   */
+  const PLATE = new THREE.Vector3(...VIEWS.catcher.target);
+  const ballPoint = new THREE.Vector3();
+  function ballAt() {
+    if (!path || phase === 'idle') return PLATE;
+    const at = sampleAt(path, Math.max(playhead, path.releaseTime ?? 0));
+    return ballPoint.set(at.x, at.y, at.z);
   }
 
   /* --- Camera and zoom --------------------------------------------------
@@ -565,40 +570,60 @@ export function createEngine() {
     applyNight();
   }
 
+  /**
+   * Jump to a preset. A locked one becomes the director's shot; any other is
+   * a place to start free roam from.
+   */
   function setView(name) {
     const v = VIEWS[name] || VIEWS.catcher;
     view = VIEWS[name] ? name : 'catcher';
-    camera.position.set(...v.position);
-    camera.up.set(...(v.up ?? [0, 1, 0])); // only `top` overrides this
-    camera.fov = v.locked ? shotFov(view) : (v.fov ?? 38);
-    camera.near = v.near ?? 0.5;
-    camera.updateProjectionMatrix();
-    if (controls) {
-      controls.object.up.copy(camera.up);
-      controls.target.set(...v.target);
-      controls.update();
-    } else {
-      camera.lookAt(...v.target);
+    if (v.locked) {
+      shotName = view;
+      setCameraLock(true);
+      return;
     }
-    locked = !!v.locked;
-    applyLock();
+    locked = false;
+    roam?.enable(v);
     emit();
   }
 
-  /** Lock the camera to the director, or hand it back to the mouse. */
+  /**
+   * Hand the camera to the director, or take it into free roam. Free roam
+   * starts from wherever the director had it, so switching never jumps.
+   */
   function setCameraLock(next) {
     const was = locked;
     locked = !!next;
-    if (locked && !was) {
+    if (locked) {
+      roam?.disable();
       view = shotName; // the director drives the chosen shot
       direct();
-    } else if (!locked && was && controls) {
-      // Keep looking where the director was, so unlocking does not jump.
-      controls.target.copy(scratch.target);
-      controls.update();
+    } else if (was) {
+      view = 'free';
+      roam?.enable();
     }
-    applyLock();
     emit();
+  }
+
+  /* --- Camera modes -----------------------------------------------------
+     L cycles them, in this order:
+
+       catcher      behind home plate, director at the wheel
+       centerfield  the broadcast shot, director at the wheel
+       free         free roam — see freeroam.js
+
+     Settings still decide which shot the app opens on and which one it goes
+     back to when Settings change; L is for the game in front of you. */
+  const MODES = ['catcher', 'centerfield', 'free'];
+
+  function cameraMode() {
+    return locked ? shotName : 'free';
+  }
+
+  function cycleCamera() {
+    const next = MODES[(MODES.indexOf(cameraMode()) + 1) % MODES.length];
+    if (next === 'free') setCameraLock(false);
+    else setView(next);
   }
 
   function setQuality(level) {
@@ -743,9 +768,12 @@ export function createEngine() {
 
     /* Same at-bat, same data: do nothing. The app re-broadcasts the selection
        on every poll of a live game, and rebuilding here would restart the
-       replay each time — the same pitch on a loop until the next one lands. */
+       replay each time — the same pitch on a loop until the next one lands.
+
+       A new eventId on the same play is a new request to see it — highlights
+       reaching the play that was already on screen — so that plays again. */
     const key = playKey(atBat);
-    if (key === loadedKey) {
+    if (key === loadedKey && atBat?.eventId === loadedAtBat?.eventId) {
       emitMoment(); // may be clearing `awaiting` on a play that did not change
       return path;
     }
@@ -929,6 +957,8 @@ export function createEngine() {
     return {
       view,
       locked,
+      camera: cameraMode(),
+      tracking: !!roam?.tracking,
       phase,
       awaiting,
       playing: phase === 'play',
@@ -1007,7 +1037,7 @@ export function createEngine() {
     syncPlayers(dt);
 
     if (locked) direct();
-    else controls?.update();
+    else roam?.update(dt);
     renderer.render(scene, camera);
   }
 
@@ -1015,10 +1045,7 @@ export function createEngine() {
     mount = el;
     mount.appendChild(renderer.domElement);
 
-    controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.maxPolarAngle = Math.PI / 2 - 0.02; // never drop under the ground
-    controls.maxDistance = 900;
+    roam = createFreeRoam({ camera, element: renderer.domElement, ballAt, onChange: emit });
     setView(shotName);
     setQuality('high');
 
@@ -1027,10 +1054,14 @@ export function createEngine() {
     resize();
 
     onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
       const preset = { 1: shotName, 2: 'home', 3: 'broadcast', 4: 'first', 5: 'top' }[e.key];
       if (preset) setView(preset);
-      else if (e.key === 'l') setCameraLock(!locked);
-      else if (e.code === 'Space') {
+      else if (e.key === 'l' || e.key === 'L') {
+        if (!e.repeat) cycleCamera();
+      } else if (e.code === 'Space' && locked) {
+        // In free roam Space is up — freeroam.js has it.
         e.preventDefault();
         phase === 'play' ? pause() : play();
       }
@@ -1067,7 +1098,8 @@ export function createEngine() {
     cancelAnimationFrame(frame);
     window.removeEventListener('keydown', onKey);
     observer?.disconnect();
-    controls?.dispose();
+    roam?.dispose();
+    roam = null;
     renderer.domElement.remove();
     field.userData.dispose();
     players?.dispose();
@@ -1099,6 +1131,7 @@ export function createEngine() {
     onContact,
     setView,
     setCameraLock,
+    cycleCamera,
     setQuality,
     setZoom,
     setCamera,

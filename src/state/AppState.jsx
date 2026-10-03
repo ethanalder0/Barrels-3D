@@ -25,6 +25,13 @@ const initialState = {
   // While true the newest at-bat is selected automatically as the game moves on.
   // Picking one by hand turns it off; the at-bat panel offers it back.
   followLatest: true,
+  /* Highlights: every play of the game in order, from the first pitch to now.
+     A number while they are running — which run this is, so the replay can
+     tell a play it is showing again from the same one already on screen —
+     and null otherwise. Anything else that picks a play, or Follow live,
+     stops them. See ReplayViewport. */
+  highlights: null,
+  highlightRuns: 0,
   playerCardId: null, // non-null → player modal is open
   // Which leaderboard the full-page view is showing, as { groupId, categoryId }.
   // Set by expanding one of the home page's top-five boards.
@@ -67,22 +74,45 @@ function reducer(state, action) {
         ...state,
         screen: action.screen,
         followLatest: action.screen === 'live' ? true : state.followLatest,
+        highlights: null,
       };
     case 'selectGame':
-      return { ...state, selectedGameId: action.gameId, followLatest: true, screen: 'live' };
+      return {
+        ...state,
+        selectedGameId: action.gameId,
+        followLatest: true,
+        highlights: null,
+        screen: 'live',
+      };
     // Same, minus the navigation: used when live data replaces the stub ids and
     // we need to point at a real gamePk without yanking the user to another screen.
     case 'hydrateGame':
-      return { ...state, selectedGameId: action.gameId, followLatest: true };
+      return { ...state, selectedGameId: action.gameId, followLatest: true, highlights: null };
     /* Changing the day also drops the selected game: it belongs to the old
        date, and leaving it selected would leave the scorebug showing one game
        while the list shows another day's. */
     case 'setScoreboardDate':
-      return { ...state, scoreboardDate: action.date, selectedGameId: null };
+      return { ...state, scoreboardDate: action.date, selectedGameId: null, highlights: null };
+    // A play picked by anything but the highlights themselves ends them.
     case 'selectAtBat':
-      return { ...state, selectedAtBatId: action.atBatId, followLatest: !!action.auto };
+      return {
+        ...state,
+        selectedAtBatId: action.atBatId,
+        followLatest: !!action.auto,
+        highlights: action.highlight ? state.highlights : null,
+      };
     case 'setFollowLatest':
-      return { ...state, followLatest: action.value };
+      return { ...state, followLatest: action.value, highlights: null };
+    case 'startHighlights':
+      return {
+        ...state,
+        selectedAtBatId: action.atBatId,
+        followLatest: false,
+        highlights: state.highlightRuns + 1,
+        highlightRuns: state.highlightRuns + 1,
+      };
+    case 'stopHighlights':
+      return { ...state, highlights: null };
     case 'openLeaderboard':
       return {
         ...state,
@@ -124,9 +154,11 @@ export function AppStateProvider({ children }) {
       selectGame: (gameId) => dispatch({ type: 'selectGame', gameId }),
       setScoreboardDate: (date) => dispatch({ type: 'setScoreboardDate', date }),
       hydrateGame: (gameId) => dispatch({ type: 'hydrateGame', gameId }),
-      selectAtBat: (atBatId, { auto = false } = {}) =>
-        dispatch({ type: 'selectAtBat', atBatId, auto }),
+      selectAtBat: (atBatId, { auto = false, highlight = false } = {}) =>
+        dispatch({ type: 'selectAtBat', atBatId, auto, highlight }),
       setFollowLatest: (value) => dispatch({ type: 'setFollowLatest', value }),
+      startHighlights: (atBatId) => dispatch({ type: 'startHighlights', atBatId }),
+      stopHighlights: () => dispatch({ type: 'stopHighlights' }),
       openLeaderboard: (groupId, categoryId) =>
         dispatch({ type: 'openLeaderboard', groupId, categoryId }),
       openPlayer: (playerId) => dispatch({ type: 'openPlayer', playerId }),

@@ -104,3 +104,26 @@ export function IconStar({ size = 16, filled = false }) {
     </svg>
   );
 }
+
+/* Play and stop, for the highlights button. */
+export function IconPlay({ size = 12, stop = false }) {
+  return (
+    <svg viewBox="0 0 16 16" width={size} height={size} aria-hidden="true">
+      {stop ? (
+        <rect x="3.5" y="3.5" width="9" height="9" rx="1.2" fill="currentColor" />
+      ) : (
+        <path d="M4.5 2.8v10.4L13 8 4.5 2.8Z" fill="currentColor" strokeLinejoin="round" />
+      )}
+    </svg>
+  );
+}
+
+/* A film camera, for the replay's camera-mode button. */
+export function IconCamera({ size = 16 }) {
+  return (
+    <svg viewBox="0 0 16 16" width={size} height={size} aria-hidden="true">
+      <rect x="1.5" y="4.5" width="9" height="7" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M10.5 7l4-2v6l-4-2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAppState } from '../state/AppState.jsx';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
 import Scorebug from '../components/Scorebug.jsx';
@@ -6,6 +6,7 @@ import ReplayViewport, { forReplay } from '../components/ReplayViewport.jsx';
 import BoxScore from '../components/BoxScore.jsx';
 import ActionReplay from '../components/ActionReplay.jsx';
 import GameLeaders from '../components/GameLeaders.jsx';
+import { isGameOver } from '../replay/interlude.js';
 
 /**
  * The main screen, one full-width column: scorebug, replay viewport, and below
@@ -20,6 +21,20 @@ export default function LiveGameScreen() {
 
   // Dressed for the replay: both clubs, and the numbers on both backs.
   const atBat = useMemo(() => forReplay(selected, game, players), [selected, game, players]);
+
+  /* Highlights pick each next play themselves. After the newest one, a game
+     still going goes back to following live; a finished one stays on its
+     last play. */
+  const { selectAtBat, setFollowLatest, stopHighlights } = actions;
+  const gameOn = game?.status === 'live' && !isGameOver(game);
+  const onHighlightNext = useCallback(
+    (id) => {
+      if (id) selectAtBat(id, { highlight: true });
+      else if (gameOn) setFollowLatest(true);
+      else stopHighlights();
+    },
+    [selectAtBat, setFollowLatest, stopHighlights, gameOn],
+  );
 
   const nightSetting = state.settings.nightGames;
   const night = nightSetting === 'night' || (nightSetting === 'auto' && isNightGame(game));
@@ -47,6 +62,8 @@ export default function LiveGameScreen() {
         homeTeam={game?.home?.abbr}
         followLatest={state.followLatest}
         onFollowLatest={() => actions.setFollowLatest(true)}
+        highlights={state.highlights}
+        onHighlightNext={onHighlightNext}
       />
 
       <div className="live__lower">
