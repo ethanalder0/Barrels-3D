@@ -13,16 +13,25 @@ backend stays `python server/app.py` with no extra install.
     GET /api/stream/<gamePk>            Server-Sent Events: snapshot / play / status
         ?replay=1&speed=6               re-run a finished game as if it were live
 
+Anything else is the built frontend from dist/, when there is one (see
+static_files.py) -- which is how a deploy serves the whole site from this one
+process. Locally there usually is not, and Vite serves the app instead.
+
 SSE rather than WebSockets: the data only flows one way, EventSource reconnects
 on its own, and it needs no dependency on either end.
 
-    python server/app.py [--port 8787]
+    python server/app.py [--port 8787] [--host 127.0.0.1]
+
+On a host that sets PORT (Heroku, and most like it) the port comes from there
+and the server listens on every interface.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import sys
 import time
 from datetime import datetime
@@ -34,7 +43,9 @@ import leaders as leaders_mod
 import mlb_api
 import projection
 import ratings as ratings_mod
-from feed_hub import FeedHub
+import static_files
+from feed_hub import FeedHub, FeedLimitReached
+from ratelimit import RequestLimiter, StreamLimiter, client_address
 
 DEFAULT_PORT = 8787
 HEARTBEAT_SECONDS = 15.0   # keeps proxies from closing an idle SSE connection
@@ -63,12 +74,60 @@ SABER_TTL = 600.0
 GAME_STATCAST_TTL = 20.0
 GAME_STATCAST_STALE_MAX = 900.0
 
+# A player card is a statsapi call per click, and the same leader gets clicked
+# by everyone reading the home page. Ten minutes is far fresher than a season
+# line moves.
+PLAYER_TTL = 600.0
+
+# One game's snapshot, for a first paint. Short, because a live game moves; the
+# point is only that a burst of visitors arriving together costs one fetch.
+SNAPSHOT_TTL = 5.0
+
+# Every cache below is keyed by something a visitor chooses -- a date, a game, a
+# player -- so each is capped, or a crawler could grow it until memory runs out.
+CACHE_MAX_ENTRIES = 500
+
+# Replay speed is timecodes per tick. Past this a game is over in seconds and
+# each tick is just more upstream fetches.
+REPLAY_SPEED_RANGE = (1.0, 30.0)
+
+# Seasons the backend will ask upstream about. Statcast starts in 2015.
+FIRST_SEASON = 2015
+
+_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+# Only set when the API is called from a different origin. Same-origin in
+# production and proxied by Vite in development, so normally unset.
+CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "")
+
+LIMITER = RequestLimiter()
+STREAMS = StreamLimiter()
+
 HUB = FeedHub()
 _schedule_cache: dict[str, tuple[float, list]] = {}
 _leaders_cache: dict[int, tuple[float, dict]] = {}
 _teams_cache: dict[int, tuple[float, dict]] = {}
 _saber_cache: dict[int, tuple[float, dict]] = {}
 _game_statcast_cache: dict[int, tuple[float, list]] = {}
+_player_cache: dict[tuple[int, int], tuple[float, dict]] = {}
+_snapshot_cache: dict[int, tuple[float, dict]] = {}
+
+
+def _remember(cache: dict, key, value) -> None:
+    """Store `value` as (now, value), dropping the oldest entries past the cap."""
+    cache[key] = (time.monotonic(), value)
+    if len(cache) > CACHE_MAX_ENTRIES:
+        for old in sorted(cache, key=lambda k: cache[k][0])[: len(cache) - CACHE_MAX_ENTRIES]:
+            del cache[old]
+
+
+def _season(query) -> int:
+    """The ?season= asked for, held to seasons that exist."""
+    now = datetime.now().year
+    season = int((query.get("season") or [now])[0])
+    if not FIRST_SEASON <= season <= now + 1:
+        raise ValueError("season out of range")
+    return season
 
 
 def _today() -> str:
@@ -102,7 +161,7 @@ def _scoreboard(date_str: str):
                 % (date_str, type(exc).__name__, age, "\n"))
             return hit[1], age
         raise
-    _schedule_cache[date_str] = (now, games)
+    _remember(_schedule_cache, date_str, games)
     return games, 0.0
 
 
@@ -210,8 +269,39 @@ def _game_statcast(game_pk: int):
                              % (game_pk, type(exc).__name__, age))
             return hit[1], age
         raise
-    _game_statcast_cache[game_pk] = (now, rows)
+    _remember(_game_statcast_cache, game_pk, rows)
     return rows, 0.0
+
+
+def _player(person_id: int, season: int) -> dict | None:
+    """One player card, cached. None if statsapi has no such player."""
+    key = (person_id, season)
+    hit = _player_cache.get(key)
+    if hit and time.monotonic() - hit[0] < PLAYER_TTL:
+        return hit[1]
+
+    person = mlb_api.get_person(person_id, season)
+    if not person:
+        return None
+    card = projection.player_card(person, _teams(season))
+    # Ability ratings, season Statcast and (for pitchers) the pitch arsenal.
+    # profile() never raises: if Savant is unreachable the card keeps its bio
+    # and season line and says why the bars are missing, rather than the whole
+    # request failing.
+    card.update(ratings_mod.profile(person_id, card["isPitcher"], season))
+    card["sabermetrics"] = _sabermetrics(season).get(str(person_id))
+    _remember(_player_cache, key, card)
+    return card
+
+
+def _snapshot(game_pk: int) -> dict:
+    """One game's current state, cached for a few seconds."""
+    hit = _snapshot_cache.get(game_pk)
+    if hit and time.monotonic() - hit[0] < SNAPSHOT_TTL:
+        return hit[1]
+    snap = projection.snapshot(mlb_api.get_live_feed(game_pk))
+    _remember(_snapshot_cache, game_pk, snap)
+    return snap
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -225,20 +315,29 @@ class Handler(BaseHTTPRequestHandler):
             sys.stderr.write(f"[{self.log_date_time_string()}] {fmt % args}\n")
 
     def _cors(self) -> None:
-        # The Vite dev server proxies /api, so this is only a fallback for
-        # hitting the backend directly from a different origin.
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        # Same origin in production, proxied by Vite in development: neither
+        # needs this. It is only for calling the API from somewhere else, and
+        # then only from the one origin named in CORS_ORIGIN -- never "*", which
+        # would let any site on the internet use this server's MLB quota.
+        if CORS_ORIGIN:
+            self.send_header("Access-Control-Allow-Origin", CORS_ORIGIN)
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.send_header("Vary", "Origin")
 
-    def _json(self, payload, status: int = 200) -> None:
+    def _json(self, payload, status: int = 200, headers: dict | None = None) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self._cors()
         self.end_headers()
         self.wfile.write(body)
+
+    def _slow_down(self, why: str) -> None:
+        self._json({"error": why}, status=429, headers={"Retry-After": "10"})
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -248,17 +347,37 @@ class Handler(BaseHTTPRequestHandler):
 
     # --- routes ------------------------------------------------------------
 
+    def do_HEAD(self):
+        parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/") or not static_files.serve(self, parsed.path, head_only=True):
+            self.send_response(404)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/")
         query = parse_qs(parsed.query)
+
+        # Not the API: the site itself, if there is a build to serve.
+        if not parsed.path.startswith("/api/"):
+            if static_files.serve(self, parsed.path):
+                return None
+            return self._json({"error": "not found", "path": path}, status=404)
+
+        if path != "/api/health" and not LIMITER.allow(client_address(self)):
+            return self._slow_down("too many requests")
 
         try:
             if path == "/api/health":
                 return self._json({"ok": True, "service": "barrels-3d", "time": _today()})
 
             if path == "/api/games":
+                # The browser always says which day it means (its own -- see
+                # liveClient.js); today on the server's clock is only a fallback.
                 date_str = (query.get("date") or [_today()])[0]
+                if not _DATE.match(date_str):
+                    return self._json({"error": "date must be YYYY-MM-DD"}, status=400)
                 games, age = _scoreboard(date_str)
                 payload = {"date": date_str, "games": games}
                 if age:
@@ -269,7 +388,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(payload)
 
             if path == "/api/leaders":
-                season = int((query.get("season") or [datetime.now().year])[0])
+                season = _season(query)
                 # ?per=50 opens a category's full board. Clamped rather than
                 # rejected: an out-of-range page size is not worth a 400.
                 per = int((query.get("per") or [LEADERS_DEFAULT])[0])
@@ -283,18 +402,9 @@ class Handler(BaseHTTPRequestHandler):
 
             if path.startswith("/api/player/"):
                 person_id = int(path.rsplit("/", 1)[1])
-                season = int((query.get("season") or [datetime.now().year])[0])
-                person = mlb_api.get_person(person_id, season)
-                if not person:
+                card = _player(person_id, _season(query))
+                if not card:
                     return self._json({"error": "player not found"}, status=404)
-
-                card = projection.player_card(person, _teams(season))
-                # Ability ratings, season Statcast and (for pitchers) the pitch
-                # arsenal. profile() never raises: if Savant is unreachable the
-                # card keeps its bio and season line and says why the bars are
-                # missing, rather than the whole request failing.
-                card.update(ratings_mod.profile(person_id, card["isPitcher"], season))
-                card["sabermetrics"] = _sabermetrics(season).get(str(person_id))
                 return self._json(card)
 
             # /api/game/<pk>/statcast -- matched before the bare /api/game/<pk>.
@@ -309,38 +419,48 @@ class Handler(BaseHTTPRequestHandler):
 
             if path.startswith("/api/game/"):
                 game_pk = int(path.rsplit("/", 1)[1])
-                feed = mlb_api.get_live_feed(game_pk)
-                return self._json(projection.snapshot(feed))
+                return self._json(_snapshot(game_pk))
 
             if path.startswith("/api/stream/"):
                 game_pk = int(path.rsplit("/", 1)[1])
                 replay = (query.get("replay") or ["0"])[0] in ("1", "true", "yes")
                 speed = float((query.get("speed") or ["6"])[0])
+                speed = max(REPLAY_SPEED_RANGE[0], min(speed, REPLAY_SPEED_RANGE[1]))
                 return self._stream(game_pk, replay, speed)
 
             return self._json({"error": "not found", "path": path}, status=404)
 
         except ValueError:
-            return self._json({"error": "bad gamePk"}, status=400)
+            return self._json({"error": "bad request"}, status=400)
         except Exception as exc:
             return self._json({"error": f"{type(exc).__name__}: {exc}"}, status=502)
 
     # --- SSE ---------------------------------------------------------------
 
     def _stream(self, game_pk: int, replay: bool, speed: float) -> None:
-        feed = HUB.get(game_pk, replay=replay, speed=speed)
+        addr = client_address(self)
+        if not STREAMS.acquire(addr):
+            return self._slow_down("too many open streams")
+        try:
+            feed = HUB.get(game_pk, replay=replay, speed=speed)
+        except FeedLimitReached:
+            STREAMS.release(addr)
+            return self._json({"error": "server busy"}, status=503, headers={"Retry-After": "30"})
         q = feed.subscribe()
 
-        self.send_response(200)
-        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
-        self.send_header("Cache-Control", "no-cache, no-transform")
-        self.send_header("Connection", "keep-alive")
-        self.send_header("X-Accel-Buffering", "no")
-        self._cors()
-        self.end_headers()
-
-        last_beat = time.monotonic()
+        # Everything after subscribe() is inside the try, headers included: a
+        # browser that leaves before they are written must still give back its
+        # subscription and its stream slot.
         try:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-transform")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("X-Accel-Buffering", "no")
+            self._cors()
+            self.end_headers()
+
+            last_beat = time.monotonic()
             while True:
                 try:
                     message = q.get(timeout=1.0)
@@ -362,6 +482,7 @@ class Handler(BaseHTTPRequestHandler):
             pass  # browser navigated away or closed the tab
         finally:
             feed.unsubscribe(q)
+            STREAMS.release(addr)
 
 
 # Errors that just mean "the browser went away" — a tab closed, a navigation, a
@@ -397,13 +518,18 @@ def main() -> None:
         except AttributeError:
             pass
 
+    # A host that hands us PORT expects us on every interface; locally, stay on
+    # loopback so the dev backend is not reachable from the rest of the network.
+    env_port = os.environ.get("PORT")
     parser = argparse.ArgumentParser(description="Barrels 3D live backend")
-    parser.add_argument("--port", type=int, default=DEFAULT_PORT)
-    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=int(env_port or DEFAULT_PORT))
+    parser.add_argument("--host", default=os.environ.get("HOST") or ("0.0.0.0" if env_port else "127.0.0.1"))
     args = parser.parse_args()
 
     server = Server((args.host, args.port), Handler)
     print(f"Barrels 3D backend on http://{args.host}:{args.port}")
+    if static_files.available():
+        print(f"  serving the built site from {static_files.ROOT}")
     print("  GET /api/games")
     print("  GET /api/leaders")
     print("  GET /api/game/<gamePk>")

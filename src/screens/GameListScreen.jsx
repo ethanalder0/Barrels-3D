@@ -2,6 +2,7 @@ import { useAppState } from '../state/AppState.jsx';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
 import { teamVars } from '../data/teamStyle.js';
 import { favoritesFirst, isFavoriteGame } from '../data/favorites.js';
+import { localISODay } from '../data/liveClient.js';
 import TeamLogo from '../components/TeamLogo.jsx';
 import { IconStar } from '../components/Icons.jsx';
 
@@ -14,10 +15,7 @@ const SECTIONS = [
 /* Local calendar days, not UTC ones. `toISOString()` is a day out for anyone
    west of Greenwich after their evening games start, which is exactly when
    somebody would be looking up yesterday's scores. */
-function isoDay(date) {
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
+const isoDay = localISODay;
 const todayISO = () => isoDay(new Date());
 
 function shiftDay(iso, delta) {

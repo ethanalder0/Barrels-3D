@@ -1834,7 +1834,6 @@ and why it is left blank rather than filled in.
 
 ## Still stubbed
 
-* Sign-in — `SplashScreen.jsx` calls `actions.signIn()` directly; no auth.
 * Settings are session-local; no persistence layer.
 * The transport bar under the viewport is deliberately disabled — the engine owns
   playback, so the controls are laid out but inert.

@@ -44,7 +44,6 @@ export default function HomeScreen() {
   const live = games.filter((g) => g.status === 'live');
   const upcoming = games.filter((g) => g.status === 'scheduled');
   const final = games.filter((g) => g.status === 'final');
-  const firstName = (state.user?.name ?? 'there').split(/[\s@.]/)[0];
 
   const mine = games.filter((g) => isFavoriteGame(g, state.favorites));
 
@@ -62,7 +61,7 @@ export default function HomeScreen() {
       <section className="hero">
         <div className="hero__text">
           <span className="u-eyebrow">
-            {state.user?.name ? `Welcome back, ${firstName}` : 'Welcome'} · {todayLabel()}
+            Welcome · {todayLabel()}
           </span>
           <h2 className="hero__title">Every at-bat, rebuilt in three dimensions</h2>
           <div className="hero__actions">

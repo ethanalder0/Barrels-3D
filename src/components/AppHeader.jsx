@@ -20,7 +20,6 @@ export default function AppHeader() {
   const { state, actions } = useAppState();
   const { mode, connection, replay } = useLiveData();
   const status = connectionLabel({ mode, connection, replay });
-  const initial = (state.user?.name ?? 'G').charAt(0).toUpperCase();
   const currentNav = NAV_PARENT[state.screen] ?? state.screen;
 
   return (
@@ -56,16 +55,6 @@ export default function AppHeader() {
         </span>
 
         <GameMenu />
-
-        <button
-          type="button"
-          className="avatar"
-          onClick={() => actions.navigate('settings')}
-          title={state.user?.email ?? 'Guest session'}
-          aria-label="Account and settings"
-        >
-          {initial}
-        </button>
       </div>
     </header>
   );

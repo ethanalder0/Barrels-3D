@@ -14,8 +14,7 @@ import { readFavorites, toggleFavorite, writeFavorites } from '../data/favorites
 
 const initialState = {
   screen: 'home', // 'home' | 'live' | 'games' | 'settings' | 'leaderboard'
-  authed: false,
-  user: null,
+  entered: false, // past the splash; nothing is fetched until then
   selectedGameId: defaultGameId,
   selectedAtBatId: atBats[0].id,
   /* Which day's scoreboard the games screen is showing. null means today, so
@@ -46,6 +45,8 @@ const initialState = {
     replayCamera: 'catcher', // 'catcher' (behind the plate) | 'centerfield' (broadcast)
     replayZoom: 1, // the chosen shot: 0.6 (wide) to 2 (tight), 1 is stock
     nightGames: 'auto', // 'auto' (as MLB schedules the game) | 'day' | 'night'
+    showBallTrail: false, // the ball's flight path, drawn over the replay; off by default
+    showStrikeZone: true, // the zone and the pitch's crossing mark
     sound: true, // contact sounds; no longer a setting, always on
     reduceMotion: 'system', // 'system' | 'always'
     theme: 'light', // 'light' | 'dark' — ships off, see App.jsx
@@ -55,17 +56,11 @@ const initialState = {
 
 function reducer(state, action) {
   switch (action.type) {
-    case 'signin':
-      // Land on Home, not on whichever game happens to be next. The home
-      // screen introduces the app and shows league-wide context; picking a
-      // game is a deliberate step from there.
-      return { ...state, authed: true, user: action.user, screen: 'home' };
-    case 'signout':
-      // Settings are display preferences, not session data. Resetting them
-      // here would drop the user's theme on sign-out and flash the splash back
-      // to light. Favourite clubs are the same kind of thing, and they are
-      // stored per browser rather than per account, so they stay too.
-      return { ...initialState, settings: state.settings, favorites: state.favorites };
+    // Land on Home, not on whichever game happens to be next. The home
+    // screen introduces the app and shows league-wide context; picking a
+    // game is a deliberate step from there.
+    case 'enter':
+      return { ...state, entered: true, screen: 'home' };
     /* Opening the game screen always follows the live game. A play picked by
        hand on an earlier visit is not what someone coming back to the game
        wants to see; what is happening now is. */
@@ -148,8 +143,7 @@ export function AppStateProvider({ children }) {
 
   const value = useMemo(() => {
     const actions = {
-      signIn: (user) => dispatch({ type: 'signin', user }),
-      signOut: () => dispatch({ type: 'signout' }),
+      enter: () => dispatch({ type: 'enter' }),
       navigate: (screen) => dispatch({ type: 'navigate', screen }),
       selectGame: (gameId) => dispatch({ type: 'selectGame', gameId }),
       setScoreboardDate: (date) => dispatch({ type: 'setScoreboardDate', date }),

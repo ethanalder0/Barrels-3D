@@ -238,14 +238,48 @@ What works today:
 Not done yet:
 - **No fielders or runners.** Only the batter and pitcher are on the field.
 - No glove yet. The cloth follows the body but doesn't swing or wrinkle.
-- Sign-in is a placeholder, and settings other than favourite teams aren't
-  saved.
+- Settings other than favourite teams aren't saved between visits.
 - The playback controls under the replay are laid out but not wired up.
+
+## Deploying
+
+The production build is one container: the Python backend serves both the API
+and the built frontend from `dist/`, so the whole site is one process on one
+origin. To try that locally:
+
+```bash
+npm run build
+```
+
+```bash
+python server/app.py
+```
+
+Then open http://localhost:8787.
+
+The site deploys to Heroku from GitHub Actions on every push to `main`
+([.github/workflows/deploy.yml](.github/workflows/deploy.yml)). The workflow
+checks out with Git LFS (Heroku's own git builds don't fetch LFS files, so the
+player model would be missing), runs the self-tests, builds the
+[Dockerfile](Dockerfile) and releases it. One-time setup:
+
+1. Create a Heroku app, on a plan that doesn't sleep (Basic or above). The
+   backend polls MLB in the background, and an app that sleeps stops polling.
+2. In the GitHub repository, under *Settings → Secrets and variables →
+   Actions*, add a secret `HEROKU_API_KEY` (Heroku dashboard → *Account
+   settings → API Key*) and a variable `HEROKU_APP` (the app's name).
+3. Push to `main`, or run the workflow by hand from the *Actions* tab.
+
+In production the backend rate-limits each visitor and caps how many games it
+polls at once, so a public site can't be used to flood MLB's API. The limits
+are in [server/ratelimit.py](server/ratelimit.py) and
+[server/feed_hub.py](server/feed_hub.py).
 
 ## Project layout
 
 ```
-server/            Python backend: MLB feed polling, SSE, leaders, player cards
+server/            Python backend: MLB feed polling, SSE, leaders, player cards,
+                   and the built site in production
 src/               React app
   screens/           home, live game, game list, leaderboards, settings
   components/        scorebug, replay viewport, player cards, box score…

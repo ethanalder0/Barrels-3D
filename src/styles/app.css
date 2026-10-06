@@ -20,6 +20,20 @@
   flex: 1;
 }
 
+.shell__foot {
+  width: 100%;
+  max-width: var(--shell-max);
+  margin: 0 auto;
+  padding: var(--s-4) var(--s-6) var(--s-6);
+  border-top: 1px solid var(--c-line);
+  font-size: var(--t-xs);
+  color: var(--c-text-faint);
+}
+
+.shell__foot p {
+  max-width: 80ch;
+}
+
 /* --- Header ------------------------------------------------------------ */
 
 .appbar {
@@ -278,19 +292,6 @@
 .gamemenu__all:focus-visible {
   background: var(--c-accent-softer);
   outline: none;
-}
-
-.avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--c-accent-soft);
-  color: var(--c-text);
-  font-size: var(--t-sm);
-  font-weight: 700;
-  border: 1px solid var(--c-line-strong);
 }
 
 /* --- Page furniture ----------------------------------------------------- */
@@ -1927,6 +1928,19 @@
   font-weight: 600;
 }
 
+/* A box score is wider than a phone. It scrolls sideways inside its panel
+   rather than being clipped by it, and the names never wrap -- a wrapped name
+   made every row three lines tall and still did not make the columns fit. */
+.statable__scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.statable__scroll .statable__name {
+  white-space: nowrap;
+}
+
 .statable__pos {
   color: var(--c-text-faint);
   font-weight: 500;
@@ -3238,6 +3252,118 @@
     flex-direction: column;
     align-items: flex-start;
     gap: var(--s-3);
+  }
+}
+
+/* --- Phones ----------------------------------------------------------------
+   Four nav pills, the feed status and a brand do not fit across a phone, and
+   squeezing them pushed the status off the edge. So the nav moves to a tab bar
+   along the bottom, where a thumb reaches it, and the header keeps the brand
+   and the status. Everything else is tighter margins so a 375px screen spends
+   its width on content. */
+@media (max-width: 640px) {
+  :root {
+    --tabbar-h: 58px;
+  }
+
+  /* backdrop-filter makes the header the containing block of anything fixed
+     inside it, which would pin the tab bar to the header instead of the
+     screen. Opaque instead. */
+  .appbar {
+    backdrop-filter: none;
+    background: var(--c-bg);
+  }
+
+  .appbar__brand > span {
+    display: inline;
+  }
+
+  .appbar__nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+    padding: 0 var(--s-2) env(safe-area-inset-bottom);
+    margin: 0;
+    gap: var(--s-1);
+    background: var(--c-bg);
+    border-top: 1px solid var(--c-line);
+    box-shadow: 0 -6px 18px -14px rgba(0, 0, 0, 0.35);
+  }
+
+  .navlink {
+    flex: 1;
+    justify-content: center;
+    height: 42px;
+    padding: 0;
+  }
+
+  .shell {
+    padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  }
+
+  .shell__body {
+    padding: var(--s-4) var(--s-3) var(--s-6);
+  }
+
+  .shell__foot {
+    padding: var(--s-4) var(--s-3);
+  }
+
+  .panel__head {
+    flex-wrap: wrap;
+    padding: var(--s-3) var(--s-4);
+  }
+
+  .panel__body:not(.panel__body--flush) {
+    padding: var(--s-4);
+  }
+
+  /* A taller replay. At 16:9 a phone's stage was under 200px high and the
+     overlays covered most of it; 4:3 gives the field room around them. */
+  .viewport__stage {
+    aspect-ratio: 4 / 3;
+  }
+
+  .statable th,
+  .statable td {
+    padding: var(--s-2) var(--s-3);
+  }
+
+  /* While the box score scrolls sideways, the names stay put. */
+  .statable__scroll td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--c-surface);
+    box-shadow: inset -1px 0 0 var(--c-line);
+  }
+
+  .statable__scroll thead th:first-child {
+    left: 0;
+    z-index: 2;
+  }
+
+  /* A setting's description gets the full width. A switch still fits beside
+     it; a segmented control or a slider wraps underneath. */
+  .setting {
+    flex-wrap: wrap;
+    gap: var(--s-3) var(--s-4);
+    padding: var(--s-4);
+  }
+
+  .setting > div:first-child {
+    flex: 1 1 220px;
+  }
+}
+
+/* A list that scrolls inside the page must hand the scroll back to the page at
+   its ends on a touchscreen, or a thumb that lands on it is stuck there. */
+@media (pointer: coarse) {
+  .gameleaders__list {
+    overscroll-behavior: auto;
   }
 }
 

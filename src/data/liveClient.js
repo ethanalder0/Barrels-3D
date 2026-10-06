@@ -13,6 +13,43 @@
 
 const API = '/api';
 
+/* ---------------------------------------------------------------------------
+   TIME ZONES
+   ---------------------------------------------------------------------------
+   The backend runs wherever it is hosted — on a cloud server, usually UTC — so
+   nothing it says about "today" or "7:10 PM" can be trusted to mean the
+   viewer's today or the viewer's 7:10. Both are decided here instead, in the
+   browser, which is the only place that knows the viewer's clock:
+
+     · every scoreboard request names a date, the viewer's local one
+     · every start time is re-read from its ISO instant and formatted in the
+       viewer's own zone, overwriting the backend's `startsAt`
+
+   Doing it at the edge means every screen that prints `startsAt` is right
+   without knowing any of this.
+--------------------------------------------------------------------------- */
+
+/** A local calendar day as YYYY-MM-DD. Not toISOString(), which is UTC's day. */
+export function localISODay(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+const START_FORMAT = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+
+/** The game with `startsAt` in the viewer's time zone, when the ISO allows. */
+function localizeGame(game) {
+  if (!game?.startsAtISO) return game;
+  const at = new Date(game.startsAtISO);
+  if (Number.isNaN(at.getTime())) return game;
+  return { ...game, startsAt: START_FORMAT.format(at) };
+}
+
+/** The same for a snapshot, whose game sits one level down. */
+export function localizeSnapshot(snap) {
+  return snap?.game ? { ...snap, game: localizeGame(snap.game) } : snap;
+}
+
 async function getJSON(path, { signal } = {}) {
   const res = await fetch(`${API}${path}`, { signal, headers: { Accept: 'application/json' } });
   if (!res.ok) {
@@ -33,10 +70,10 @@ export function fetchHealth(opts) {
  * serves its last good board rather than failing, and says so.
  */
 export async function fetchGames({ date, signal } = {}) {
-  const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+  const qs = `?date=${encodeURIComponent(date || localISODay())}`;
   const payload = await getJSON(`/games${qs}`, { signal });
   return {
-    games: payload.games ?? [],
+    games: (payload.games ?? []).map(localizeGame),
     stale: Boolean(payload.stale),
     ageSeconds: payload.ageSeconds ?? 0,
   };
@@ -64,8 +101,8 @@ export function fetchPlayer(personId, { season, signal } = {}) {
   return getJSON(`/player/${personId}${qs}`, { signal });
 }
 
-export function fetchSnapshot(gamePk, opts) {
-  return getJSON(`/game/${gamePk}`, opts);
+export async function fetchSnapshot(gamePk, opts) {
+  return localizeSnapshot(await getJSON(`/game/${gamePk}`, opts));
 }
 
 /**
@@ -103,7 +140,10 @@ export function openGameStream(gamePk, handlers = {}, options = {}) {
     }
   };
 
-  source.addEventListener('snapshot', parse(handlers.onSnapshot));
+  source.addEventListener(
+    'snapshot',
+    parse(handlers.onSnapshot && ((snap) => handlers.onSnapshot(localizeSnapshot(snap)))),
+  );
   source.addEventListener('play', parse(handlers.onPlay));
   source.addEventListener('status', parse(handlers.onStatus));
 

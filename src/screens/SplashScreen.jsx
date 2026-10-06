@@ -23,18 +23,18 @@ const INTRO_CONTACT = 'barrel';
 const SWING = {
   totalMs: 1060,
   contactMs: 420,
-  cardAtMs: 900, // card starts fading in while the ball is still climbing
+  enterMs: 1150, // into the app once the ball is gone, not while it climbs
 };
 
 /**
- * Landing screen. Starts as a static splash with no form in the DOM at all —
- * the login card is only mounted once the swing resolves, which is what keeps
- * its controls out of the tab order until they are actually revealed.
+ * Landing screen. A static splash; click and the bat swings, the ball leaves,
+ * and the app opens. There are no accounts, so there is nothing to sign in to
+ * — the splash is an introduction, not a gate.
  */
 export default function SplashScreen() {
   const { state, actions } = useAppState();
   const prefersReducedMotion = useReducedMotion();
-  const [phase, setPhase] = useState('idle'); // 'idle' | 'swing' | 'login'
+  const [phase, setPhase] = useState('idle'); // 'idle' | 'swing'
   const timers = useRef([]);
 
   const clearTimers = () => {
@@ -43,17 +43,17 @@ export default function SplashScreen() {
   };
   useEffect(() => clearTimers, []);
 
-  const reveal = useCallback(() => {
+  const enter = useCallback(() => {
     clearTimers();
-    setPhase('login');
-  }, []);
+    actions.enter();
+  }, [actions]);
 
   const start = useCallback(() => {
     if (phase !== 'idle') return;
 
-    // Reduced motion: no bat, no ball, no crack — straight to the card.
+    // Reduced motion: no bat, no ball, no crack — straight in.
     if (prefersReducedMotion) {
-      setPhase('login');
+      enter();
       return;
     }
 
@@ -65,18 +65,18 @@ export default function SplashScreen() {
       playContact(INTRO_CONTACT, { delay: SWING.contactMs / 1000, volume: 1 });
     }
 
-    timers.current.push(setTimeout(reveal, SWING.cardAtMs));
-  }, [phase, prefersReducedMotion, reveal, state.settings.sound]);
+    timers.current.push(setTimeout(enter, SWING.enterMs));
+  }, [phase, prefersReducedMotion, enter, state.settings.sound]);
 
   // Escape skips the animation for anyone who does not want to sit through it.
   useEffect(() => {
     if (phase !== 'swing') return undefined;
     const onKey = (e) => {
-      if (e.key === 'Escape') reveal();
+      if (e.key === 'Escape') enter();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [phase, reveal]);
+  }, [phase, enter]);
 
   return (
     <main className="splash" data-phase={phase}>
@@ -91,25 +91,24 @@ export default function SplashScreen() {
             <span>Barrels</span>
             <span className="dim">3D</span>
           </h1>
-          {phase !== 'login' && (
-            <p className="splash__tagline">
-              Every at-bat, rebuilt in three dimensions.
-            </p>
-          )}
+          <p className="splash__tagline">
+            Every at-bat, rebuilt in three dimensions.
+          </p>
         </header>
-
-        {phase === 'login' && <LoginCard onSignIn={actions.signIn} />}
       </div>
 
-      {phase !== 'login' && (
+      {phase === 'idle' && (
         <button
           type="button"
           className="splash__trigger"
           onClick={start}
-          aria-label="Start Barrels 3D and show the sign-in form"
+          aria-label="Enter Barrels 3D"
         >
           <span className="splash__hint">
-            Click anywhere to step in
+            <span>
+              <span className="splash__hint-click">Click</span>
+              <span className="splash__hint-tap">Tap</span> anywhere to step in
+            </span>
             <span className="splash__hint-key" aria-hidden="true">
               ↵
             </span>
@@ -153,101 +152,5 @@ function SeamBackdrop() {
       <path d="M1240 180C1020 240 900 380 900 560c0 120 40 220 110 300" />
       <path className="stitch" d="M1222 196C1006 254 886 392 886 568c0 116 38 214 106 290" />
     </svg>
-  );
-}
-
-/* --- Login card ---------------------------------------------------------- */
-
-function LoginCard({ onSignIn }) {
-  const emailRef = useRef(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(true);
-  const [error, setError] = useState('');
-
-  // Move focus into the form the moment it exists, so keyboard users land on
-  // the first field rather than back at the top of the document.
-  useEffect(() => {
-    emailRef.current?.focus();
-  }, []);
-
-  const submit = (e) => {
-    e.preventDefault();
-    if (!email.trim() || !password) {
-      setError('Enter an email and password to continue.');
-      return;
-    }
-    setError('');
-    onSignIn({ email: email.trim(), name: email.split('@')[0] || 'Guest', remember });
-  };
-
-  return (
-    <form className="splash__card" onSubmit={submit} noValidate>
-      <div className="splash__card-head">
-        <h2>Sign in</h2>
-        <p>Pick up the game where you left it.</p>
-      </div>
-
-      <div className="field">
-        <label className="field__label" htmlFor="login-email">
-          Email
-        </label>
-        <input
-          id="login-email"
-          ref={emailRef}
-          className="field__input"
-          type="email"
-          autoComplete="username"
-          placeholder="you@ballpark.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </div>
-
-      <div className="field">
-        <label className="field__label" htmlFor="login-password">
-          Password
-        </label>
-        <input
-          id="login-password"
-          className="field__input"
-          type="password"
-          autoComplete="current-password"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-
-      <div className="splash__row">
-        <label className="splash__check">
-          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-          Keep me signed in
-        </label>
-        <a href="#reset" onClick={(e) => e.preventDefault()}>
-          Forgot password?
-        </a>
-      </div>
-
-      <p className="splash__error" role="alert">
-        {error}
-      </p>
-
-      <button type="submit" className="btn btn--primary btn--block">
-        Sign in
-      </button>
-
-      <div className="splash__alt">or</div>
-
-      <button
-        type="button"
-        className="btn btn--ghost btn--block"
-        onClick={() => onSignIn({ email: null, name: 'Guest', remember: false })}
-      >
-        Continue as guest
-      </button>
-
-      <p className="splash__foot">No backend wired yet — any credentials get you in.</p>
-    </form>
   );
 }

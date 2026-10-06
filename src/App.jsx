@@ -67,7 +67,7 @@ export default function App() {
     };
   }, [state.settings.theme]);
 
-  if (!state.authed) return <SplashScreen />;
+  if (!state.entered) return <SplashScreen />;
 
   const Screen = SCREENS[state.screen] ?? LiveGameScreen;
 
@@ -77,6 +77,14 @@ export default function App() {
       <main className="shell__body">
         <Screen />
       </main>
+      {/* The README's disclaimer, where visitors will actually see it. */}
+      <footer className="shell__foot">
+        <p>
+          Barrels 3D is an independent fan project, not affiliated with or endorsed by Major League
+          Baseball or any club. Team names and logos belong to their owners. Game data © MLB Advanced
+          Media, used for non-commercial purposes.
+        </p>
+      </footer>
       <PlayerCard />
     </div>
   );

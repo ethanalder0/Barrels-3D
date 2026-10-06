@@ -30,7 +30,8 @@ import { interludeFor } from '../replay/interlude.js';
                                 who should be standing in the box
        · .getCurrentPark()    → { venue, home } for the game on screen
        · .isFollowingLive()   → whether the app is following the live game
-       · .getView()           → { camera, zoom, night } from Settings, as
+       · .getView()           → { camera, zoom, night, trail, zone } from
+                                Settings, as
                                 the events below carry them
        · .setEngineReady(bool)→ hides/shows the "engine not mounted" placeholder
 
@@ -58,6 +59,10 @@ import { interludeFor } from '../replay/interlude.js';
                            below 1 wider.
        · 'barrels:night'   detail = boolean — night game: dark sky, field
                            under lights.
+       · 'barrels:trail'   detail = boolean — whether to draw the ball's
+                           flight path behind and ahead of it.
+       · 'barrels:zone'    detail = boolean — whether to draw the strike zone
+                           and the pitch's crossing mark.
        · 'barrels:follow'  detail = boolean — whether the app is following the
                            live game. Following, plays arrive on the feed's
                            schedule and the engine queues them so each one runs
@@ -251,6 +256,8 @@ export default function ReplayViewport({
   camera,
   zoom,
   night,
+  trail,
+  zone,
   units,
   sound,
   venue,
@@ -268,7 +275,13 @@ export default function ReplayViewport({
   parkRef.current = { venue, home: homeTeam };
   const followRef = useRef(true);
   const viewRef = useRef(null);
-  viewRef.current = { camera: camera ?? 'catcher', zoom: zoom ?? 1, night: !!night };
+  viewRef.current = {
+    camera: camera ?? 'catcher',
+    zoom: zoom ?? 1,
+    night: !!night,
+    trail: trail !== false,
+    zone: zone !== false,
+  };
   followRef.current = followLatest !== false;
   const [moment, setMoment] = useState(null);
   /* The same, but current the instant the engine says it. Effects in the
@@ -657,6 +670,18 @@ export default function ReplayViewport({
       new CustomEvent('barrels:night', { detail: !!night, bubbles: true }),
     );
   }, [night]);
+
+  useEffect(() => {
+    mountRef.current?.dispatchEvent(
+      new CustomEvent('barrels:trail', { detail: trail !== false, bubbles: true }),
+    );
+  }, [trail]);
+
+  useEffect(() => {
+    mountRef.current?.dispatchEvent(
+      new CustomEvent('barrels:zone', { detail: zone !== false, bubbles: true }),
+    );
+  }, [zone]);
 
   useEffect(() => {
     mountRef.current?.dispatchEvent(

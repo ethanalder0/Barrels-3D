@@ -56,6 +56,8 @@ export default function LiveGameScreen() {
         camera={state.settings.replayCamera}
         zoom={state.settings.replayZoom}
         night={night}
+        trail={state.settings.showBallTrail}
+        zone={state.settings.showStrikeZone}
         units={state.settings.units}
         sound={state.settings.sound}
         venue={game?.venue}

@@ -64,12 +64,12 @@ export function LiveDataProvider({ children }) {
   const [stale, setStale] = useState(null);
 
   // --- scoreboard --------------------------------------------------------
-  // Nothing is fetched until sign-in: no point polling MLB while the splash is
+  // Nothing is fetched until the splash is passed: no point polling MLB while it is
   // up, and it keeps the landing screen free of network work.
   const scoreboardDate = state.scoreboardDate;
 
   useEffect(() => {
-    if (!state.authed) return undefined;
+    if (!state.entered) return undefined;
 
     let cancelled = false;
     const controller = new AbortController();
@@ -106,7 +106,7 @@ export function LiveDataProvider({ children }) {
       controller.abort();
       clearInterval(timer);
     };
-  }, [state.authed, scoreboardDate]);
+  }, [state.entered, scoreboardDate]);
 
   /* A new day needs a new default game. Without this the one-shot hydration
      below stays latched from the first load and the games screen shows one
@@ -160,7 +160,7 @@ export function LiveDataProvider({ children }) {
   const completed = !replayOptions.gamePk && selectedGame?.status === 'final';
 
   useEffect(() => {
-    if (!state.authed || mode !== 'live' || !gamePk || !completed) return undefined;
+    if (!state.entered || mode !== 'live' || !gamePk || !completed) return undefined;
 
     let cancelled = false;
     const controller = new AbortController();
@@ -184,10 +184,10 @@ export function LiveDataProvider({ children }) {
       cancelled = true;
       controller.abort();
     };
-  }, [state.authed, mode, gamePk, completed]);
+  }, [state.entered, mode, gamePk, completed]);
 
   useEffect(() => {
-    if (!state.authed || mode !== 'live' || !gamePk || completed) return undefined;
+    if (!state.entered || mode !== 'live' || !gamePk || completed) return undefined;
 
     setConnection('connecting');
     setPlays([]);
@@ -215,7 +215,7 @@ export function LiveDataProvider({ children }) {
       close();
       setConnection('closed');
     };
-  }, [state.authed, mode, gamePk, completed, replayOptions.replay, replayOptions.speed]);
+  }, [state.entered, mode, gamePk, completed, replayOptions.replay, replayOptions.speed]);
 
   // --- resolve what the UI reads ----------------------------------------
   const resolved = useMemo(() => {

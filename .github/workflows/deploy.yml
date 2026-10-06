@@ -1,0 +1,81 @@
+# Deploy to Heroku on every push to main.
+#
+# Built here rather than by Heroku because Heroku's git builds do not fetch Git
+# LFS files, and the player model is one: the site would deploy with no players.
+# This checks out with LFS, runs the offline self-tests, builds the Dockerfile,
+# and hands the image to Heroku's container registry.
+#
+# Needs two repository settings (Settings -> Secrets and variables -> Actions):
+#   secret    HEROKU_API_KEY   from `heroku authorizations:create`, or the
+#                              Heroku dashboard under Account -> API Key
+#   variable  HEROKU_APP       the Heroku app's name
+#
+# Until both are set, a push still runs the self-tests and skips the deploy.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_APP: ${{ vars.HEROKU_APP }}
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Self-tests
+        run: |
+          npm ci
+          npm run selftest
+          npm run selftest:parks
+          npm run selftest:follow
+          pip install -r server/requirements.txt
+          python server/selftest.py
+          python server/ratingstest.py
+          python server/situationtest.py
+
+      - name: Skip deploy (Heroku not configured)
+        if: env.HEROKU_APP == '' || env.HEROKU_API_KEY == ''
+        run: echo "::notice::HEROKU_APP or HEROKU_API_KEY is not set; tests ran, deploy skipped."
+
+      - name: Build the image
+        if: env.HEROKU_APP != '' && env.HEROKU_API_KEY != ''
+        run: docker build -t "registry.heroku.com/$HEROKU_APP/web" .
+
+      - name: Push to Heroku
+        if: env.HEROKU_APP != '' && env.HEROKU_API_KEY != ''
+        run: |
+          echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
+          docker push "registry.heroku.com/$HEROKU_APP/web"
+
+      # The CLI's `container:release`, done through the Platform API directly
+      # so the runner does not need the Heroku CLI installed.
+      - name: Release
+        if: env.HEROKU_APP != '' && env.HEROKU_API_KEY != ''
+        run: |
+          image=$(docker inspect "registry.heroku.com/$HEROKU_APP/web" --format='{{.Id}}')
+          curl -sf -X PATCH "https://api.heroku.com/apps/$HEROKU_APP/formation" \
+            -H "Authorization: Bearer $HEROKU_API_KEY" \
+            -H "Accept: application/vnd.heroku+json; version=3.docker-releases" \
+            -H "Content-Type: application/json" \
+            -d "{\"updates\":[{\"type\":\"web\",\"docker_image\":\"$image\"}]}"

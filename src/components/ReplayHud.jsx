@@ -117,8 +117,16 @@ const CAMERA_MODES = {
       ['B', 'track the ball'],
       ['L', 'next camera'],
     ],
+    /* A phone has none of those keys. Dragging still looks around, and the
+       camera button is how you leave. */
+    touchKeys: [
+      ['Drag', 'look around'],
+      ['Camera button', 'next camera'],
+    ],
   },
 };
+
+const TOUCH = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
 export function CameraToast({ camera }) {
   const [toast, setToast] = useState(null);
@@ -131,7 +139,8 @@ export function CameraToast({ camera }) {
     if (!before) return undefined;
     let next = null;
     if (before.mode !== camera.mode) {
-      next = { ...CAMERA_MODES[camera.mode], key: `${camera.mode}` };
+      const mode = CAMERA_MODES[camera.mode];
+      next = { ...mode, keys: (TOUCH && mode.touchKeys) || mode.keys, key: `${camera.mode}` };
     } else if (before.tracking !== camera.tracking) {
       next = { label: camera.tracking ? 'Tracking the ball' : 'Tracking off', key: `t${camera.tracking}` };
     }

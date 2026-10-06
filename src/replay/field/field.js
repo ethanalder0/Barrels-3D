@@ -219,6 +219,9 @@ function buildRubber() {
 
 /* --- Walls -------------------------------------------------------------- */
 
+/* Depth of the yellow cap along the top of the wall, in feet. */
+const WALL_CAP = 4 / 12;
+
 /**
  * A vertical ribbon standing on a run of ground points.
  *
@@ -264,11 +267,18 @@ function buildWalls(park) {
     return Math.abs(theta) <= 45 ? park.fenceHeight(theta) : S.FOUL_WALL_HEIGHT;
   };
 
+  /* The wall stops where the cap starts. Running the green to the top and
+     laying the cap over it put two surfaces in one plane, and the depth buffer
+     cannot tell them apart: the green flickered through the yellow, worst at a
+     distance and through the broadcast camera's long lens. Edge to edge on the
+     same points, there is nothing to fight over and no seam to open. */
+  const capBottom = (p) => heightAt(p) - WALL_CAP;
+
   group.add(
     ribbon(
       closed,
       0,
-      heightAt,
+      capBottom,
       new THREE.MeshStandardMaterial({
         color: S.COLORS.wall,
         roughness: 0.9,
@@ -287,7 +297,7 @@ function buildWalls(park) {
   group.add(
     ribbon(
       closed,
-      (p) => heightAt(p) - 4 / 12,
+      capBottom,
       heightAt,
       new THREE.MeshStandardMaterial({
         color: S.COLORS.wallTop,

@@ -1,0 +1,13 @@
+# Only what the Dockerfile copies is needed; keep everything else out of the
+# build context. The Blender sources alone are tens of megabytes.
+.git
+.github
+.capture
+node_modules
+dist
+assets
+docs
+scripts
+**/__pycache__
+**/*.pyc
+field.html

@@ -84,6 +84,12 @@ function onZoom(e) {
 function onNight(e) {
   engine?.setNight(e.detail);
 }
+function onTrail(e) {
+  engine?.setTrail(e.detail);
+}
+function onZone(e) {
+  engine?.setStrikeZone(e.detail);
+}
 /* The camera button on the HUD: the same as pressing L. */
 function onCycleCamera() {
   engine?.cycleCamera();
@@ -104,6 +110,8 @@ function attach(mount) {
   mount.addEventListener('barrels:camera', onCamera);
   mount.addEventListener('barrels:zoom', onZoom);
   mount.addEventListener('barrels:night', onNight);
+  mount.addEventListener('barrels:trail', onTrail);
+  mount.addEventListener('barrels:zone', onZone);
   mount.addEventListener('barrels:park', onPark);
   mount.addEventListener('barrels:sound', onSound);
   mount.addEventListener('barrels:follow', onFollow);
@@ -142,11 +150,14 @@ function attach(mount) {
   engine.setPark(parkFor(at?.venue, at?.home));
   const following = window.BarrelsReplay?.isFollowingLive?.() !== false;
   engine.setFollowLive(following);
-  // Camera, zoom and night are Settings, so likewise decided before we came up.
+  // Camera, zoom, night and the overlays are Settings, so likewise decided
+  // before we came up.
   const look = window.BarrelsReplay?.getView?.();
   engine.setCamera(look?.camera ?? 'catcher');
   engine.setZoom(look?.zoom ?? 1);
   engine.setNight(!!look?.night);
+  engine.setTrail(look?.trail !== false);
+  engine.setStrikeZone(look?.zone !== false);
   /* Following live, opening the viewer plays NOTHING: whatever is in the feed
      already happened before you got here. It stands the current batter in and
      waits for the next pitch. A play picked by hand is the opposite — it was
@@ -167,6 +178,8 @@ function detach() {
   attached?.removeEventListener('barrels:camera', onCamera);
   attached?.removeEventListener('barrels:zoom', onZoom);
   attached?.removeEventListener('barrels:night', onNight);
+  attached?.removeEventListener('barrels:trail', onTrail);
+  attached?.removeEventListener('barrels:zone', onZone);
   attached?.removeEventListener('barrels:park', onPark);
   attached?.removeEventListener('barrels:sound', onSound);
   attached?.removeEventListener('barrels:follow', onFollow);

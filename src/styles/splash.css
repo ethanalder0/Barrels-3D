@@ -1,10 +1,9 @@
 /* ---------------------------------------------------------------------------
-   Landing / login screen.
+   Landing screen.
 
-   Three phases, driven by [data-phase] on the root:
-     idle   → static splash, no form in the DOM at all
-     swing  → bat/ball animation plays over the splash
-     login  → login card mounted and focusable
+   Two phases, driven by [data-phase] on the root:
+     idle   → static splash, waiting for a click
+     swing  → bat/ball animation plays over the splash, then the app opens
 
    Contact happens 420ms into a 1060ms swing; the sound is scheduled against
    the same number in SplashScreen.jsx (SWING.contactMs).
@@ -101,15 +100,6 @@
   max-width: 34ch;
 }
 
-/* Once the card is up, the wordmark steps back and lets the form lead. */
-.splash[data-phase='login'] .splash__wordmark {
-  font-size: clamp(1.75rem, 5vw, var(--t-2xl));
-}
-
-.splash[data-phase='login'] .splash__content {
-  gap: var(--s-6);
-}
-
 /* --- The "click to start" trigger -------------------------------------- */
 
 .splash__trigger {
@@ -180,6 +170,22 @@
   border: 1px solid var(--c-line-strong);
   font-size: var(--t-xs);
   color: var(--c-text-faint);
+}
+
+/* A touchscreen taps rather than clicks, and has no Enter key to show. */
+.splash__hint-tap {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .splash__hint-click,
+  .splash__hint-key {
+    display: none;
+  }
+
+  .splash__hint-tap {
+    display: inline;
+  }
 }
 
 /* --- Swing stage -------------------------------------------------------
@@ -391,100 +397,6 @@
     transform: scale(2.2);
     opacity: 0;
   }
-}
-
-/* --- Login card -------------------------------------------------------- */
-
-.splash__card {
-  width: 100%;
-  padding: var(--s-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-4);
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-lg);
-  animation: card-rise var(--dur-slow) var(--ease-out) both;
-}
-
-@keyframes card-rise {
-  0% {
-    opacity: 0;
-    transform: translateY(18px) scale(0.98);
-  }
-  100% {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.splash__card-head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
-  margin-bottom: var(--s-2);
-}
-
-.splash__card-head h2 {
-  font-size: var(--t-lg);
-}
-
-.splash__card-head p {
-  font-size: var(--t-sm);
-  color: var(--c-text-muted);
-}
-
-.splash__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-3);
-  font-size: var(--t-sm);
-  color: var(--c-text-muted);
-}
-
-.splash__check {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-2);
-  cursor: pointer;
-}
-
-.splash__check input {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--c-accent);
-}
-
-.splash__error {
-  font-size: var(--t-sm);
-  color: var(--c-seam);
-  min-height: 1.2em;
-}
-
-.splash__alt {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  color: var(--c-text-faint);
-  font-size: var(--t-xs);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.splash__alt::before,
-.splash__alt::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--c-line);
-}
-
-.splash__foot {
-  text-align: center;
-  font-size: var(--t-xs);
-  color: var(--c-text-faint);
 }
 
 @media (max-width: 520px) {

@@ -529,9 +529,17 @@ export function createEngine() {
   let shotName = 'catcher';
   let zoom = 1;
 
+  /* Each shot is framed for 16:9. A narrower stage — a phone, which runs the
+     replay at 4:3 — keeps that WIDTH and gains height, rather than keeping the
+     height and losing the sides: held at the same vertical angle, the batter
+     ended up filling half of a phone's frame. Wider than 16:9 is left alone;
+     that is simply more field at the edges. */
+  const FRAMED_ASPECT = 16 / 9;
+
   function shotFov(name) {
     const half = (VIEWS[name].fov * Math.PI) / 360;
-    return (Math.atan(Math.tan(half) / zoom) * 360) / Math.PI;
+    const fit = Math.max(1, FRAMED_ASPECT / camera.aspect);
+    return (Math.atan((Math.tan(half) * fit) / zoom) * 360) / Math.PI;
   }
 
   function setZoom(next) {
@@ -568,6 +576,18 @@ export function createEngine() {
   function setNight(next) {
     night = !!next;
     applyNight();
+  }
+
+  /* --- Overlays ---------------------------------------------------------
+     Settings -> Replay -> Ball trail and Strike zone. Both are drawn over the
+     play rather than part of it, so turning them off changes nothing else:
+     the ball still flies the same path and the camera still frames the zone. */
+  function setTrail(next) {
+    ball.setTrail(next !== false);
+  }
+
+  function setStrikeZone(next) {
+    zone.setVisible(next !== false);
   }
 
   /**
@@ -1136,6 +1156,8 @@ export function createEngine() {
     setZoom,
     setCamera,
     setNight,
+    setTrail,
+    setStrikeZone,
     scene,
     camera,
     renderer,

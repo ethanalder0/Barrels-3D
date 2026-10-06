@@ -197,18 +197,35 @@ class GameFeed:
         return LIVE_INTERVAL if status == "live" else PREGAME_INTERVAL
 
 
+class FeedLimitReached(RuntimeError):
+    """Starting another feed would put the server over MAX_FEEDS."""
+
+
+# Feeds polling at once, across every visitor. A day has at most sixteen games,
+# so this only ever bites on replays of old games -- each of which polls MLB
+# once a second -- and is what stops a crawler walking gamePks from turning the
+# server into a stream of requests upstream.
+MAX_FEEDS = 40
+
+
 class FeedHub:
     """Keeps one GameFeed per (gamePk, mode) and hands out subscriptions."""
 
-    def __init__(self):
+    def __init__(self, max_feeds: int = MAX_FEEDS):
         self._feeds: dict[tuple[int, bool], GameFeed] = {}
         self._lock = threading.Lock()
+        self.max_feeds = max_feeds
 
     def get(self, game_pk: int, replay: bool = False, speed: float = 6.0) -> GameFeed:
         key = (game_pk, replay)
         with self._lock:
             feed = self._feeds.get(key)
             if feed is None or feed._stop.is_set():
+                # Forget the finished ones before counting, or the table only grows.
+                for k in [k for k, f in self._feeds.items() if f._stop.is_set()]:
+                    del self._feeds[k]
+                if len(self._feeds) >= self.max_feeds:
+                    raise FeedLimitReached(f"{len(self._feeds)} feeds already running")
                 feed = GameFeed(game_pk, replay=replay, speed=speed)
                 self._feeds[key] = feed
             return feed

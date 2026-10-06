@@ -34,7 +34,7 @@ export default function SettingsScreen() {
 
         <Setting
           label="Render quality"
-          hint="Passed to the replay engine as a barrels:quality event. Lower it on older hardware."
+          hint="Lower it if the replay stutters on an older computer or phone."
         >
           <Segmented
             value={s.replayQuality}
@@ -91,6 +91,28 @@ export default function SettingsScreen() {
           />
         </Setting>
 
+        <Setting
+          label="Ball trail"
+          hint="Draws the ball's flight path — the part already flown bright, the rest faint. Turn it off to watch the ball on its own."
+        >
+          <Switch
+            checked={s.showBallTrail}
+            onChange={(v) => set('showBallTrail', v)}
+            label="Ball trail"
+          />
+        </Setting>
+
+        <Setting
+          label="Strike zone"
+          hint="Draws the batter's strike zone at the plate, and marks where each pitch crossed it."
+        >
+          <Switch
+            checked={s.showStrikeZone}
+            onChange={(v) => set('showStrikeZone', v)}
+            label="Strike zone"
+          />
+        </Setting>
+
         <Setting label="Advanced metrics" hint="Show exit velocity, launch angle and barrel rate throughout.">
           <Switch
             checked={s.showAdvancedMetrics}
@@ -142,25 +164,6 @@ export default function SettingsScreen() {
             ]}
           />
         </Setting>
-      </section>
-
-      <section className="panel" aria-label="Account">
-        <div className="panel__head">
-          <div className="panel__title">
-            <h3>Account</h3>
-          </div>
-        </div>
-        <div className="panel__body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-4)' }}>
-          <div>
-            <div className="setting__label">{state.user?.name ?? 'Guest'}</div>
-            <p className="setting__hint">{state.user?.email ?? 'Signed in without an account.'}</p>
-          </div>
-          <div>
-            <button type="button" className="btn btn--ghost" onClick={actions.signOut}>
-              Sign out
-            </button>
-          </div>
-        </div>
       </section>
     </div>
   );

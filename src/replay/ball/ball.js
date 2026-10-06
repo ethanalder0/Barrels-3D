@@ -352,6 +352,12 @@ export function createBall() {
     trailGeometry.setDrawRange(0, n);
   }
 
+  /** Settings -> Replay -> Ball trail. The ball and its landing ring stay. */
+  const setTrail = (on) => {
+    ghost.visible = !!on;
+    trail.visible = !!on;
+  };
+
   /** The engine hides the ball between plays, while it waits on the feed. */
   const setVisible = (v) => {
     group.visible = !!v && !!path;
@@ -370,5 +376,5 @@ export function createBall() {
   }
 
   group.visible = false;
-  return { group, setPath, update, setVisible, setViewportHeight, dispose };
+  return { group, setPath, update, setVisible, setTrail, setViewportHeight, dispose };
 }

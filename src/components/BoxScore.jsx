@@ -73,36 +73,38 @@ export default function BoxScore() {
         {rows.length === 0 ? (
           <p className="atbats__empty">No {tab} lines yet.</p>
         ) : (
-          <table className="statable statable--team">
-            <thead>
-              <tr>
-                <th scope="col">{tab === 'batting' ? 'Batter' : 'Pitcher'}</th>
-                {cols.map((c) => (
-                  <th key={c} scope="col">
-                    {c}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <PlayerName playerId={r.id} name={r.name}>
-                      <span className="statable__name">{r.name}</span>
-                      {r.pos && <span className="statable__pos">{r.pos}</span>}
-                    </PlayerName>
-                  </td>
-                  {(tab === 'batting'
-                    ? [r.ab, r.r, r.h, r.rbi, r.bb, r.k, r.avg]
-                    : [r.ip, r.h, r.r, r.er, r.bb, r.k, r.era]
-                  ).map((v, i) => (
-                    <td key={cols[i]}>{v ?? '—'}</td>
+          <div className="statable__scroll">
+            <table className="statable statable--team">
+              <thead>
+                <tr>
+                  <th scope="col">{tab === 'batting' ? 'Batter' : 'Pitcher'}</th>
+                  {cols.map((c) => (
+                    <th key={c} scope="col">
+                      {c}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id}>
+                    <td>
+                      <PlayerName playerId={r.id} name={r.name}>
+                        <span className="statable__name">{r.name}</span>
+                        {r.pos && <span className="statable__pos">{r.pos}</span>}
+                      </PlayerName>
+                    </td>
+                    {(tab === 'batting'
+                      ? [r.ab, r.r, r.h, r.rbi, r.bb, r.k, r.avg]
+                      : [r.ip, r.h, r.r, r.er, r.bb, r.k, r.era]
+                    ).map((v, i) => (
+                      <td key={cols[i]}>{v ?? '—'}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </section>
