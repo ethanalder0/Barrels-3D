@@ -73,9 +73,6 @@ export default function HomeScreen() {
               {live.length ? 'Watch a live game' : 'Browse today’s games'}
               <IconChevron size={14} />
             </button>
-            <button type="button" className="btn btn--ghost" onClick={() => actions.navigate('games')}>
-              Today’s schedule
-            </button>
           </div>
         </div>
 

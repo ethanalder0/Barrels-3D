@@ -144,13 +144,17 @@ function SwingStage() {
   );
 }
 
+/* Two seams, each a seam line and its stitching. True circular arcs on one
+   centre per pair, at radii 407 and 424, so the two stay parallel the whole
+   way round. The right pair is the left turned half a circle about the middle
+   of the frame. Both ends of every arc run off the canvas. */
 function SeamBackdrop() {
   return (
     <svg className="splash__seams" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <path d="M-40 620C180 560 300 420 300 240 300 120 260 20 190-60" />
-      <path className="stitch" d="M-20 604C196 546 316 408 316 232 316 116 278 18 210-58" />
-      <path d="M1240 180C1020 240 900 380 900 560c0 120 40 220 110 300" />
-      <path className="stitch" d="M1222 196C1006 254 886 392 886 568c0 116 38 214 106 290" />
+      <path d="M-176.7 619.8A407 407 0 0 0 33.2 -163.5" />
+      <path className="stitch" d="M-179.6 636.6A424 424 0 0 0 39 -179.4" />
+      <path d="M1376.7 180.2A407 407 0 0 0 1166.8 963.5" />
+      <path className="stitch" d="M1379.6 163.4A424 424 0 0 0 1161 979.4" />
     </svg>
   );
 }
