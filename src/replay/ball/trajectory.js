@@ -145,7 +145,15 @@ const beyondFence = (park, p) =>
    solve for nothing. */
 const DEFAULT_PARK = createPark();
 
-const SPIN_BOUNDS = [0, 3800]; // rpm the solver may use before giving up
+/* The most backspin the solver may use, by launch angle. A bat puts a few
+   hundred rpm on a low line drive and a grounder, and 2000+ only on a ball hit
+   in the air. With one flat 3800 ceiling a 2 degree ball with a 150 ft tracked
+   distance was "solved" by giving it absurd lift, so a grounder skimmed 150 ft
+   in the air and then bounced on, high and far. Capped this way it cannot, and
+   a number that far out falls to `ground` mode: fly to first contact, then
+   hop and roll to the tracked spot, which is what a grounder does. */
+const maxSpinFor = (launchAngle) =>
+  300 + (Math.max(0, Math.min(30, launchAngle)) / 30) * 3500; // rpm
 const DT = 1 / 480; // integration step
 const OUT_HZ = 120; // sample rate of the returned path
 const MAX_TIME = 15; // s, a hard stop so nothing can loop forever
@@ -281,11 +289,12 @@ function groundPhase(start, startVel, startTime, surface, out, maxDistance = Inf
       const [nextPos, nextVel] = step(pos, vel, [0, 0, 0], 0, 1, DT);
       if (nextPos[1] <= BALL_RADIUS && nextVel[1] < 0) {
         pos = [nextPos[0], BALL_RADIUS, nextPos[2]];
-        vel = [
-          nextVel[0] * surface.bounce,
-          -nextVel[1] * surface.restitution,
-          nextVel[2] * surface.bounce,
-        ];
+        /* A ball does not bounce the same off every impact: it gives back
+           less of a hard hit. A flat restitution sent steep chops (and every
+           first hop) up and away; scaled by impact speed, hard grounders stay
+           low and tight while a slow dribble still hops. */
+        const e = surface.restitution * Math.max(0.55, 1 - Math.abs(nextVel[1]) / 120);
+        vel = [nextVel[0] * surface.bounce, -nextVel[1] * e, nextVel[2] * surface.bounce];
       } else {
         pos = nextPos;
         vel = nextVel;
@@ -442,8 +451,9 @@ export function solveTrajectory(p, park = DEFAULT_PARK) {
     const f = fly(rpm);
     return { f, carry: groundDistance(f.samples[f.samples.length - 1]) };
   };
-  const lo = carryAt(SPIN_BOUNDS[0]);
-  const hi = carryAt(SPIN_BOUNDS[1]);
+  const spinMax = maxSpinFor(p.launchAngle);
+  const lo = carryAt(0);
+  const hi = carryAt(spinMax);
 
   // 1. INTERCEPT — it flew past the number, so the number is where it was
   // caught. Fly the nominal arc and stop there; that height is the catch.
@@ -463,8 +473,8 @@ export function solveTrajectory(p, park = DEFAULT_PARK) {
 
   // 2. CARRY — land it exactly on the number by solving backspin.
   if (distance >= lo.carry && distance <= hi.carry) {
-    let a = SPIN_BOUNDS[0];
-    let b = SPIN_BOUNDS[1];
+    let a = 0;
+    let b = spinMax;
     let best = hi;
     for (let i = 0; i < 40 && b - a > 0.5; i++) {
       const mid = (a + b) / 2;
