@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useAppState } from '../state/AppState.jsx';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
 import { IconChevron, IconPlay } from './Icons.jsx';
@@ -19,6 +19,11 @@ import { scrollReplayIntoView } from './ReplayViewport.jsx';
  * Highlights play the whole list, from the first pitch of the game to now, one
  * after another (ReplayViewport runs them). For catching up on a game you
  * joined late, or watching back one that is over.
+ *
+ * Under the picker, the same plays as a running play-by-play: a scannable
+ * column of the game where the select is a way to jump. Clicking a row is the
+ * same as picking it above. The list holds its height and scrolls, keeping the
+ * selected row in view as plays are stepped through.
  */
 export default function ActionReplay() {
   const { state, actions } = useAppState();
@@ -46,6 +51,18 @@ export default function ActionReplay() {
     scrollReplayIntoView();
   };
 
+  // Keep the selected row in view inside the list, without moving the page.
+  const listRef = useRef(null);
+  useEffect(() => {
+    const list = listRef.current;
+    const row = list?.querySelector('[aria-current="true"]');
+    if (!list || !row) return;
+    const top = row.offsetTop - list.offsetTop;
+    if (top < list.scrollTop || top + row.offsetHeight > list.scrollTop + list.clientHeight) {
+      list.scrollTop = top - list.clientHeight / 2 + row.offsetHeight / 2;
+    }
+  }, [state.selectedAtBatId]);
+
   const highlights = state.highlights != null;
   const toggleHighlights = () => {
     if (highlights) {
@@ -57,18 +74,18 @@ export default function ActionReplay() {
   };
 
   return (
-    <section className="panel actionreplay" aria-label="Action replay">
+    <section className="panel panel--boxed actionreplay" aria-label="Action replay">
       <div className="panel__head">
         <div className="panel__title">
           <h3>Action Replay</h3>
-          {atBats.length > 0 && <span className="chip">{atBats.length}</span>}
+          {atBats.length > 0 && <span className="chip chip--count">{atBats.length}</span>}
         </div>
 
         {atBats.length > 0 && (
           <div className="actionreplay__steps">
             <button
               type="button"
-              className="btn btn--ghost btn--sm actionreplay__highlights"
+              className="btn btn--primary btn--sm actionreplay__highlights"
               onClick={toggleHighlights}
               aria-pressed={highlights}
               title={
@@ -144,14 +161,38 @@ export default function ActionReplay() {
           </>
         )}
       </div>
+
+      {atBats.length > 0 && (
+        <ol className="pbp" ref={listRef} aria-label="Play-by-play">
+          {atBats.map((ab) => (
+            <li key={ab.id}>
+              <button
+                type="button"
+                className="pbp__row"
+                aria-current={ab.id === selected?.id}
+                onClick={() => play(ab.id)}
+              >
+                <span className="pbp__inning u-num">{ab.inningLabel}</span>
+                <span className="pbp__play">
+                  {resultOf(ab)} · <span className="pbp__who">{ab.batter}</span>
+                </span>
+                <span className="pbp__ev u-num">{ab.exitVelo != null ? ab.exitVelo.toFixed(1) : ''}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }
 
 /** "Strikeout | Nick Gonzales vs Kyle Harrison" */
 export function playName(ab) {
-  const result = ab.live ? 'At bat' : ab.result && ab.result !== '—' ? ab.result : 'Play';
-  return `${result} | ${ab.batter} vs ${ab.pitcher}`;
+  return `${resultOf(ab)} | ${ab.batter} vs ${ab.pitcher}`;
+}
+
+function resultOf(ab) {
+  return ab.live ? 'At bat' : ab.result && ab.result !== '—' ? ab.result : 'Play';
 }
 
 function halfLabel(ab) {

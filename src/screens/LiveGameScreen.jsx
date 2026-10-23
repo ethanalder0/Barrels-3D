@@ -3,16 +3,17 @@ import { useAppState } from '../state/AppState.jsx';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
 import Scorebug from '../components/Scorebug.jsx';
 import ReplayViewport, { forReplay } from '../components/ReplayViewport.jsx';
+import BattedBallStrip from '../components/BattedBallStrip.jsx';
 import BoxScore from '../components/BoxScore.jsx';
 import ActionReplay from '../components/ActionReplay.jsx';
 import GameLeaders from '../components/GameLeaders.jsx';
 import { isGameOver } from '../replay/interlude.js';
 
 /**
- * The main screen, one full-width column: scorebug, replay viewport, and below
- * them the play picker and game leaders beside the box score. The viewport
- * keeps its own fixed aspect ratio, so mounting the engine cannot reflow
- * anything.
+ * The main screen: the score band across the top, then two columns. The replay,
+ * its batted-ball numbers and the box score on the left; the play picker and
+ * the game leaders in a rail on the right. The viewport keeps its own fixed
+ * aspect ratio, so mounting the engine cannot reflow anything.
  */
 export default function LiveGameScreen() {
   const { state, actions } = useAppState();
@@ -50,30 +51,39 @@ export default function LiveGameScreen() {
       {!ready && mode !== 'demo' && <p className="notice">Connecting to the live feed…</p>}
 
       <Scorebug />
-      <ReplayViewport
-        atBat={atBat}
-        quality={state.settings.replayQuality}
-        camera={state.settings.replayCamera}
-        zoom={state.settings.replayZoom}
-        night={night}
-        trail={state.settings.showBallTrail}
-        zone={state.settings.showStrikeZone}
-        units={state.settings.units}
-        sound={state.settings.sound}
-        venue={game?.venue}
-        homeTeam={game?.home?.abbr}
-        followLatest={state.followLatest}
-        onFollowLatest={() => actions.setFollowLatest(true)}
-        highlights={state.highlights}
-        onHighlightNext={onHighlightNext}
-      />
 
-      <div className="live__lower">
+      <div className="live__body">
+        <div className="live__main">
+          {/* The numbers sit flush under the stage, so the two read as one. */}
+          <div>
+            <ReplayViewport
+              atBat={atBat}
+              quality={state.settings.replayQuality}
+              camera={state.settings.replayCamera}
+              zoom={state.settings.replayZoom}
+              night={night}
+              trail={state.settings.showBallTrail}
+              zone={state.settings.showStrikeZone}
+              units={state.settings.units}
+              sound={state.settings.sound}
+              venue={game?.venue}
+              homeTeam={game?.home?.abbr}
+              followLatest={state.followLatest}
+              onFollowLatest={() => actions.setFollowLatest(true)}
+              highlights={state.highlights}
+              onHighlightNext={onHighlightNext}
+            />
+            {state.settings.showAdvancedMetrics && (
+              <BattedBallStrip atBat={selected} metric={state.settings.units === 'metric'} />
+            )}
+          </div>
+          <BoxScore />
+        </div>
+
         <div className="live__side">
           <ActionReplay />
           <GameLeaders />
         </div>
-        <BoxScore />
       </div>
     </div>
   );

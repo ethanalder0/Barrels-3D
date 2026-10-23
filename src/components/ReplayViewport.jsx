@@ -702,10 +702,7 @@ export default function ReplayViewport({
     <section className="panel" id={PANEL_ID} aria-label="3D replay">
       <div className="panel__head viewport__head">
         <div className="panel__title">
-          <IconCube />
           <h3>Replay</h3>
-        </div>
-        <div className="panel__title">
           {/* Only for a play picked by hand: following live, what is on screen
               is simply the game, and the HUD already names the batter. */}
           {highlights && highlightAt >= 0 ? (
@@ -717,13 +714,16 @@ export default function ReplayViewport({
             atBat?.hasReplay && <span className="chip viewport__status">Tracked data ready</span>
           )}
           {followLatest ? (
-            <span className="chip chip--live chip--dot">Following live</span>
+            <span className="chip chip--red chip--dot">Following live</span>
           ) : (
             <button type="button" className="btn btn--ghost btn--sm" onClick={onFollowLatest}>
               Follow live
             </button>
           )}
         </div>
+        <span className="sectionhead__note viewport__shot u-num">
+          {camera === 'centerfield' ? 'Broadcast' : 'Behind the plate'} · {(zoom ?? 1).toFixed(2)}×
+        </span>
       </div>
 
       <div className="viewport__stage" ref={stageRef} data-engine="idle" data-expanded={expanded}>
@@ -788,11 +788,6 @@ export default function ReplayViewport({
         </div>
       </div>
 
-      {/* A closing rail under the stage, matching the banner above it: the same
-          surface and the same hairline, half the height and deliberately empty.
-          Without it the canvas runs straight into the panel's bottom edge and
-          the stage reads as unfinished on one side only. */}
-      <div className="viewport__foot" aria-hidden="true" />
     </section>
   );
 }

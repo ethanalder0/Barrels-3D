@@ -1,109 +1,96 @@
 import { useLiveData } from '../state/LiveDataProvider.jsx';
-import { teamVars } from '../data/teamStyle.js';
 import PlayerName from './PlayerName.jsx';
 import TeamLogo from './TeamLogo.jsx';
 
 /**
- * Live scorebug + line score. Everything here comes from the current snapshot;
- * `bases` is the real `linescore.offense` runner set.
+ * The score band across the top of the live page, in three columns split by
+ * ink rules: both clubs with their runs, the situation (half, bases, count),
+ * and the line score. Everything comes from the current snapshot; `bases` is
+ * the real `linescore.offense` runner set.
  */
 export default function Scorebug() {
   const { game, lineScore, bases, matchup } = useLiveData();
-  if (!game) return <PanelSkeleton />;
+  if (!game) return <BandSkeleton />;
 
   const st = game.state;
   const homeBatting = st?.half === 'bottom';
 
   return (
-    <section className="panel" aria-label="Score">
-      <div className="scorebug">
-        <div className="scorebug__teams">
-          <TeamRow team={game.away} batting={st ? !homeBatting : false} />
-          <TeamRow team={game.home} batting={st ? homeBatting : false} />
-          {matchup?.batter && (
-            <p className="scorebug__matchup">
-              <span className="u-eyebrow">At bat</span>{' '}
-              <PlayerName playerId={matchup.batterId} name={matchup.batter} />
-              {matchup.pitcher && (
-                <>
-                  {' '}
-                  <span className="atbat__vs">vs</span>{' '}
-                  <PlayerName playerId={matchup.pitcherId} name={matchup.pitcher} />
-                </>
-              )}
-            </p>
-          )}
-        </div>
+    <section className="scoreband" aria-label="Score">
+      <div className="scoreband__teams">
+        <TeamRow team={game.away} batting={st ? !homeBatting : false} />
+        <TeamRow team={game.home} batting={st ? homeBatting : false} />
+        {matchup?.batter && (
+          <p className="scoreband__matchup">
+            <span className="scoreband__kicker">At bat</span>
+            <PlayerName playerId={matchup.batterId} name={matchup.batter} className="scoreband__who" />
+            {matchup.pitcher && (
+              <>
+                <span className="scoreband__vs">vs</span>
+                <PlayerName
+                  playerId={matchup.pitcherId}
+                  name={matchup.pitcher}
+                  className="scoreband__who"
+                />
+              </>
+            )}
+            {matchup.onDeck && <span className="scoreband__deck">On deck · {matchup.onDeck}</span>}
+          </p>
+        )}
+      </div>
 
-        <div className="scorebug__state">
-          {st ? (
-            <>
-              <div className="scorebug__inning">
-                <span className="scorebug__half" aria-hidden="true">
-                  {st.half === 'top' ? '▲' : '▼'}
-                </span>
-                <span>
-                  {st.half === 'top' ? 'Top' : 'Bot'} {ordinal(st.inning)}
-                </span>
-              </div>
-
-              <Diamond bases={bases} />
-
-              <div className="count">
-                <div className="count__group">
-                  <span className="count__label">B</span>
-                  <Pips total={3} on={st.balls} />
-                </div>
-                <div className="count__group">
-                  <span className="count__label">S</span>
-                  <Pips total={2} on={st.strikes} />
-                </div>
-                <div className="count__group">
-                  <span className="count__label">O</span>
-                  <Pips total={3} on={st.outs} variant="out" />
-                </div>
-              </div>
-            </>
-          ) : (
-            <div style={{ textAlign: 'center' }}>
-              <p className="u-eyebrow">{game.status === 'final' ? 'Final' : game.startsAt}</p>
-              {game.detailedStatus && (
-                <p className="scorebug__detail">{game.detailedStatus}</p>
-              )}
+      <div className="scoreband__state">
+        {st ? (
+          <>
+            <div className="scoreband__inning">
+              <span aria-hidden="true">{st.half === 'top' ? '▲' : '▼'}</span>{' '}
+              {st.half === 'top' ? 'Top' : 'Bot'} {ordinal(st.inning)}
             </div>
-          )}
-        </div>
+            <Diamond bases={bases} />
+            <div className="count">
+              <span className="count__label">B</span>
+              <Pips total={3} on={st.balls} />
+              <span className="count__label">S</span>
+              <Pips total={2} on={st.strikes} />
+              <span className="count__label">O</span>
+              <Pips total={3} on={st.outs} variant="out" />
+            </div>
+          </>
+        ) : (
+          <div className="scoreband__idle">
+            <p className="scoreband__inning">{game.status === 'final' ? 'Final' : game.startsAt}</p>
+            {game.detailedStatus && <p className="scoreband__detail">{game.detailedStatus}</p>}
+          </div>
+        )}
+      </div>
 
+      <div className="scoreband__line">
         <LineScore game={game} lineScore={lineScore} />
       </div>
     </section>
   );
 }
 
-function PanelSkeleton() {
+function BandSkeleton() {
   return (
-    <section className="panel" aria-label="Score" aria-busy="true">
-      <div className="scorebug">
-        <div className="scorebug__teams">
-          <div className="skeleton" style={{ height: 42 }} />
-          <div className="skeleton" style={{ height: 42 }} />
-        </div>
+    <section className="scoreband" aria-label="Score" aria-busy="true">
+      <div className="scoreband__teams">
+        <div className="skeleton" style={{ height: 56 }} />
+        <div className="skeleton" style={{ height: 56 }} />
       </div>
     </section>
   );
 }
 
 function TeamRow({ team, batting }) {
-  // The batting side gets the club wash instead of the generic accent, so the
-  // row that matters is also the row wearing the team's colour.
   return (
-    <div className="scoreteam" data-batting={batting} style={teamVars(team.abbr)}>
-      <TeamLogo abbr={team.abbr} size={26} className="scoreteam__logo" />
-      <span className="scoreteam__abbr">{team.abbr}</span>
-      <span className="scoreteam__name">
-        {team.name}
-        {team.record && <span className="scoreteam__record">{team.record}</span>}
-      </span>
+    <div className="scoreteam" data-batting={batting}>
+      <TeamLogo abbr={team.abbr} size={48} />
+      <div className="scoreteam__id">
+        <span className="scoreteam__name">{team.name}</span>
+        {team.record && <span className="scoreteam__record u-num">{team.record}</span>}
+        {batting && <span className="scoreteam__bat">At bat</span>}
+      </div>
       <span className="scoreteam__runs u-num">{team.runs ?? '–'}</span>
     </div>
   );
@@ -126,12 +113,9 @@ function Diamond({ bases }) {
     second: Boolean(bases?.second),
     third: Boolean(bases?.third),
   };
-  const on = Object.entries(occupied)
-    .filter(([, v]) => v)
-    .map(([b]) => b);
 
-  // Runner names when we have them — a scorebug diamond that can say who is on
-  // is strictly more useful to a screen reader than "runners on first and third".
+  // Runner names when we have them — a diamond that can say who is on is
+  // strictly more useful to a screen reader than "runners on first and third".
   const named = ['first', 'second', 'third']
     .filter((b) => bases?.[b])
     .map((b) => `${bases[b]} on ${b}`)
@@ -142,59 +126,60 @@ function Diamond({ bases }) {
       <span className="diamond__base diamond__base--second" data-occupied={occupied.second} />
       <span className="diamond__base diamond__base--third" data-occupied={occupied.third} />
       <span className="diamond__base diamond__base--first" data-occupied={occupied.first} />
-      <span className="diamond__home" />
-      <span className="u-visually-hidden">{on.length ? `Runners on ${on.join(', ')}` : 'Bases empty'}</span>
     </div>
   );
 }
 
 function LineScore({ game, lineScore }) {
-  const innings = lineScore?.innings ?? Array.from({ length: 9 }, (_, i) => ({
-    inning: i + 1,
-    away: null,
-    home: null,
-  }));
+  const innings = lineScore?.innings?.length
+    ? lineScore.innings
+    : Array.from({ length: 9 }, (_, i) => ({ inning: i + 1, away: null, home: null }));
   const totals = lineScore?.totals ?? {
     away: { r: '–', h: '–', e: '–' },
     home: { r: '–', h: '–', e: '–' },
   };
 
+  // The half-inning being played, lit in red. Nothing is lit once it's over.
+  const st = game.status === 'live' ? game.state : null;
+  const current = st ? { inning: st.inning, side: st.half === 'top' ? 'away' : 'home' } : null;
+
   return (
-    <div className="linescore">
-      <table>
-        <caption className="u-visually-hidden">Line score by inning</caption>
-        <thead>
-          <tr>
-            <th scope="col">
-              <span className="u-visually-hidden">Team</span>
+    <table className="linescore">
+      <caption className="u-visually-hidden">Line score by inning</caption>
+      <thead>
+        <tr>
+          <th scope="col">
+            <span className="u-visually-hidden">Team</span>
+          </th>
+          {innings.map((i) => (
+            <th key={i.inning} scope="col">
+              {i.inning}
             </th>
-            {innings.map((i) => (
-              <th key={i.inning} scope="col">
-                {i.inning}
-              </th>
-            ))}
-            <th scope="col" className="total">R</th>
-            <th scope="col" className="total">H</th>
-            <th scope="col" className="total">E</th>
-          </tr>
-        </thead>
-        <tbody>
-          {['away', 'home'].map((side) => (
-            <tr key={side}>
-              <th scope="row">{game[side].abbr}</th>
-              {innings.map((i) => (
-                <td key={i.inning} className={i[side] == null ? 'empty' : undefined}>
-                  {i[side] ?? '·'}
-                </td>
-              ))}
-              <td className="total">{totals[side].r}</td>
-              <td className="total">{totals[side].h}</td>
-              <td className="total">{totals[side].e}</td>
-            </tr>
           ))}
-        </tbody>
-      </table>
-    </div>
+          <th scope="col" className="total total--first">R</th>
+          <th scope="col" className="total">H</th>
+          <th scope="col" className="total">E</th>
+        </tr>
+      </thead>
+      <tbody>
+        {['away', 'home'].map((side) => (
+          <tr key={side}>
+            <th scope="row">{game[side].abbr}</th>
+            {innings.map((i) => (
+              <td
+                key={i.inning}
+                data-current={current?.inning === i.inning && current.side === side ? true : undefined}
+              >
+                {i[side] ?? ''}
+              </td>
+            ))}
+            <td className="total total--first">{totals[side].r}</td>
+            <td className="total">{totals[side].h}</td>
+            <td className="total">{totals[side].e}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

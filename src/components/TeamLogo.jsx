@@ -9,7 +9,9 @@ import { useAppState } from '../state/AppState.jsx';
  * logo on a light ground, and the cap mark recoloured for dark — most club
  * marks are navy or black and vanish on the dark theme. `surface="dark"` is
  * for the places that are dark whatever the theme (the replay HUD and its
- * interludes sit over the 3D scene).
+ * interludes sit over the 3D scene). `onInk` is for a mark sitting on an
+ * ink-filled control (a chosen tab, a picked favourite): ink inverts with the
+ * theme, so the mark does too.
  *
  * Falls back to a monogram in the team's colours when the mark cannot load —
  * offline, or an abbreviation the table doesn't cover.
@@ -17,7 +19,7 @@ import { useAppState } from '../state/AppState.jsx';
  * `alt` is empty on purpose: every place this is used already has the team
  * name or abbreviation as text next to it, so announcing it again is noise.
  */
-export default function TeamLogo({ abbr, size = 22, className = '', surface }) {
+export default function TeamLogo({ abbr, size = 22, className = '', surface, onInk = false }) {
   const { state } = useAppState();
   // Remembers which URL failed, so switching theme retries with the other mark.
   const [failedSrc, setFailedSrc] = useState(null);
@@ -25,7 +27,9 @@ export default function TeamLogo({ abbr, size = 22, className = '', surface }) {
 
   if (!team) return null;
 
-  const dark = (surface ?? state.settings.theme) === 'dark';
+  const theme = state.settings.theme === 'dark' ? 'dark' : 'light';
+  const inverse = theme === 'dark' ? 'light' : 'dark';
+  const dark = (surface ?? (onInk ? inverse : theme)) === 'dark';
   const src = dark ? team.logoDark : team.logo;
   const classes = `teamlogo ${className}`.trim();
 

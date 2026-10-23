@@ -160,7 +160,7 @@ function GameRow({ game, current, onPick }) {
       <span className="gamemenu__teams">
         {['away', 'home'].map((side) => (
           <span className="gamemenu__team" key={side}>
-            <TeamLogo abbr={game[side].abbr} size={16} />
+            <TeamLogo abbr={game[side].abbr} size={16} onInk={current} />
             <span className="gamemenu__abbr">{game[side].abbr}</span>
             {started && <span className="gamemenu__runs u-num">{game[side].runs}</span>}
           </span>

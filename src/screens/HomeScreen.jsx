@@ -2,37 +2,31 @@ import { useEffect, useState } from 'react';
 import { useAppState } from '../state/AppState.jsx';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
 import { fetchLeaders } from '../data/liveClient.js';
-import { teamVars } from '../data/teamStyle.js';
 import { favoritesFirst, isFavoriteGame } from '../data/favorites.js';
+import { loserOf, statusLine } from '../data/gameStatus.js';
 import PlayerName from '../components/PlayerName.jsx';
 import TeamLogo from '../components/TeamLogo.jsx';
-import { IconChevron, IconStar } from '../components/Icons.jsx';
 
 /* ---------------------------------------------------------------------------
    Landing screen.
 
-   A LANDING PAGE, NOT A PITCH. This used to open with a paragraph of lede and
-   three cards explaining what the app does — how the poller works, what the
-   strike-zone plot is drawn from, that the replay engine is coming. Nobody who
-   has just signed in needs any of that: they know what they opened, and it
-   pushed the only thing they came for — today's games — below the fold.
+   A LANDING PAGE, NOT A PITCH. Everything above the leaderboards answers one
+   question, which is what a landing page is for: what is on right now, and
+   how do I get into it.
 
-   So everything above the leaderboards now answers one question, which is what
-   a landing page is for: what is on right now, and how do I get into it.
+     · the masthead — what day it is, and the way in
+     · today's slate, as three counts in a ruled box beside it
+     · a ticker of the games themselves, favourite clubs first
 
-     · a masthead — who is signed in, what day it is, and the two ways in
-     · today's slate, as three counts, with live ones in the accent
-     · the games themselves, as tiles, favourite clubs first
-
-   The leaderboards below are unchanged. They are deliberately sabermetric
-   (WAR, wRC+, wOBA, FIP, ERA-) rather than the usual batting-average-and-RBI
-   set; see server/leaders.py for where they come from and why the sort has to
-   be done ourselves.
+   The leaderboards below are deliberately sabermetric (WAR, wRC+, wOBA, FIP,
+   ERA-) rather than the usual batting-average-and-RBI set; see
+   server/leaders.py for where they come from and why the sort has to be done
+   ourselves.
 --------------------------------------------------------------------------- */
 
-/* How many tiles the landing page shows before deferring to the full
-   schedule: two rows of three on a wide window. */
-const TILE_LIMIT = 6;
+/* How many games the ticker shows before deferring to the full schedule: one
+   row of six on a wide window. */
+const TICKER_LIMIT = 6;
 
 const todayLabel = () =>
   new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
@@ -45,41 +39,42 @@ export default function HomeScreen() {
   const upcoming = games.filter((g) => g.status === 'scheduled');
   const final = games.filter((g) => g.status === 'final');
 
-  const mine = games.filter((g) => isFavoriteGame(g, state.favorites));
-
   /* Followed clubs first, then whatever else is live, then the rest of the
      day. One ordered list rather than a section each: three sections would
-     leave the page half empty in the morning, when everything is 'scheduled'
-     and nothing is live. */
-  const tiles = favoritesFirst(
+     leave the page half empty in the morning, when nothing is live yet. */
+  const ticker = favoritesFirst(
     [...live, ...games.filter((g) => g.status !== 'live')],
     state.favorites,
-  ).slice(0, TILE_LIMIT);
+  ).slice(0, TICKER_LIMIT);
 
   return (
     <div className="home">
       <section className="hero">
         <div className="hero__text">
-          <span className="u-eyebrow">
-            Welcome · {todayLabel()}
-          </span>
-          <h2 className="hero__title">Every at-bat, rebuilt in three dimensions</h2>
-          <div className="hero__actions">
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => actions.navigate(live.length ? 'live' : 'games')}
-            >
-              {live.length ? 'Watch a live game' : 'Browse today’s games'}
-              <IconChevron size={14} />
-            </button>
-          </div>
+          <span className="u-kicker">Welcome · {todayLabel()}</span>
+          <h1 className="hero__title">
+            Every <span className="u-nowrap">at-bat</span>, rebuilt in <em>three dimensions.</em>
+          </h1>
+          <button
+            type="button"
+            className="btn btn--primary hero__cta"
+            onClick={() => actions.navigate(live.length ? 'live' : 'games')}
+          >
+            {live.length ? 'Watch a live game' : 'Browse today’s games'}
+            <span aria-hidden="true">→</span>
+          </button>
         </div>
 
-        <div className="hero__slate" aria-label="Today at a glance">
-          <SlateStat value={live.length} label={live.length === 1 ? 'game live' : 'games live'} live />
-          <SlateStat value={upcoming.length} label="still to start" />
-          <SlateStat value={final.length} label="final" />
+        <div className="slatebox" aria-label="Today at a glance">
+          <div className="slatebox__head">
+            <span>Today’s slate</span>
+            <span>
+              {games.length} game{games.length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <SlateStat value={live.length} label={live.length === 1 ? 'Game live' : 'Games live'} />
+          <SlateStat value={upcoming.length} label="Still to start" />
+          <SlateStat value={final.length} label="Final" />
         </div>
       </section>
 
@@ -91,38 +86,17 @@ export default function HomeScreen() {
         </p>
       )}
 
-      {games.length > 0 && (
-        <section className="todaygames" aria-label="Today’s games">
-          <div className="page-head">
-            <div>
-              <h3 className="todaygames__title">
-                {mine.length ? 'Your teams, and the rest of today' : 'Today around the league'}
-              </h3>
-              {mine.length > 0 && (
-                <p>{`${mine.length} game${mine.length === 1 ? '' : 's'} with a team you follow`}</p>
-              )}
-            </div>
-            <button
-              type="button"
-              className="btn btn--ghost btn--sm"
-              onClick={() => actions.navigate('games')}
-            >
-              All {games.length} games
-              <IconChevron size={13} />
-            </button>
-          </div>
-
-          <div className="tilegrid">
-            {tiles.map((game) => (
-              <GameTile
-                key={game.id}
-                game={game}
-                favorite={isFavoriteGame(game, state.favorites)}
-                onSelect={() => actions.selectGame(game.id)}
-              />
-            ))}
-          </div>
-        </section>
+      {ticker.length > 0 && (
+        <div className="ticker" aria-label="Today’s games">
+          {ticker.map((game) => (
+            <TickerGame
+              key={game.id}
+              game={game}
+              favorite={isFavoriteGame(game, state.favorites)}
+              onSelect={() => actions.selectGame(game.id)}
+            />
+          ))}
+        </div>
       )}
 
       <Leaders demo={mode === 'demo'} />
@@ -130,63 +104,47 @@ export default function HomeScreen() {
   );
 }
 
-function SlateStat({ value, label, live }) {
+function SlateStat({ value, label }) {
   return (
-    <div className="slate">
-      <span className={`slate__value u-num${live && value > 0 ? ' slate__value--live' : ''}`}>{value}</span>
-      <span className="slate__label">{label}</span>
+    <div className="slatebox__row">
+      <span className="slatebox__value u-num">{value}</span>
+      <span className="slatebox__label">{label}</span>
     </div>
   );
 }
 
 /* --- Today's games ------------------------------------------------------- */
 
-/**
- * One game, compact: both clubs with their runs, and the single line of status
- * that matters — the inning while it is on, first pitch before it, Final after.
- * The whole tile opens the game, which is what this page is for.
- */
-function GameTile({ game, favorite, onSelect }) {
-  const st = game.state;
-  const awayRuns = game.away.runs ?? 0;
-  const homeRuns = game.home.runs ?? 0;
-  // Only bold a winner once there is one: level, or unplayed, is not leading.
-  const decided = game.away.runs != null && game.home.runs != null && awayRuns !== homeRuns;
+function TickerGame({ game, favorite, onSelect }) {
+  const [status, detail] = statusLine(game);
+  const loser = loserOf(game);
 
   return (
     <button
       type="button"
-      className="tile"
-      data-favorite={favorite || undefined}
+      className="ticker__game"
+      data-live={game.status === 'live' || undefined}
       onClick={onSelect}
-      style={teamVars(game.home.abbr)}
+      title={`${game.away.name} at ${game.home.name}`}
     >
-      <span className="tile__head">
-        {game.status === 'live' ? (
-          <span className="chip chip--live chip--dot">
-            {st ? `${st.half === 'top' ? 'Top' : 'Bot'} ${st.inning}` : 'Live'}
-          </span>
-        ) : (
-          <span className="chip">{game.status === 'final' ? 'Final' : game.startsAt}</span>
-        )}
-        {favorite && (
-          <span className="tile__fav" title="One of your teams">
-            <IconStar size={12} filled />
-          </span>
-        )}
+      <span className="ticker__status">
+        <span>
+          {favorite && (
+            <span className="ticker__fav" aria-label="One of your teams">
+              ★{' '}
+            </span>
+          )}
+          {status}
+        </span>
+        <span>{detail}</span>
       </span>
-
       {['away', 'home'].map((side) => (
-        <span
-          className="tile__row"
-          key={side}
-          data-leading={
-            decided ? (side === 'away' ? awayRuns > homeRuns : homeRuns > awayRuns) : false
-          }
-        >
-          <TeamLogo abbr={game[side].abbr} size={20} />
-          <span className="tile__team">{game[side].name}</span>
-          <span className="tile__runs u-num">{game[side].runs ?? '–'}</span>
+        <span className="ticker__team" key={side} data-lost={loser === side || undefined}>
+          <TeamLogo abbr={game[side].abbr} size={18} />
+          <span className="ticker__abbr">{game[side].abbr}</span>
+          <span className="ticker__runs u-num">
+            {game.status === 'scheduled' ? '' : (game[side].runs ?? '–')}
+          </span>
         </span>
       ))}
     </button>
@@ -218,51 +176,63 @@ function Leaders({ demo }) {
 
   return (
     <section className="leaders" aria-label="League leaders">
-      <div className="page-head">
-        <div>
-          <h3 className="leaders__title">League leaders</h3>
-          <p>
-            {data
-              ? `${data.season} season · qualified players only`
-              : 'Advanced statistics, qualified players only'}
-            {data?.stale && <span className="stale-note"> · cached, live feed unreachable</span>}
-          </p>
-        </div>
-        <span className="chip">Advanced</span>
+      <div className="leaders__head">
+        <h2>League leaders</h2>
+        <p className="leaders__deck">
+          {data
+            ? `${data.season} season · qualified players only`
+            : 'Advanced statistics, qualified players only'}
+          {data?.stale && <span className="stale-note"> · cached, live feed unreachable</span>}
+        </p>
+        <span className="chip leaders__chip">Advanced</span>
       </div>
 
-      {demo && <p className="atbats__empty">League leaders need the live backend.</p>}
+      {demo && <p className="leaders__empty">League leaders need the live backend.</p>}
       {!demo && error && <p className="notice">Couldn’t load leaders — <code>{error}</code></p>}
       {!demo && !error && !data && <LeaderSkeleton />}
 
-      {data?.groups.map((group) => (
-        <div className="leaders__group" key={group.id}>
-          <h4 className="u-eyebrow">{group.label}</h4>
-          <div className="leaders__grid">
-            {group.categories.map((cat) => (
-              <LeaderBoard key={cat.id} groupId={group.id} category={cat} />
-            ))}
-          </div>
+      {data && (
+        <div className="leaders__grid">
+          {data.groups.map((group) => [
+            <h3 className="leaders__group" key={`${group.id}-label`}>
+              {group.label}
+            </h3>,
+            ...group.categories.map((cat) => (
+              <LeaderBoard key={`${group.id}-${cat.id}`} groupId={group.id} category={cat} />
+            )),
+          ])}
         </div>
-      ))}
+      )}
     </section>
   );
 }
 
+/**
+ * How far along its row a leader's bar runs: the value against the best on
+ * the board. Inverted where lower is better (FIP, ERA-), so the leader's bar
+ * is always the full row and everyone else's is shorter.
+ */
+function barWidth(value, best, lowerIsBetter) {
+  if (!Number.isFinite(value) || !Number.isFinite(best) || value <= 0 || best <= 0) return 0;
+  return Math.min(1, lowerIsBetter ? best / value : value / best);
+}
+
 function LeaderBoard({ groupId, category }) {
   const { actions } = useAppState();
+  const values = category.leaders.map((r) => r.value);
+  const best = category.lowerIsBetter ? Math.min(...values) : Math.max(...values);
 
   return (
     <article className="board">
       <header className="board__head">
-        <h5 className="board__stat">{category.label}</h5>
+        <h4 className="board__stat">{category.label}</h4>
         <p className="board__desc">{category.description}</p>
       </header>
       <ol className="board__list">
         {category.leaders.map((row) => (
-          <li className="board__row" key={`${row.rank}-${row.playerId}`} style={teamVars(row.teamAbbr)}>
+          <li className="board__row" key={`${row.rank}-${row.playerId}`}>
             <span className="board__rank u-num">{row.rank}</span>
-            <TeamLogo abbr={row.teamAbbr} size={18} />
+            <TeamLogo abbr={row.teamAbbr} size={28} />
             <PlayerName
               playerId={row.playerId}
               name={row.name}
@@ -270,6 +240,11 @@ function LeaderBoard({ groupId, category }) {
               title={row.teamName ? `${row.name} — ${row.teamName}` : row.name}
             />
             <span className="board__value u-num">{row.display}</span>
+            <span
+              className="board__bar"
+              aria-hidden="true"
+              style={{ width: `${barWidth(row.value, best, category.lowerIsBetter) * 100}%` }}
+            />
           </li>
         ))}
       </ol>
@@ -282,8 +257,7 @@ function LeaderBoard({ groupId, category }) {
         className="board__more"
         onClick={() => actions.openLeaderboard(groupId, category.id)}
       >
-        See top 50
-        <IconChevron size={13} />
+        See top 50 <span aria-hidden="true">→</span>
       </button>
     </article>
   );
@@ -292,11 +266,12 @@ function LeaderBoard({ groupId, category }) {
 function LeaderSkeleton() {
   return (
     <div className="leaders__grid" aria-busy="true">
+      <span className="leaders__group" />
       {[0, 1, 2].map((i) => (
         <div className="board" key={i}>
-          <div className="skeleton" style={{ height: 18, width: '40%', margin: 'var(--s-4)' }} />
+          <div className="skeleton" style={{ height: 30, width: '40%', margin: '14px 0' }} />
           {[0, 1, 2, 3, 4].map((r) => (
-            <div className="skeleton" key={r} style={{ height: 14, margin: '10px var(--s-4)' }} />
+            <div className="skeleton" key={r} style={{ height: 18, margin: '16px 0' }} />
           ))}
         </div>
       ))}

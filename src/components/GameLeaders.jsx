@@ -89,7 +89,7 @@ export default function GameLeaders() {
                   title={`Replay: ${row.ab.detail ?? row.context}`}
                 >
                   <span className="gameleaders__rank u-num">{row.rank}</span>
-                  <TeamLogo abbr={row.team} size={18} />
+                  <TeamLogo abbr={row.team} size={30} />
                   <span className="gameleaders__who">
                     <span className="gameleaders__name">{row.name}</span>
                     <span className="gameleaders__context">

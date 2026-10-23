@@ -7,135 +7,116 @@
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(90% 60% at 50% -10%, var(--c-glow) 0%, var(--c-glow-fade) 60%),
-    var(--c-bg);
+  background: var(--c-paper);
 }
 
+/* Screens own their vertical rhythm (each opens on a ruled head), so the body
+   only sets the page gutter. */
 .shell__body {
   width: 100%;
   max-width: var(--shell-max);
   margin: 0 auto;
-  padding: var(--s-6) var(--s-6) var(--s-9);
+  padding: 0 var(--gutter) 56px;
   flex: 1;
 }
 
 .shell__foot {
-  width: 100%;
-  max-width: var(--shell-max);
+  width: calc(100% - 2 * var(--gutter));
+  max-width: calc(var(--shell-max) - 2 * var(--gutter));
   margin: 0 auto;
-  padding: var(--s-4) var(--s-6) var(--s-6);
-  border-top: 1px solid var(--c-line);
-  font-size: var(--t-xs);
-  color: var(--c-text-faint);
+  padding: 20px 0 32px;
+  border-top: 1px solid var(--c-ink);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--c-muted);
 }
 
 .shell__foot p {
-  max-width: 80ch;
+  max-width: 560px;
 }
 
-/* --- Header ------------------------------------------------------------ */
+/* --- Header ------------------------------------------------------------
+   68px, ruled off with a 2px ink line. The active tab is marked by a red bar
+   the full height of the header, the way a section tab on a newspaper's
+   front page is. */
 
 .appbar {
   position: sticky;
   top: 0;
   z-index: 20;
   height: var(--header-h);
-  background: var(--c-appbar-bg);
-  backdrop-filter: saturate(1.4) blur(10px);
-  border-bottom: 1px solid var(--c-line);
+  background: var(--c-paper);
+  border-bottom: 2px solid var(--c-ink);
 }
 
 .appbar__inner {
   height: 100%;
   max-width: var(--shell-max);
   margin: 0 auto;
-  padding: 0 var(--s-6);
+  padding: 0 var(--gutter);
   display: flex;
   align-items: center;
-  gap: var(--s-5);
+  gap: 44px;
 }
 
-.appbar__brand {
+.wordmark {
   display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  font-size: var(--t-lg);
+  align-items: baseline;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-size: 28px;
   font-weight: 700;
-  letter-spacing: -0.035em;
+  line-height: 1;
+  letter-spacing: -0.02em;
   white-space: nowrap;
+  color: var(--c-ink);
 }
 
-.appbar__brand .dim {
-  color: var(--c-accent);
-  font-weight: 300;
+.wordmark em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--c-red);
 }
 
 .appbar__nav {
   display: flex;
-  align-items: center;
-  gap: var(--s-1);
-  margin-left: var(--s-4);
+  align-self: stretch;
+  gap: 30px;
 }
 
 .navlink {
-  position: relative;
-  height: 34px;
-  padding: 0 var(--s-4);
-  border-radius: var(--r-pill);
-  font-size: var(--t-sm);
-  font-weight: 600;
-  color: var(--c-text-muted);
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: var(--s-2);
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 .navlink:hover {
-  background: var(--c-accent-softer);
-  color: var(--c-text);
+  color: var(--c-ink);
 }
 
 .navlink[aria-current='page'] {
-  background: var(--c-accent-soft);
-  color: var(--c-text);
+  font-weight: 700;
+  color: var(--c-ink);
+  box-shadow: inset 0 -4px 0 var(--c-red);
+}
+
+.navlink:focus-visible {
+  border-radius: 0;
 }
 
 .appbar__spacer {
   flex: 1;
 }
 
-.appbar__game {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  height: 38px;
-  padding: 0 var(--s-4);
-  border-radius: var(--r-pill);
-  border: 1px solid var(--c-line);
-  background: var(--c-surface);
-  box-shadow: var(--shadow-xs);
-  font-size: var(--t-sm);
-  font-weight: 600;
-  color: var(--c-text);
-  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
-}
-
-.appbar__game:hover {
-  border-color: var(--c-accent-soft);
-  box-shadow: var(--shadow-sm);
-}
-
-.appbar__game .sep {
-  color: var(--c-text-faint);
-  font-weight: 400;
-}
-
-.appbar__inning {
-  font-size: var(--t-xs);
-  color: var(--c-accent);
-  font-weight: 700;
+/* The status chip sits flush with the game picker; 12px between them. */
+.appbar__status {
+  height: 30px;
+  margin-right: -32px;
 }
 
 /* --- Game switcher menu ----------------------------------------------------- */
@@ -144,19 +125,44 @@
   position: relative;
 }
 
-.appbar__game[aria-expanded='true'] {
-  border-color: var(--c-accent);
-  box-shadow: var(--shadow-sm);
+.appbar__game {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 14px;
+  background: var(--c-ink);
+  color: var(--c-paper);
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.appbar__game:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+.appbar__game .sep {
+  opacity: 0.55;
+  font-weight: 400;
+}
+
+.appbar__inning {
+  font-size: var(--t-xs);
+  color: var(--c-red);
+  font-weight: 600;
+  filter: brightness(1.35);
+}
+
+.appbar__game:hover,
+.appbar__game[aria-expanded='true'] {
+  background: var(--c-red);
+}
+
+.appbar__game:hover .appbar__inning,
+.appbar__game[aria-expanded='true'] .appbar__inning {
+  color: var(--c-paper);
 }
 
 .gamemenu__chev {
   display: grid;
-  color: var(--c-text-muted);
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
@@ -169,12 +175,10 @@
   top: calc(100% + 6px);
   right: 0;
   z-index: 30;
-  width: 244px;
-  padding: var(--s-1);
+  width: 260px;
   background: var(--c-surface-raised);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-lg);
+  border: 2px solid var(--c-ink);
+  box-shadow: var(--shadow-md);
   animation: gamemenu-in var(--dur-fast) var(--ease-out);
   transform-origin: top right;
 }
@@ -182,7 +186,7 @@
 @keyframes gamemenu-in {
   from {
     opacity: 0;
-    transform: translateY(-4px) scale(0.98);
+    transform: translateY(-4px);
   }
 }
 
@@ -200,25 +204,27 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--s-3);
-  padding: 6px var(--s-2);
-  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--c-hair);
   text-align: left;
-  color: var(--c-text);
+  color: var(--c-ink);
 }
 
 .gamemenu__item:hover,
 .gamemenu__item:focus-visible {
-  background: var(--c-accent-softer);
+  background: var(--c-paper-2);
+  box-shadow: none;
   outline: none;
 }
 
 .gamemenu__item[data-current='true'] {
-  background: var(--c-accent-soft);
+  background: var(--c-ink);
+  color: var(--c-paper);
 }
 
 .gamemenu__teams {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
   flex: 1;
 }
@@ -226,52 +232,59 @@
 .gamemenu__team {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: var(--t-sm);
+  gap: 8px;
+  font-size: 14px;
   line-height: 1.25;
 }
 
 .gamemenu__abbr {
-  font-weight: 650;
+  font-weight: 600;
   flex: 1;
 }
 
 .gamemenu__runs {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .gamemenu__status {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-width: 52px;
+  min-width: 56px;
   justify-content: flex-end;
+  font-family: var(--font-num);
   font-size: var(--t-xs);
-  font-weight: 600;
-  color: var(--c-text-muted);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-muted);
   white-space: nowrap;
-  padding-left: var(--s-2);
-  border-left: 1px solid var(--c-line);
+  padding-left: var(--s-3);
+  border-left: 1px solid var(--c-hair);
   align-self: stretch;
 }
 
+.gamemenu__item[data-current='true'] .gamemenu__status {
+  color: inherit;
+  opacity: 0.8;
+}
+
 .gamemenu__status[data-status='live'] {
-  color: var(--c-live);
-  font-weight: 700;
+  color: var(--c-red);
+  font-weight: 600;
 }
 
 .gamemenu__dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--c-live);
+  background: currentColor;
 }
 
 .gamemenu__empty {
   padding: var(--s-3);
   font-size: var(--t-sm);
-  color: var(--c-text-faint);
+  color: var(--c-muted);
 }
 
 .gamemenu__all {
@@ -279,156 +292,164 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: var(--s-1);
-  padding: var(--s-2);
-  border-top: 1px solid var(--c-line);
-  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  padding: 12px;
+  font-family: var(--font-num);
   font-size: var(--t-xs);
   font-weight: 600;
-  color: var(--c-accent);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-red);
 }
 
 .gamemenu__all:hover,
 .gamemenu__all:focus-visible {
-  background: var(--c-accent-softer);
+  background: var(--c-paper-2);
+  box-shadow: none;
   outline: none;
 }
 
-/* --- Page furniture ----------------------------------------------------- */
+/* --- Page furniture -----------------------------------------------------
+   Every screen opens on the same masthead: an 80px serif title, an italic
+   deck under it, controls on the right, and a 2px ink rule beneath. */
 
 .page-head {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
   gap: var(--s-5);
-  margin-bottom: var(--s-5);
+  padding: 40px 0 24px;
+  border-bottom: 2px solid var(--c-ink);
 }
 
+.page-head h1,
 .page-head h2 {
-  font-size: var(--t-2xl);
+  font-size: 80px;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
 }
 
+.page-head__deck,
 .page-head p {
-  color: var(--c-text-muted);
-  font-size: var(--t-md);
-  margin-top: var(--s-1);
+  margin-top: 12px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 21px;
+  line-height: 1.3;
+  color: var(--c-muted);
 }
 
-/* --- Scoreboard date picker ----------------------------------------------- */
-
-.datebar {
+.page-head__aside {
+  margin-left: auto;
   display: flex;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-5);
   flex-shrink: 0;
 }
 
-.datebar__step,
-.datebar__today {
-  font: inherit;
-  font-size: var(--t-sm);
-  color: var(--c-text);
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-sm);
-  padding: var(--s-1) var(--s-3);
-  cursor: pointer;
-  line-height: 1.4;
+/* A section head inside a page: 30px serif title over a 3px ink rule, with
+   chips and controls riding on the same line. */
+.sectionhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid var(--c-ink);
 }
 
-.datebar__step {
-  min-width: 2rem;
-  font-size: var(--t-lg);
-  padding: 0 var(--s-2);
+.sectionhead h2,
+.sectionhead h3 {
+  font-size: 30px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.datebar__step:hover:not(:disabled),
-.datebar__today:hover {
-  border-color: var(--c-accent);
-  color: var(--c-accent);
+.sectionhead__aside {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 0;
 }
 
-.datebar__step:disabled {
-  opacity: 0.35;
-  cursor: default;
+/* Small mono note on a section head ("BEHIND THE PLATE · 1.00×"). */
+.sectionhead__note {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  white-space: nowrap;
 }
 
-.datebar__input {
-  font: inherit;
-  font-size: var(--t-sm);
-  color: var(--c-text);
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-sm);
-  padding: var(--s-1) var(--s-2);
-}
-
-.datebar__input:focus-visible,
-.datebar__step:focus-visible,
-.datebar__today:focus-visible {
-  outline: 2px solid var(--c-accent);
-  outline-offset: 2px;
-}
-
-@media (max-width: 640px) {
-  .page-head {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
+/* --- Panels --------------------------------------------------------------
+   No cards. A panel is a section of the page: its head is a section head and
+   its body sits straight on the paper. The one boxed panel (Action Replay)
+   opts back in with .panel--boxed. */
 
 .panel {
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
+  min-width: 0;
 }
 
 .panel__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s-3);
-  padding: var(--s-4) var(--s-5);
-  border-bottom: 1px solid var(--c-line);
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid var(--c-ink);
 }
 
 .panel__title {
   display: flex;
   align-items: center;
-  gap: var(--s-3);
+  gap: 14px;
+  min-width: 0;
 }
 
 .panel__title h3 {
-  font-size: var(--t-md);
-  font-weight: 650;
+  font-size: 30px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.panel__head > :last-child:not(:first-child) {
+  margin-left: auto;
 }
 
 .panel__body {
-  padding: var(--s-5);
+  padding: var(--s-4) 0;
 }
 
 .panel__body--flush {
   padding: 0;
 }
 
+.panel--boxed {
+  border: 2px solid var(--c-ink);
+}
+
+.panel--boxed > .panel__head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--c-ink);
+}
+
+.panel--boxed > .panel__head h3 {
+  font-size: 24px;
+}
+
 /* Inline notice: backend unreachable, connecting, etc. */
 .notice {
+  margin: var(--s-4) 0;
   padding: var(--s-3) var(--s-4);
-  border-radius: var(--r-md);
-  background: var(--c-accent-softer);
-  border: 1px solid var(--c-line-strong);
-  color: var(--c-text-muted);
-  font-size: var(--t-sm);
+  border: 1px solid var(--c-ink);
+  border-left: 4px solid var(--c-red);
+  color: var(--c-muted);
+  font-size: 14px;
 }
 
 .notice code {
-  font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
-  font-size: var(--t-xs);
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-sm);
+  font-family: var(--font-num);
+  font-size: 12px;
+  background: var(--c-paper-2);
   padding: 1px 5px;
 }
 
@@ -440,291 +461,414 @@
   background-repeat: repeat-x;
 }
 
-/* --- Live screen grid ---------------------------------------------------- */
+/* --- Live screen grid ----------------------------------------------------
+   The score band across the top, then two columns: the replay, its batted-
+   ball numbers and the box score on the left; the play picker and the game
+   leaders in a 420px rail on the right. */
 
 .live {
   display: flex;
   flex-direction: column;
-  gap: var(--s-5);
   min-width: 0;
 }
 
-/* Under the replay: play picker and game leaders on the left, box score on
-   the right taking the rest. */
-.live__lower {
+.live__body {
   display: grid;
-  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
-  gap: var(--s-5);
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 40px;
+  padding-top: 32px;
   align-items: start;
 }
 
+.live__main,
 .live__side {
   display: flex;
   flex-direction: column;
-  gap: var(--s-5);
+  gap: 40px;
   min-width: 0;
 }
 
-@media (max-width: 900px) {
-  .live__lower {
+@media (max-width: 1100px) {
+  .live__body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
-/* --- Scorebug ------------------------------------------------------------ */
-
-.scorebug {
+/* Batted-ball numbers under the replay: four ruled cells. */
+.bbstrip {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) auto minmax(0, 1.1fr);
-  gap: var(--s-5);
-  align-items: center;
-  padding: var(--s-5);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--c-ink);
 }
 
-.scorebug__teams {
+.bbstrip__cell {
+  padding: 14px 16px;
+  border-right: 1px solid var(--c-hair);
+}
+
+.bbstrip__cell:first-child {
+  padding-left: 0;
+}
+
+.bbstrip__cell:last-child {
+  border-right: none;
+}
+
+.bbstrip__label {
+  font-family: var(--font-num);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.bbstrip__value {
+  font-family: var(--font-num);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bbstrip__value small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
+.bbstrip__value[data-yes] {
+  color: var(--c-red);
+}
+
+.bbstrip__value[data-none] {
+  color: var(--c-muted);
+}
+
+/* --- Score band ------------------------------------------------------------ */
+
+.scoreband {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px minmax(0, 560px);
+  border-bottom: 2px solid var(--c-ink);
+}
+
+.scoreband__teams {
   display: flex;
   flex-direction: column;
-  gap: var(--s-2);
+  gap: 6px;
+  padding: 28px 32px 24px 0;
+  min-width: 0;
 }
 
 .scoreteam {
   display: grid;
-  grid-template-columns: 26px 34px minmax(0, 1fr) auto;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-2) var(--s-3);
-  border-radius: var(--r-md);
-  /* Deliberately not transitioned. The club wash comes from custom properties
-     that React rewrites on every snapshot, and transitioning a property across
-     a changing var() substitution leaves the computed value stuck a flip
-     behind -- the row keeps the previous batting team's colour. A scorebug
-     should snap when the side changes anyway. */
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--c-hair);
 }
 
-/* The side at bat wears its club colour: a wash plus a spine on the left edge.
-   Falls back to the generic accent when we have no colours for the team. */
-.scoreteam[data-batting='true'] {
-  background-color: var(--team-wash, var(--c-accent-softer));
-  box-shadow: inset 3px 0 0 var(--team, var(--c-accent));
-}
-
-.scoreteam__abbr {
-  display: grid;
-  place-items: center;
-  height: 26px;
-  border-radius: var(--r-sm);
-  background: var(--c-surface-sunken);
-  border: 1px solid var(--c-line);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+.scoreteam__id {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-width: 0;
 }
 
 .scoreteam__name {
+  font-family: var(--font-display);
+  font-size: 40px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.scoreteam__record {
-  font-size: var(--t-xs);
-  color: var(--c-text-faint);
-  font-weight: 500;
-  margin-left: var(--s-2);
-}
-
-.scoreteam__runs {
-  font-size: var(--t-xl);
-  font-weight: 700;
-  min-width: 1.6ch;
-  text-align: right;
-}
-
-.scorebug__matchup {
-  margin-top: var(--s-2);
-  padding: 0 var(--s-3);
-  font-size: var(--t-sm);
-  color: var(--c-text-muted);
-}
-
-.scorebug__matchup .u-eyebrow {
-  margin-right: var(--s-2);
-}
-
-.scorebug__detail {
-  font-size: var(--t-sm);
-  color: var(--c-text-muted);
-  margin-top: var(--s-1);
-}
-
-.scorebug__state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--s-3);
-  padding: 0 var(--s-5);
-  border-left: 1px solid var(--c-line);
-  border-right: 1px solid var(--c-line);
-  align-self: stretch;
-  justify-content: center;
-}
-
-.scorebug__inning {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  font-weight: 700;
-  font-size: var(--t-md);
-}
-
-.scorebug__half {
-  color: var(--c-accent);
-  font-size: 10px;
   line-height: 1;
 }
 
-.count {
+.scoreteam__record {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
+.scoreteam__bat {
+  align-self: center;
+  padding: 3px 7px;
+  background: var(--c-red);
+  color: var(--c-paper);
+  font-family: var(--font-num);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.scoreteam__runs {
+  font-size: 64px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.scoreband__matchup {
   display: flex;
-  gap: var(--s-4);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-top: 8px;
+  font-size: 15px;
+}
+
+.scoreband__kicker {
+  font-family: var(--font-num);
   font-size: var(--t-xs);
-  color: var(--c-text-muted);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-red);
 }
 
-.count__group {
+.scoreband__who {
+  font-weight: 600;
+}
+
+.scoreband__vs {
+  color: var(--c-muted);
+}
+
+.scoreband__deck {
+  margin-left: auto;
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--c-muted);
+}
+
+.scoreband__state {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--s-2);
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  border-left: 1px solid var(--c-ink);
+  border-right: 1px solid var(--c-ink);
 }
 
-.count__label {
-  font-weight: 700;
-  letter-spacing: 0.06em;
+.scoreband__inning {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-style: italic;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.scoreband__inning > span {
+  color: var(--c-red);
+}
+
+.scoreband__idle {
+  text-align: center;
+}
+
+.scoreband__detail {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--c-muted);
+}
+
+/* Three rotated squares, second base on top. */
+.diamond {
+  position: relative;
+  width: 92px;
+  height: 64px;
+}
+
+.diamond__base {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  transform: rotate(45deg);
+  background: var(--c-red);
+  opacity: 0.18;
+  transition: opacity var(--dur-med) var(--ease-out);
+}
+
+.diamond__base[data-occupied='true'] {
+  opacity: 1;
+}
+
+.diamond__base--second {
+  left: 34px;
+  top: 2px;
+}
+
+.diamond__base--third {
+  left: 6px;
+  top: 30px;
+}
+
+.diamond__base--first {
+  left: 62px;
+  top: 30px;
+}
+
+.count {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 6px 12px;
+  align-items: center;
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .pips {
   display: flex;
-  gap: 3px;
+  gap: 5px;
 }
 
 .pip {
-  width: 8px;
-  height: 8px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  border: 1px solid var(--c-line-strong);
-  background: transparent;
+  background: var(--c-ink);
+  opacity: 0.18;
+}
+
+.pip--out {
+  background: var(--c-red);
 }
 
 .pip[data-on='true'] {
-  background: var(--c-accent);
-  border-color: var(--c-accent);
+  opacity: 1;
 }
 
-.pip--out[data-on='true'] {
-  background: var(--c-seam);
-  border-color: var(--c-seam);
+.scoreband__line {
+  display: flex;
+  align-items: center;
+  padding: 28px 0 24px 32px;
+  min-width: 0;
 }
 
-/* Bases, laid out the way they sit on a field seen from behind home: second at
-   the top, first to the right, third to the left, home plate at the bottom.
-   Each base is a square turned 45deg. Rotating the *container* instead drags
-   the bases off the diamond's points and they read as a cross. */
-.diamond {
-  position: relative;
-  width: 64px;
-  height: 60px;
-  flex: none;
-}
-
-/* Positioned by centre — the negative margins do the centring so `transform`
-   is free to carry the 45deg turn on its own. */
-.diamond__base {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  border-radius: 3px;
-  border: 1.5px solid var(--c-line-strong);
-  background: var(--c-surface-sunken);
-  transform: rotate(45deg);
-  transition: background var(--dur-med) var(--ease-out), border-color var(--dur-med) var(--ease-out);
-}
-
-.diamond__base[data-occupied='true'] {
-  background: var(--c-accent);
-  border-color: var(--c-accent-hover);
-}
-
-.diamond__base--second {
-  left: 32px;
-  top: 13px;
-}
-
-.diamond__base--first {
-  left: 48px;
-  top: 29px;
-}
-
-.diamond__base--third {
-  left: 16px;
-  top: 29px;
-}
-
-/* Home plate: orientation only, never occupied, so it stays quiet. */
-.diamond__home {
-  position: absolute;
-  left: 32px;
-  top: 45px;
-  width: 12px;
-  height: 12px;
-  margin: -6px 0 0 -6px;
-  border-radius: 2px;
-  border: 1.5px solid var(--c-line);
-  transform: rotate(45deg);
-}
-
-/* Line score table */
 .linescore {
-  overflow-x: auto;
-}
-
-.linescore table {
-  border-collapse: collapse;
   width: 100%;
-  font-size: var(--t-sm);
+  border: 2px solid var(--c-ink);
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .linescore th,
 .linescore td {
-  padding: var(--s-2) 0;
+  padding: 12px 0;
   text-align: center;
-  min-width: 26px;
-  font-variant-numeric: tabular-nums;
+  border-left: 1px solid var(--c-hair);
 }
 
 .linescore thead th {
+  padding: 8px 0;
+  border-bottom: 2px solid var(--c-ink);
   font-size: var(--t-xs);
-  font-weight: 600;
-  color: var(--c-text-faint);
-  border-bottom: 1px solid var(--c-line);
+  color: var(--c-muted);
+}
+
+.linescore th:first-child {
+  width: 56px;
+  padding-left: 8px;
+  text-align: left;
+  border-left: none;
 }
 
 .linescore tbody th {
-  text-align: left;
-  font-weight: 700;
-  font-size: var(--t-xs);
-  letter-spacing: 0.04em;
-  padding-right: var(--s-3);
+  font-weight: 600;
+}
+
+.linescore tbody tr + tr {
+  border-top: 1px solid var(--c-hair);
 }
 
 .linescore .total {
-  font-weight: 700;
-  border-left: 1px solid var(--c-line);
+  width: 40px;
+  font-weight: 600;
+  color: var(--c-ink);
+  border-left-color: var(--c-ink);
 }
 
-.linescore .empty {
-  color: var(--c-line-strong);
+.linescore .total--first {
+  border-left: 2px solid var(--c-ink);
 }
+
+.linescore td[data-current] {
+  background: var(--c-red);
+  color: var(--c-paper);
+  font-weight: 600;
+}
+
+@media (max-width: 1240px) {
+  .scoreband {
+    grid-template-columns: minmax(0, 1fr) 210px;
+  }
+
+  .scoreband__state {
+    border-right: none;
+  }
+
+  .scoreband__line {
+    grid-column: 1 / -1;
+    padding: 20px 0;
+    border-top: 1px solid var(--c-ink);
+  }
+}
+
+@media (max-width: 760px) {
+  .scoreband {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scoreband__teams {
+    padding-right: 0;
+  }
+
+  .scoreband__state {
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 14px 0;
+    border: none;
+    border-top: 1px solid var(--c-ink);
+  }
+
+  .scoreteam {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+  }
+
+  .scoreteam .teamlogo {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .scoreteam__name {
+    font-size: 28px;
+  }
+
+  .scoreteam__runs {
+    font-size: 44px;
+  }
+
+  .linescore {
+    font-size: 12px;
+  }
+
+  .linescore th:first-child {
+    width: 44px;
+  }
+
+  .linescore .total {
+    width: 30px;
+  }
+}
+
 
 /* --- Replay viewport ------------------------------------------------------ */
 
@@ -746,21 +890,11 @@
      mount, so a wider stage is simply more field at the sides. The floor keeps
      a very short window from squashing it to a letterbox. */
   max-height: max(320px, calc(100dvh - var(--header-h) - 96px));
-  background:
-    radial-gradient(70% 80% at 50% 110%, var(--c-accent-softer) 0%, rgba(242, 231, 214, 0) 60%),
-    var(--c-surface-sunken);
+  /* Ink in both themes: the 3D scene is a picture set into the page, and a
+     photo well on newsprint is black. */
+  background: #17150f;
   overflow: hidden;
   isolation: isolate;
-}
-
-/* The closing rail under the stage. Same surface and hairline as .panel__head
-   above the stage, at half its vertical padding and with nothing in it — it is
-   a border, not a second banner, so it carries no text and never grows to fit
-   any. Keep the two in step if the head's padding changes. */
-.viewport__foot {
-  height: var(--s-4);
-  border-top: 1px solid var(--c-line);
-  background: var(--c-surface);
 }
 
 /* The mount node. Deliberately empty — the replay engine owns everything
@@ -901,11 +1035,13 @@
 }
 
 .hud {
-  --hud-bg: rgba(10, 14, 18, 0.64);
-  --hud-line: rgba(255, 255, 255, 0.12);
-  --hud-text: #f5f3ee;
-  --hud-muted: rgba(245, 243, 238, 0.62);
-  --hud-accent: #ffd34d;
+  /* Ink and paper with the lifted press red: the HUD is a printed overlay on
+     the photo well, the same in both themes. */
+  --hud-bg: rgba(23, 21, 15, 0.88);
+  --hud-line: rgba(243, 239, 230, 0.22);
+  --hud-text: #f3efe6;
+  --hud-muted: rgba(243, 239, 230, 0.62);
+  --hud-accent: #e86246;
   --hud-pad: clamp(8px, 1.6cqw, 28px);
 
   position: absolute;
@@ -936,7 +1072,7 @@
 .hud__panel {
   background: var(--hud-bg);
   border: 1px solid var(--hud-line);
-  border-radius: 0.6em;
+  border-radius: 0;
   backdrop-filter: blur(8px) saturate(1.2);
   -webkit-backdrop-filter: blur(8px) saturate(1.2);
   box-shadow: 0 0.4em 1.4em -0.6em rgba(0, 0, 0, 0.5);
@@ -1061,7 +1197,7 @@
 
 .hud__tag {
   padding: 0.3em 0.7em;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--hud-accent);
   color: #1b1405;
   font-size: 0.8em;
@@ -1090,7 +1226,7 @@
   transform: translateX(-50%);
   max-width: min(92%, 34em);
   padding: 0.6em 0.9em;
-  border-radius: 0.6em;
+  border-radius: 0;
   background: var(--hud-bg);
   border: 1px solid var(--hud-line);
   backdrop-filter: blur(6px);
@@ -1154,7 +1290,7 @@
   min-height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 0.5em;
+  border-radius: 0;
   color: var(--hud-text);
   background: var(--hud-bg);
   border: 1px solid var(--hud-line);
@@ -1222,7 +1358,7 @@
   font-weight: 700;
   color: var(--hud-muted);
   border: 1px solid var(--hud-line);
-  border-radius: 0.3em;
+  border-radius: 0;
   padding: 0 0.3em;
 }
 
@@ -1256,7 +1392,7 @@
 .hud__result {
   flex-shrink: 0;
   padding: 0.15em 0.55em;
-  border-radius: 999px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.14);
   font-size: 0.78em;
   font-weight: 800;
@@ -1370,10 +1506,10 @@
    same in the panel and at full screen. The scene stays visible, dimmed,
    behind it. */
 .interlude {
-  --hud-text: #f5f3ee;
-  --hud-muted: rgba(245, 243, 238, 0.62);
-  --hud-line: rgba(255, 255, 255, 0.12);
-  --hud-accent: #ffd34d;
+  --hud-text: #f3efe6;
+  --hud-muted: rgba(243, 239, 230, 0.62);
+  --hud-line: rgba(243, 239, 230, 0.22);
+  --hud-accent: var(--c-final); /* the gold "Final" */
 
   position: absolute;
   inset: 0;
@@ -1405,7 +1541,7 @@
   padding: 1.6em 2.6em 1.8em;
   background: rgba(10, 14, 18, 0.7);
   border: 1px solid var(--hud-line);
-  border-radius: 0.9em;
+  border-radius: 0;
   box-shadow: 0 1em 3em -1em rgba(0, 0, 0, 0.6);
   text-align: center;
   animation: hud-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -1629,7 +1765,9 @@
   color: var(--c-warn-ink);
 }
 
-/* --- Select ---------------------------------------------------------------- */
+/* --- Select ----------------------------------------------------------------
+   A native select dressed as a 1px ink box: full-width in Action Replay, a
+   small uppercase one on a section head (Game leaders). */
 
 .select {
   position: relative;
@@ -1642,136 +1780,185 @@
   appearance: none;
   width: 100%;
   min-width: 0;
-  height: 36px;
-  padding: 0 calc(var(--s-4) + 18px) 0 var(--s-4);
-  border: 1px solid var(--c-line-strong);
-  border-radius: var(--r-md);
-  background: var(--c-surface);
-  color: var(--c-text);
+  height: 42px;
+  padding: 0 34px 0 12px;
+  border: 1px solid var(--c-ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--c-ink);
   font: inherit;
-  font-size: var(--t-sm);
+  font-size: 15px;
   font-weight: 600;
   text-overflow: ellipsis;
   cursor: pointer;
-  transition: border-color var(--dur-fast) var(--ease-out),
-    background var(--dur-fast) var(--ease-out);
 }
 
 .select__input:hover {
-  background: var(--c-accent-softer);
+  background: var(--c-paper-2);
 }
 
 .select__input:focus-visible {
-  outline: 2px solid var(--c-accent);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .select__input option,
 .select__input optgroup {
-  background: var(--c-surface);
-  color: var(--c-text);
+  background: var(--c-surface-raised);
+  color: var(--c-ink);
 }
 
 .select__chevron {
   position: absolute;
-  right: var(--s-3);
+  right: 12px;
   display: grid;
   place-items: center;
-  color: var(--c-text-faint);
+  color: var(--c-ink);
   pointer-events: none;
 }
 
 .select--sm .select__input {
   height: 30px;
-  padding-left: var(--s-3);
-  border-radius: var(--r-pill);
-  font-size: var(--t-xs);
+  padding-left: 10px;
+  padding-right: 28px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-/* --- Action replay (play picker) ------------------------------------------- */
+.select--sm .select__chevron {
+  right: 9px;
+}
+
+/* --- Action replay (play picker) -------------------------------------------- */
 
 .actionreplay__body {
   display: flex;
   flex-direction: column;
-  gap: var(--s-3);
-  padding: var(--s-4) var(--s-5);
-}
-
-.actionreplay .panel__head,
-.gameleaders .panel__head {
-  padding-top: var(--s-3);
-  padding-bottom: var(--s-3);
+  gap: 10px;
+  padding: 16px;
 }
 
 .actionreplay__steps {
   display: flex;
-  align-items: center;
-  gap: var(--s-1);
+  align-items: stretch;
+  gap: 6px;
 }
 
 .actionreplay__highlights {
-  height: 30px;
-  margin-right: var(--s-1);
-  gap: var(--s-1);
-  padding: 0 var(--s-3);
+  gap: 6px;
 }
 
 .actionreplay__highlights[aria-pressed='true'] {
-  background: var(--c-accent-softer);
-  color: var(--c-text);
+  background: var(--c-red);
 }
 
 .actionreplay__step {
   width: 30px;
-  height: 30px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--c-line-strong);
-  border-radius: 50%;
-  color: var(--c-text-muted);
+  border: 1px solid var(--c-ink);
+  color: var(--c-ink);
   transition: background var(--dur-fast) var(--ease-out);
 }
 
 .actionreplay__step:hover:not(:disabled) {
-  background: var(--c-accent-softer);
-  color: var(--c-text);
+  background: var(--c-ink);
+  color: var(--c-paper);
 }
 
 .actionreplay__step:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
-.actionreplay__step:focus-visible {
-  outline: 2px solid var(--c-accent);
-  outline-offset: 2px;
-}
-
 .actionreplay__detail {
-  font-size: var(--t-sm);
-  color: var(--c-text-muted);
+  font-size: 15px;
   line-height: 1.45;
 }
 
 .actionreplay__inning {
-  display: inline-block;
-  margin-right: var(--s-2);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  color: var(--c-text-faint);
+  margin-right: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-red);
 }
 
 .actionreplay__empty,
 .gameleaders__empty {
-  color: var(--c-text-faint);
-  font-size: var(--t-sm);
-  text-align: center;
+  color: var(--c-muted);
+  font-size: 14px;
+}
+
+/* The running play-by-play under the picker. About seven rows on show; the
+   selected one is set in reverse, like a highlighted line in a box score. */
+.pbp {
+  max-height: 300px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+}
+
+.pbp__row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border-top: 1px solid var(--c-hair);
+  text-align: left;
+}
+
+.pbp__row:hover {
+  background: var(--c-paper-2);
+}
+
+.pbp__row:focus-visible {
+  border-radius: 0;
+}
+
+.pbp__row[aria-current='true'] {
+  background: var(--c-ink);
+  color: var(--c-paper);
+  border-top-color: var(--c-ink);
+}
+
+.pbp__inning {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-muted);
+}
+
+.pbp__play {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pbp__who {
+  font-weight: 400;
+  color: var(--c-muted);
+}
+
+.pbp__ev {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
+.pbp__row[aria-current='true'] .pbp__inning,
+.pbp__row[aria-current='true'] .pbp__who,
+.pbp__row[aria-current='true'] .pbp__ev {
+  color: inherit;
 }
 
 /* --- Game leaders ------------------------------------------------------------ */
 
 .gameleaders__empty {
-  padding: var(--s-6) var(--s-5);
+  padding: var(--s-5) 0;
 }
 
 /* Five rows on show, the rest a scroll away (GameLeaders.jsx sizes it). The
@@ -1785,39 +1972,35 @@
 
 .gameleaders__row {
   display: grid;
-  grid-template-columns: 16px 18px minmax(0, 1fr) auto;
+  grid-template-columns: 18px 30px minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--s-3);
+  gap: 12px;
   width: 100%;
-  padding: var(--s-3) var(--s-5);
-  border-bottom: 1px solid var(--c-line);
+  padding: 11px 0;
+  border-bottom: 1px solid var(--c-hair);
   text-align: left;
-  /* The player's club colour as a hairline, same as the league boards. */
-  box-shadow: inset 3px 0 0 var(--team, transparent);
   transition: background var(--dur-fast) var(--ease-out);
 }
 
-.gameleaders__list li:last-child .gameleaders__row {
-  border-bottom: none;
-}
-
 .gameleaders__row:hover {
-  background: var(--c-surface-sunken);
+  background: var(--c-paper-2);
 }
 
 .gameleaders__row[aria-current='true'] {
-  background: var(--c-accent-softer);
+  box-shadow: inset 3px 0 0 var(--c-red);
+  padding-left: 8px;
+  margin-left: -8px;
+  width: calc(100% + 8px);
 }
 
 .gameleaders__row:focus-visible {
-  outline: 2px solid var(--c-accent);
-  outline-offset: -2px;
+  border-radius: 0;
 }
 
 .gameleaders__rank {
-  font-size: var(--t-xs);
-  font-weight: 700;
-  color: var(--c-text-faint);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--c-muted);
 }
 
 .gameleaders__who {
@@ -1834,97 +2017,144 @@
 }
 
 .gameleaders__name {
-  font-size: var(--t-sm);
+  font-size: 15px;
   font-weight: 600;
 }
 
 .gameleaders__context {
-  font-size: var(--t-xs);
-  color: var(--c-text-faint);
+  font-size: 12px;
+  color: var(--c-muted);
 }
 
 .gameleaders__value {
-  font-size: var(--t-md);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 18px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .gameleaders__value small {
-  margin-left: 2px;
-  font-size: var(--t-xs);
+  margin-left: 4px;
+  font-size: 11px;
   font-weight: 500;
-  color: var(--c-text-faint);
+  color: var(--c-muted);
 }
 
-/* --- Box score ------------------------------------------------------------ */
+/* --- Box score ------------------------------------------------------------
+   Team tabs on the left of the head (ink fill when chosen), Batting and
+   Pitching on the right with the red underline. */
 
 .tabs {
   display: flex;
-  gap: var(--s-1);
-  padding: var(--s-2);
-  background: var(--c-surface-sunken);
-  border-radius: var(--r-pill);
+  gap: 4px;
 }
 
 .tabs__btn {
-  height: 28px;
-  padding: 0 var(--s-4);
-  border-radius: var(--r-pill);
-  font-size: var(--t-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--c-line-strong);
+  font-family: var(--font-num);
+  font-size: 13px;
   font-weight: 600;
-  color: var(--c-text-muted);
+  color: var(--c-ink);
+}
+
+.tabs__btn:hover {
+  border-color: var(--c-ink);
 }
 
 .tabs__btn[aria-selected='true'] {
-  background: var(--c-surface);
-  color: var(--c-text);
-  box-shadow: var(--shadow-xs);
+  background: var(--c-ink);
+  border-color: var(--c-ink);
+  color: var(--c-paper);
+}
+
+.tabs__btn:focus-visible {
+  border-radius: 0;
+}
+
+.tabs--line {
+  gap: 20px;
+}
+
+.tabs--line .tabs__btn {
+  height: auto;
+  padding: 0 0 4px;
+  border: none;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.tabs--line .tabs__btn[aria-selected='true'] {
+  background: none;
+  color: var(--c-ink);
+  font-weight: 700;
+  box-shadow: inset 0 -3px 0 var(--c-red);
+}
+
+.boxscore .panel__head {
+  gap: 20px;
 }
 
 .statable {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--t-sm);
 }
 
 .statable th,
 .statable td {
-  padding: var(--s-3) var(--s-4);
+  padding: 10px 0 10px 12px;
   text-align: right;
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .statable th:first-child,
 .statable td:first-child {
+  padding-left: 0;
   text-align: left;
+  width: 100%;
 }
 
 .statable thead th {
+  font-family: var(--font-num);
   font-size: var(--t-xs);
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--c-text-faint);
-  border-bottom: 1px solid var(--c-line);
+  color: var(--c-muted);
+  border-bottom: 1px solid var(--c-ink);
   position: sticky;
   top: 0;
-  background: var(--c-surface);
+  background: var(--c-paper);
+}
+
+.statable td {
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  min-width: 58px;
+}
+
+.statable td:first-child {
+  font-family: var(--font-sans);
 }
 
 .statable tbody tr {
-  border-bottom: 1px solid var(--c-line);
-}
-
-.statable tbody tr:last-child {
-  border-bottom: none;
+  border-bottom: 1px solid var(--c-hair);
 }
 
 .statable tbody tr:hover {
-  background: var(--c-surface-sunken);
+  background: var(--c-paper-2);
 }
 
 .statable__name {
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -1942,10 +2172,11 @@
 }
 
 .statable__pos {
-  color: var(--c-text-faint);
-  font-weight: 500;
-  margin-left: var(--s-2);
+  margin-left: 8px;
+  font-family: var(--font-num);
   font-size: var(--t-xs);
+  font-weight: 500;
+  color: var(--c-muted);
 }
 
 .linkish {
@@ -1955,276 +2186,606 @@
 }
 
 .linkish:hover {
-  color: var(--c-accent);
+  color: var(--c-red);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-/* --- Game list ------------------------------------------------------------ */
 
-.gamegrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--s-5);
+/* --- Game list -------------------------------------------------------------
+   The date control is one 2px ink box: ‹ date › and an inverted TODAY. Below
+   it, three columns of cards: live, upcoming, final. */
+
+.datebox {
+  display: flex;
+  align-items: stretch;
+  border: 2px solid var(--c-ink);
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.gamecard {
+.datebox__step {
+  padding: 8px 14px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.datebox__step:hover:not(:disabled),
+.datebox__today:hover {
+  background: var(--c-paper-2);
+}
+
+.datebox__step:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.datebox__input {
+  padding: 8px 14px;
+  border: none;
+  border-left: 1px solid var(--c-ink);
+  border-right: 1px solid var(--c-ink);
+  background: transparent;
+  color: var(--c-ink);
+  font: inherit;
+}
+
+.datebox__today {
+  padding: 8px 16px;
+  border-left: 2px solid var(--c-ink);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.datebox__today[aria-pressed='true'] {
+  background: var(--c-ink);
+  color: var(--c-paper);
+}
+
+.datebox :focus-visible {
+  border-radius: 0;
+}
+
+.games__count {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-red);
+  white-space: nowrap;
+}
+
+.games__count[data-none] {
+  color: var(--c-muted);
+}
+
+.games__columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  padding-top: 8px;
+}
+
+.games__colhead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0 14px;
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.games__colhead > span:first-child {
+  color: var(--c-red);
+}
+
+.games__rule {
+  flex: 1;
+  height: 1px;
+  background: var(--c-ink);
+}
+
+.games__none {
+  padding: 16px 0;
+  color: var(--c-muted);
+  font-size: 14px;
+}
+
+.games__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gcard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 2px solid var(--c-ink);
   text-align: left;
-  padding: var(--s-5);
+  transition: box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+.gcard:hover {
+  box-shadow: 4px 4px 0 var(--c-ink);
+  transform: translate(-2px, -2px);
+}
+
+.gcard:focus-visible {
+  border-radius: 0;
+}
+
+.gcard__bar {
   display: flex;
-  flex-direction: column;
-  gap: var(--s-4);
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--dur-med) var(--ease-out), box-shadow var(--dur-med) var(--ease-out),
-    border-color var(--dur-med) var(--ease-out);
+  height: 6px;
 }
 
-.gamecard:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--c-accent-soft);
+.gcard__bar > span {
+  flex: 1;
 }
 
-.gamecard[aria-current='true'] {
-  border-color: var(--c-accent);
-  box-shadow: var(--shadow-md);
-}
-
-.gamecard__head {
+.gcard__head {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: var(--s-3);
-}
-
-.gamecard__venue {
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 4px;
+  font-family: var(--font-num);
   font-size: var(--t-xs);
-  color: var(--c-text-faint);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
 }
 
-/* A followed club's game. The venue takes the flexible middle of the head row,
-   so the star sits hard against the right edge whatever the venue is called. */
-.gamecard__venue {
-  margin-right: auto;
+.gcard__status {
+  font-weight: 600;
+  color: var(--c-ink);
+  white-space: nowrap;
 }
 
-.gamecard__fav {
-  display: grid;
-  place-items: center;
-  color: var(--c-accent);
+.gcard[data-status='live'] .gcard__status {
+  color: var(--c-red);
 }
 
-.gamecard[data-favorite] {
-  border-color: var(--c-line-strong);
+.gcard__fav {
+  color: var(--c-red);
 }
 
-.gamecard__teams {
+.gcard__venue {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gcard__teams {
   display: flex;
   flex-direction: column;
-  gap: var(--s-2);
+  padding: 4px 16px 12px;
 }
 
-.gamecard__row {
+.gcard__row {
   display: grid;
-  grid-template-columns: 38px 1fr auto;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--s-3);
+  gap: 12px;
+  padding: 6px 0;
 }
 
-.gamecard__row[data-leading='true'] .gamecard__runs {
-  color: var(--c-text);
+.gcard__row[data-lost] {
+  opacity: 0.45;
 }
 
-.gamecard__runs {
-  font-size: var(--t-lg);
-  font-weight: 700;
-  color: var(--c-text-muted);
-  font-variant-numeric: tabular-nums;
+.gcard__name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.gamecard__foot {
+.gcard__runs {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.gcard__foot {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  font-size: var(--t-sm);
-  color: var(--c-text-muted);
-  padding-top: var(--s-3);
-  border-top: 1px solid var(--c-line);
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid var(--c-ink);
+  font-size: 14px;
 }
 
-.gamelist__section + .gamelist__section {
-  margin-top: var(--s-7);
+.gcard__detail {
+  color: var(--c-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.gamelist__section h3 {
-  margin-bottom: var(--s-4);
+.gcard__cta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-/* --- Settings ------------------------------------------------------------- */
+.gcard__cta--on {
+  color: var(--c-red);
+}
 
-.settings {
-  max-width: 760px;
+.gcard__cta--on::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* An empty day: a headline and a way out. */
+.emptyday {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 56px;
+  align-items: end;
+  padding: 72px 0 80px;
+}
+
+.emptyday__title {
+  margin-top: 14px;
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.emptyday__text {
+  max-width: 560px;
+  margin-top: 18px;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--c-muted);
+}
+
+.emptyday__links {
   display: flex;
   flex-direction: column;
-  gap: var(--s-5);
+  border-top: 3px solid var(--c-ink);
+}
+
+.emptyday__link {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--c-ink);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.emptyday__link:hover:not(:disabled) {
+  color: var(--c-red);
+}
+
+.emptyday__link:disabled {
+  cursor: default;
+  color: var(--c-muted);
+}
+
+@media (max-width: 1100px) {
+  .games__columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .games__stack {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  }
+
+  .emptyday {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    padding: 48px 0;
+  }
+}
+
+
+/* --- Settings -------------------------------------------------------------
+   Favourite teams across the full width, then the preferences in two ruled
+   columns. Controls are square: segmented in a 1.5px ink outline, a 52×28
+   switch that fills red, a hairline slider with an ink tick for a thumb. */
+
+.favteams {
+  padding-top: 32px;
+}
+
+.favteams__head {
+  align-items: baseline;
+  gap: 16px;
+}
+
+.favteams__head h2 {
+  font-size: 32px;
+}
+
+.favteams__mark {
+  color: var(--c-red);
+}
+
+.favteams__hint {
+  font-size: 15px;
+  color: var(--c-muted);
+  min-width: 0;
+}
+
+.favteams__grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  border-left: 1px solid var(--c-hair);
+}
+
+.favteams__team {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-right: 1px solid var(--c-hair);
+  border-bottom: 1px solid var(--c-hair);
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.favteams__team:hover {
+  background: var(--c-paper-2);
+}
+
+.favteams__team:focus-visible {
+  border-radius: 0;
+}
+
+.favteams__team[aria-pressed='true'] {
+  background: var(--c-ink);
+  color: var(--c-paper);
+}
+
+/* The fallback disc gets a paper ring so a dark club colour does not merge
+   into the ink cell. Logos swap to their on-ink mark instead (onInk). */
+.favteams__team[aria-pressed='true'] .teamlogo--mono {
+  box-shadow: 0 0 0 2px var(--c-paper);
+}
+
+.favteams__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.favteams__team[aria-pressed='true'] .favteams__name {
+  font-weight: 600;
+}
+
+.favteams__main {
+  font-family: var(--font-num);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.favteams__star {
+  color: var(--c-muted);
+}
+
+.favteams__team[aria-pressed='true'] .favteams__star {
+  color: var(--c-red);
+  filter: brightness(1.3);
+}
+
+.settings__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 48px;
+  padding: 44px 0 8px;
+  align-items: start;
+}
+
+.settings__title {
+  padding-bottom: 12px;
+  border-bottom: 3px solid var(--c-ink);
+  font-size: 32px;
+  line-height: 1;
 }
 
 .setting {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s-5);
-  padding: var(--s-4) var(--s-5);
-  border-bottom: 1px solid var(--c-line);
-}
-
-.setting:last-child {
-  border-bottom: none;
+  gap: 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--c-hair);
 }
 
 .setting__label {
+  font-size: 17px;
   font-weight: 600;
 }
 
 .setting__hint {
-  font-size: var(--t-sm);
-  color: var(--c-text-muted);
-  margin-top: 2px;
-  max-width: 52ch;
-}
-
-/* Right-hand control cluster of a settings row (test buttons + a switch). */
-.setting__controls {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  flex: none;
+  max-width: 400px;
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--c-muted);
 }
 
 .segmented {
   display: inline-flex;
-  padding: 3px;
-  gap: 2px;
-  background: var(--c-surface-sunken);
-  border-radius: var(--r-pill);
-  border: 1px solid var(--c-line);
+  border: 1.5px solid var(--c-ink);
   flex: none;
 }
 
 .segmented button {
-  height: 28px;
-  padding: 0 var(--s-4);
-  border-radius: var(--r-pill);
-  font-size: var(--t-sm);
-  font-weight: 600;
-  color: var(--c-text-muted);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-muted);
   white-space: nowrap;
 }
 
+.segmented button:hover {
+  color: var(--c-ink);
+}
+
 .segmented button[aria-pressed='true'] {
-  background: var(--c-surface);
-  color: var(--c-text);
-  box-shadow: var(--shadow-xs);
+  background: var(--c-ink);
+  color: var(--c-paper);
+  font-weight: 600;
+}
+
+.segmented button:focus-visible {
+  border-radius: 0;
 }
 
 .switch {
   position: relative;
-  width: 46px;
-  height: 26px;
-  border-radius: var(--r-pill);
-  background: var(--c-line-strong);
-  border: none;
+  width: 52px;
+  height: 28px;
+  border: 1.5px solid var(--c-ink);
   flex: none;
-  transition: background var(--dur-med) var(--ease-out);
-}
-
-.switch[aria-checked='true'] {
-  background: var(--c-accent);
+  transition: background var(--dur-med) var(--ease-out), border-color var(--dur-med) var(--ease-out);
 }
 
 .switch::after {
   content: '';
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--c-knob);
-  box-shadow: var(--shadow-xs);
-  transition: transform var(--dur-med) var(--ease-out);
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  background: var(--c-ink);
+  transition: transform var(--dur-med) var(--ease-out), background var(--dur-med) var(--ease-out);
+}
+
+.switch[aria-checked='true'] {
+  background: var(--c-red);
+  border-color: var(--c-red);
 }
 
 .switch[aria-checked='true']::after {
-  transform: translateX(20px);
+  background: var(--c-paper);
+  transform: translateX(24px);
 }
 
-/* A range input dressed to match the switch: the same accent for the part
-   that is "on", the same track grey for the rest, the same knob. `--fill` is
-   set inline from the value, because only Firefox can colour the filled side
-   of a range on its own. */
+.switch:focus-visible {
+  border-radius: 0;
+}
+
+/* A range input as a 2px rule: red for the part that is "on", a faint rule
+   for the rest, and a 4×18 ink tick for the thumb. `--fill` is set inline
+   from the value, because only Firefox can colour the filled side of a range
+   on its own. */
 .slider {
   display: flex;
   align-items: center;
-  gap: var(--s-3);
+  gap: 12px;
   flex: none;
 }
 
 .slider input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
-  width: 180px;
-  height: 6px;
-  border-radius: var(--r-pill);
+  width: 170px;
+  height: 18px;
   background: linear-gradient(
-    to right,
-    var(--c-accent) 0 var(--fill, 50%),
-    var(--c-line-strong) var(--fill, 50%) 100%
-  );
+      to right,
+      var(--c-red) 0 var(--fill, 50%),
+      var(--c-line-strong) var(--fill, 50%) 100%
+    )
+    center / 100% 2px no-repeat;
   cursor: pointer;
 }
 
 .slider input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--c-knob);
-  border: 1px solid var(--c-line-strong);
-  box-shadow: var(--shadow-xs);
+  width: 4px;
+  height: 18px;
+  border: none;
+  border-radius: 0;
+  background: var(--c-ink);
 }
 
 .slider input[type='range']::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--c-knob);
-  border: 1px solid var(--c-line-strong);
-  box-shadow: var(--shadow-xs);
+  width: 4px;
+  height: 18px;
+  border: none;
+  border-radius: 0;
+  background: var(--c-ink);
 }
 
 .slider input[type='range']:focus-visible {
-  outline: 2px solid var(--c-accent);
-  outline-offset: 4px;
+  border-radius: 0;
 }
 
 .slider__value {
   min-width: 5ch;
   text-align: right;
-  font-size: var(--t-sm);
+  font-family: var(--font-num);
+  font-size: 13px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--c-text-muted);
+}
+
+@media (max-width: 1100px) {
+  .favteams__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .settings__columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 640px) {
+  .favteams__head {
+    flex-wrap: wrap;
+  }
+
+  .favteams__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .slider input[type='range'] {
     width: 120px;
   }
 }
+
 
 /* --- Player card modal ----------------------------------------------------- */
 
@@ -3202,80 +3763,467 @@
 }
 
 
-/* --- Responsive ------------------------------------------------------------ */
+/* --- Home / landing -------------------------------------------------------
+   Masthead and slate box, a ticker ruled off under them, then the leaders. */
 
-@media (max-width: 900px) {
-  .scorebug {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--s-4);
+.home {
+  display: flex;
+  flex-direction: column;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 56px;
+  padding: 44px 0 40px;
+  border-bottom: 1px solid var(--c-ink);
+}
+
+.hero__title {
+  margin: 16px 0 32px;
+  font-size: clamp(56px, 7.5vw, 108px);
+  font-weight: 600;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.hero__title em {
+  font-weight: 400;
+  color: var(--c-red);
+}
+
+.btn.hero__cta {
+  height: auto;
+  padding: 16px 24px;
+  gap: 14px;
+  font-size: 15px;
+}
+
+.slatebox {
+  align-self: end;
+  border: 2px solid var(--c-ink);
+}
+
+.slatebox__head {
+  display: flex;
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-bottom: 2px solid var(--c-ink);
+  font-family: var(--font-num);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.slatebox__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--c-hair);
+}
+
+.slatebox__row:last-child {
+  border-bottom: none;
+}
+
+.slatebox__value {
+  font-size: 60px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.slatebox__row:first-of-type .slatebox__value:not(:empty) {
+  color: var(--c-ink);
+}
+
+.slatebox__label {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* The games ticker: six equal cells across, ruled between. */
+.ticker {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  border-bottom: 2px solid var(--c-ink);
+}
+
+.ticker__game {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-right: 1px solid var(--c-hair);
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.ticker__game:first-child {
+  padding-left: 0;
+}
+
+.ticker__game:last-child {
+  border-right: none;
+}
+
+.ticker__game:hover {
+  background: var(--c-paper-2);
+}
+
+.ticker__status {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font-num);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  white-space: nowrap;
+}
+
+.ticker__game[data-live] .ticker__status > span:first-child {
+  color: var(--c-red);
+  font-weight: 600;
+}
+
+.ticker__fav {
+  color: var(--c-red);
+}
+
+.ticker__team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ticker__team[data-lost] {
+  opacity: 0.45;
+}
+
+.ticker__abbr {
+  flex: 1;
+}
+
+.ticker__runs {
+  font-weight: 600;
+}
+
+/* --- League leaders ------------------------------------------------------- */
+
+.leaders {
+  padding: 48px 0 8px;
+}
+
+.leaders__head {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.leaders__head h2 {
+  font-size: 60px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.leaders__deck {
+  padding-bottom: 6px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--c-muted);
+}
+
+.leaders__chip {
+  margin-left: auto;
+}
+
+.leaders__empty {
+  padding: var(--s-6) 0;
+  color: var(--c-muted);
+}
+
+/* A narrow column for the rotated group label, then three boards. Each group
+   is four grid items, so HITTING and PITCHING each fill one row. */
+.leaders__grid {
+  display: grid;
+  grid-template-columns: 44px repeat(3, minmax(0, 1fr));
+  column-gap: 32px;
+  row-gap: 44px;
+}
+
+.leaders__group {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  padding-right: 12px;
+  border-right: 2px solid var(--c-red);
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  line-height: 1;
+  text-align: right;
+  text-transform: uppercase;
+  color: var(--c-red);
+}
+
+.board {
+  min-width: 0;
+  border-top: 3px solid var(--c-ink);
+}
+
+.board__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0 12px;
+  border-bottom: 1px solid var(--c-ink);
+}
+
+.board__stat {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.board__desc {
+  font-size: 13px;
+  color: var(--c-muted);
+  text-align: right;
+}
+
+.board__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--c-hair);
+}
+
+.board__rank {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
+.board__name {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.board__value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* The bar along the row's bottom edge: this player against the leader. */
+.board__bar {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--c-red);
+}
+
+.board__more {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0;
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-red);
+}
+
+.board__more:hover {
+  color: var(--c-ink);
+}
+
+@media (max-width: 1100px) {
+  .ticker {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .scorebug__state {
-    border: none;
-    border-top: 1px solid var(--c-line);
-    border-bottom: 1px solid var(--c-line);
-    padding: var(--s-4) 0;
-    flex-direction: row;
-    justify-content: space-around;
+  .ticker__game:nth-child(3n) {
+    border-right: none;
+  }
+
+  .ticker__game:nth-child(3n + 1) {
+    padding-left: 0;
+  }
+
+  .ticker__game:nth-child(-n + 3) {
+    border-bottom: 1px solid var(--c-hair);
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .leaders__grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 28px;
+  }
+
+  .leaders__group {
+    writing-mode: horizontal-tb;
+    transform: none;
+    padding: 0 0 8px;
+    border-right: none;
+    border-bottom: 2px solid var(--c-red);
+    text-align: left;
+  }
+}
+
+
+/* --- Responsive ------------------------------------------------------------ */
+
+@media (max-width: 1100px) {
+  .appbar__inner {
+    gap: 28px;
+  }
+
+  .appbar__nav {
+    gap: 22px;
+  }
+
+  .page-head h1,
+  .page-head h2 {
+    font-size: 64px;
   }
 }
 
 @media (max-width: 760px) {
-  .shell__body,
-  .appbar__inner {
-    padding-left: var(--s-4);
-    padding-right: var(--s-4);
-  }
-
-  .appbar__inner {
-    gap: var(--s-3);
-  }
-
-  /* Narrow header: the ball mark carries the brand on its own. */
-  .appbar__brand > span {
-    display: none;
-  }
-
-  .appbar__nav {
-    margin-left: 0;
-  }
-
-  .navlink {
-    padding: 0 var(--s-3);
-  }
-
-  .appbar__game {
-    display: none;
-  }
-
   .page-head {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--s-3);
+    gap: var(--s-4);
+    padding: 28px 0 20px;
+  }
+
+  .page-head h1,
+  .page-head h2 {
+    font-size: 48px;
+  }
+
+  .page-head__deck,
+  .page-head p {
+    font-size: 18px;
+  }
+
+  .page-head__aside {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .sectionhead,
+  .panel__head {
+    flex-wrap: wrap;
+    row-gap: var(--s-2);
+  }
+
+  .sectionhead h2,
+  .sectionhead h3,
+  .panel__title h3 {
+    font-size: 24px;
+  }
+
+  .hero {
+    padding: 24px 0 28px;
+  }
+
+  .hero__title {
+    font-size: 44px;
+    line-height: 0.95;
+    margin: 8px 0 20px;
+  }
+
+  .leaders__head {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+
+  .leaders__head h2 {
+    font-size: 40px;
+  }
+
+  .leaders__deck {
+    font-size: 17px;
+  }
+
+  .emptyday__title {
+    font-size: 44px;
+  }
+
+  .bbstrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bbstrip__cell:nth-child(2) {
+    border-right: none;
+  }
+
+  .bbstrip__cell:nth-child(3) {
+    padding-left: 0;
+  }
+
+  .bbstrip__cell:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--c-hair);
+  }
+
+  .bbstrip__value {
+    font-size: 22px;
   }
 }
 
 /* --- Phones ----------------------------------------------------------------
-   Four nav pills, the feed status and a brand do not fit across a phone, and
-   squeezing them pushed the status off the edge. So the nav moves to a tab bar
-   along the bottom, where a thumb reaches it, and the header keeps the brand
-   and the status. Everything else is tighter margins so a 375px screen spends
-   its width on content. */
+   Four tabs, the feed status, the game picker and a wordmark do not fit
+   across a phone. So the nav moves to a tab bar along the bottom, where a
+   thumb reaches it, ruled off with the same 2px ink line as the header, and
+   the header keeps the wordmark, the status and the game. */
 @media (max-width: 640px) {
-  :root {
-    --tabbar-h: 58px;
+  .appbar__inner {
+    gap: 10px;
   }
 
-  /* backdrop-filter makes the header the containing block of anything fixed
-     inside it, which would pin the tab bar to the header instead of the
-     screen. Opaque instead. */
-  .appbar {
-    backdrop-filter: none;
-    background: var(--c-bg);
+  .wordmark {
+    font-size: 24px;
   }
 
-  .appbar__brand > span {
-    display: inline;
+  .appbar__status {
+    margin-right: 0;
+    height: 26px;
+    padding: 0 7px;
+    font-size: 10px;
+  }
+
+  .appbar__game {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
   }
 
   .appbar__nav {
@@ -3285,19 +4233,31 @@
     bottom: 0;
     z-index: 20;
     height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
-    padding: 0 var(--s-2) env(safe-area-inset-bottom);
-    margin: 0;
-    gap: var(--s-1);
-    background: var(--c-bg);
-    border-top: 1px solid var(--c-line);
-    box-shadow: 0 -6px 18px -14px rgba(0, 0, 0, 0.35);
+    padding: 0 0 env(safe-area-inset-bottom);
+    gap: 0;
+    background: var(--c-paper);
+    border-top: 2px solid var(--c-ink);
   }
 
   .navlink {
     flex: 1;
     justify-content: center;
-    height: 42px;
-    padding: 0;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .navlink[aria-current='page'] {
+    color: var(--c-red);
+    box-shadow: none;
+  }
+
+  .navlink[aria-current='page']::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
   }
 
   .shell {
@@ -3305,20 +4265,17 @@
   }
 
   .shell__body {
-    padding: var(--s-4) var(--s-3) var(--s-6);
+    padding-bottom: var(--s-6);
   }
 
-  .shell__foot {
-    padding: var(--s-4) var(--s-3);
+  .live__body {
+    padding-top: 20px;
+    gap: 28px;
   }
 
-  .panel__head {
-    flex-wrap: wrap;
-    padding: var(--s-3) var(--s-4);
-  }
-
-  .panel__body:not(.panel__body--flush) {
-    padding: var(--s-4);
+  .live__main,
+  .live__side {
+    gap: 28px;
   }
 
   /* A taller replay. At 16:9 a phone's stage was under 200px high and the
@@ -3327,9 +4284,66 @@
     aspect-ratio: 4 / 3;
   }
 
+  /* The ticker scrolls sideways rather than stacking: a phone shows two and a
+     half games and the edge says there are more. */
+  .ticker {
+    display: flex;
+    gap: 10px;
+    margin-right: calc(-1 * var(--gutter));
+    padding: 14px var(--gutter) 14px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .ticker__game,
+  .ticker__game:first-child,
+  .ticker__game:nth-child(3n + 1) {
+    flex: none;
+    width: 140px;
+    padding: 10px;
+    border: 1px solid var(--c-ink);
+  }
+
+  /* The slate goes three-up, a count over its label in each cell. */
+  .slatebox {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .slatebox__head {
+    grid-column: 1 / -1;
+  }
+
+  .slatebox__row {
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    border-bottom: none;
+    border-right: 1px solid var(--c-hair);
+  }
+
+  .slatebox__row:last-child {
+    border-right: none;
+  }
+
+  .slatebox__value {
+    font-size: 30px;
+  }
+
+  .slatebox__label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--c-muted);
+  }
+
+  .board__stat {
+    font-size: 30px;
+  }
+
   .statable th,
   .statable td {
-    padding: var(--s-2) var(--s-3);
+    padding-top: 8px;
+    padding-bottom: 8px;
   }
 
   /* While the box score scrolls sideways, the names stay put. */
@@ -3337,8 +4351,9 @@
     position: sticky;
     left: 0;
     z-index: 1;
-    background: var(--c-surface);
-    box-shadow: inset -1px 0 0 var(--c-line);
+    padding-right: 12px;
+    background: var(--c-paper);
+    box-shadow: inset -1px 0 0 var(--c-hair);
   }
 
   .statable__scroll thead th:first-child {
@@ -3346,31 +4361,38 @@
     z-index: 2;
   }
 
-  /* A setting's description gets the full width. A switch still fits beside
-     it; a segmented control or a slider wraps underneath. */
+  /* A setting's description gets the full width; its control wraps under it
+     unless it is a switch, which still fits beside. */
   .setting {
-    flex-wrap: wrap;
-    gap: var(--s-3) var(--s-4);
-    padding: var(--s-4);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
   }
 
-  .setting > div:first-child {
-    flex: 1 1 220px;
+  .setting:has(.switch) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .setting > :last-child {
+    justify-self: start;
+  }
+
+  .setting:has(.switch) > :last-child {
+    justify-self: end;
   }
 }
 
 /* A list that scrolls inside the page must hand the scroll back to the page at
    its ends on a touchscreen, or a thumb that lands on it is stuck there. */
 @media (pointer: coarse) {
-  .gameleaders__list {
+  .gameleaders__list,
+  .pbp {
     overscroll-behavior: auto;
   }
 }
 
 /* --- Team identity -------------------------------------------------------
-   Club colours arrive as CSS variables set inline (see data/teamStyle.js), so
-   every rule below has a neutral fallback and the cream palette still leads.
-------------------------------------------------------------------------- */
+   Club marks are MLB's own logos (TeamLogo.jsx), with a monogram disc in the
+   club's colours as the fallback when a mark cannot load. */
 
 .teamlogo {
   flex: none;
@@ -3386,66 +4408,10 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  font-weight: 700;
+  font-family: var(--font-num);
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1;
-}
-
-/* Hairline of club colour along the top of a panel. */
-.panel--team {
-  position: relative;
-}
-
-.panel__accent {
-  height: 3px;
-  background: linear-gradient(
-    90deg,
-    var(--team, var(--c-accent)),
-    var(--team-2, var(--c-accent-soft))
-  );
-}
-
-.tabs--team .tabs__btn--team {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-2);
-  padding-left: var(--s-2);
-}
-
-.tabs__btn--team[aria-selected='true'] {
-  background: var(--c-surface);
-  color: var(--team-ink, var(--c-text));
-  box-shadow: inset 0 0 0 1px var(--team-line, var(--c-line)), var(--shadow-xs);
-}
-
-/* Table head takes the club wash. The opaque base matters: the head is sticky,
-   so a translucent background alone would let rows scroll through it. */
-.statable--team thead th {
-  background-color: var(--c-surface);
-  background-image: linear-gradient(var(--team-wash), var(--team-wash));
-}
-
-/* Both clubs along the top edge of a game card. */
-.gamecard {
-  position: relative;
-  overflow: hidden;
-}
-
-.gamecard__edge {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(
-    90deg,
-    var(--away, var(--c-accent)) 0 50%,
-    var(--home, var(--c-accent-soft)) 50% 100%
-  );
-}
-
-.gamecard__row {
-  min-width: 0;
 }
 
 /* Scoreboard is cached because the upstream feed is unreachable — say so
@@ -3455,432 +4421,6 @@
   font-weight: 600;
 }
 
-/* Team colour, dark theme.
-   The club variables are set inline by teamStyle.js, which emits both a light
-   and a dark value for anything that cannot survive the background flipping.
-   Only these three rules actually consume them. */
-
-:root[data-theme='dark'] .scoreteam[data-batting='true'] {
-  background-color: var(--team-wash-dark, var(--c-accent-softer));
-}
-
-:root[data-theme='dark'] .tabs__btn--team[aria-selected='true'] {
-  color: var(--team-ink-dark, var(--c-text));
-  box-shadow: inset 0 0 0 1px var(--team-line-dark, var(--c-line)), var(--shadow-xs);
-}
-
-:root[data-theme='dark'] .statable--team thead th {
-  background-image: linear-gradient(var(--team-wash-dark), var(--team-wash-dark));
-}
-
-/* --- Home / landing ------------------------------------------------------- */
-
-.home {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-7);
-}
-
-.hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
-  gap: var(--s-6);
-  align-items: center;
-  padding: var(--s-7) var(--s-6);
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  overflow: hidden;
-}
-
-/* A single seam arc, the same understated motif as the splash. */
-.hero::after {
-  content: '';
-  position: absolute;
-  right: -120px;
-  top: -80px;
-  width: 340px;
-  height: 340px;
-  border-radius: 50%;
-  border: 2px dashed var(--c-line-strong);
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.hero__text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-3);
-  min-width: 0;
-}
-
-.hero__title {
-  font-size: clamp(1.75rem, 3.4vw, var(--t-3xl));
-  letter-spacing: -0.035em;
-  max-width: 18ch;
-}
-
-.hero__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-3);
-  margin-top: var(--s-3);
-}
-
-.hero__slate {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--s-3);
-  padding: var(--s-5);
-  background: var(--c-surface-sunken);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-lg);
-  position: relative;
-  z-index: 1;
-}
-
-.slate {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 2px;
-}
-
-.slate__value {
-  font-size: var(--t-2xl);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.slate__value--live {
-  color: var(--c-live);
-}
-
-.slate__label {
-  font-size: var(--t-xs);
-  color: var(--c-text-muted);
-}
-
-/* --- Favourite teams (Settings) ------------------------------------------- */
-
-.favteams__hint {
-  margin-bottom: var(--s-4);
-}
-
-.favteams__picked {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
-  margin-bottom: var(--s-4);
-  padding-bottom: var(--s-4);
-  border-bottom: 1px solid var(--c-line);
-}
-
-.favteams__chip {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  padding: 5px var(--s-3) 5px 7px;
-  border-radius: 999px;
-  border: 1px solid var(--team, var(--c-line-strong));
-  background: var(--team-wash, var(--c-accent-softer));
-  color: var(--c-text);
-  font-size: var(--t-sm);
-  font-weight: 650;
-}
-
-.favteams__chip small {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--c-text-muted);
-  font-weight: 700;
-}
-
-.favteams__remove {
-  color: var(--c-text-faint);
-  font-size: var(--t-md);
-  line-height: 1;
-}
-
-.favteams__chip:hover .favteams__remove {
-  color: var(--c-text);
-}
-
-/* Thirty clubs. Wide enough for the longest short name to fit without an
-   ellipsis — White Sox, Guardians, Nationals — and no wider, so the grid still
-   comes out five or six across on a desktop window. */
-.favteams__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
-  gap: var(--s-2);
-}
-
-.favteams__team {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-2) var(--s-3);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-md);
-  background: var(--c-surface);
-  text-align: left;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
-    background var(--dur-fast) var(--ease-out);
-}
-
-.favteams__team:hover {
-  border-color: var(--c-line-strong);
-  background: var(--c-surface-sunken);
-}
-
-/* Followed: the club's own colour, so the grid reads at a glance. */
-.favteams__team[aria-pressed='true'] {
-  border-color: var(--team, var(--c-accent));
-  background: var(--team-wash, var(--c-accent-softer));
-}
-
-.favteams__name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--t-sm);
-  font-weight: 600;
-}
-
-.favteams__star {
-  margin-left: auto;
-  color: var(--c-text-faint);
-  display: grid;
-  place-items: center;
-}
-
-.favteams__team[aria-pressed='true'] .favteams__star {
-  color: var(--team-ink, var(--c-accent));
-}
-
-/* Dark theme reads the other half of the pair teamVars emits. A 6% wash and a
-   navy primary are both invisible on espresso — see the note in teamStyle.js. */
-:root[data-theme='dark'] .favteams__team[aria-pressed='true'] {
-  border-color: var(--team-line-dark, var(--c-accent));
-  background: var(--team-wash-dark, var(--c-accent-softer));
-}
-
-:root[data-theme='dark'] .favteams__team[aria-pressed='true'] .favteams__star {
-  color: var(--team-ink-dark, var(--c-accent));
-}
-
-:root[data-theme='dark'] .favteams__chip {
-  border-color: var(--team-line-dark, var(--c-line-strong));
-  background: var(--team-wash-dark, var(--c-accent-softer));
-}
-
-/* --- Today's games (landing page tiles) ---------------------------------- */
-
-.todaygames__title {
-  font-size: var(--t-xl);
-}
-
-.tilegrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: var(--s-4);
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  padding: var(--s-4);
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-xs);
-  text-align: left;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out),
-    transform var(--dur-fast) var(--ease-out);
-}
-
-.tile:hover {
-  border-color: var(--team-line, var(--c-line-strong));
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
-
-.tile__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-2);
-  margin-bottom: var(--s-1);
-}
-
-.tile__fav {
-  display: grid;
-  place-items: center;
-  color: var(--c-accent);
-}
-
-/* A followed club's game, in that club's own colour along the top. */
-.tile[data-favorite] {
-  border-color: var(--team-line, var(--c-line-strong));
-  background:
-    linear-gradient(var(--team-wash), var(--team-wash)),
-    var(--c-surface);
-}
-
-.tile__row {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--s-2);
-}
-
-.tile__team {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--t-sm);
-  font-weight: 600;
-  color: var(--c-text-muted);
-}
-
-.tile__runs {
-  font-size: var(--t-md);
-  font-weight: 650;
-  color: var(--c-text-muted);
-}
-
-/* The side that is ahead reads as ahead — the only emphasis on the tile. */
-.tile__row[data-leading='true'] .tile__team,
-.tile__row[data-leading='true'] .tile__runs {
-  color: var(--c-text);
-  font-weight: 750;
-}
-
-:root[data-theme='dark'] .tile[data-favorite] {
-  background:
-    linear-gradient(var(--team-wash-dark), var(--team-wash-dark)),
-    var(--c-surface);
-  border-color: var(--team-line-dark, var(--c-line-strong));
-}
-
-/* --- Leaderboards --------------------------------------------------------- */
-
-.leaders__title {
-  font-size: var(--t-xl);
-}
-
-.leaders__group + .leaders__group {
-  margin-top: var(--s-6);
-}
-
-.leaders__group > .u-eyebrow {
-  display: block;
-  margin-bottom: var(--s-3);
-}
-
-.leaders__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--s-5);
-}
-
-.board {
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-xs);
-  overflow: hidden;
-}
-
-.board__head {
-  padding: var(--s-4) var(--s-5) var(--s-3);
-  border-bottom: 1px solid var(--c-line);
-}
-
-.board__stat {
-  font-size: var(--t-lg);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.board__desc {
-  font-size: var(--t-xs);
-  color: var(--c-text-muted);
-  margin-top: 2px;
-}
-
-.board__row {
-  display: grid;
-  grid-template-columns: 18px 18px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-3) var(--s-5);
-  border-bottom: 1px solid var(--c-line);
-  /* A hairline of the player's club colour, so the board is scannable by team
-     without tinting six panels. */
-  box-shadow: inset 3px 0 0 var(--team, transparent);
-}
-
-.board__row:last-child {
-  border-bottom: none;
-}
-
-.board__rank {
-  font-size: var(--t-xs);
-  color: var(--c-text-faint);
-  font-weight: 700;
-}
-
-.board__name {
-  font-size: var(--t-sm);
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: left;
-}
-
-.board__value {
-  font-size: var(--t-md);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-/* Expand a top-five board into its full page. Sits under the last row as a
-   footer rather than beside the heading, so the eye reaches it after reading
-   the five rather than before. */
-.board__more {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--s-2);
-  width: 100%;
-  padding: var(--s-3);
-  border-top: 1px solid var(--c-line);
-  background: var(--c-surface-sunken);
-  color: var(--c-text-muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.board__more:hover {
-  background: var(--c-accent-softer);
-  color: var(--c-accent);
-}
 
 /* --- Full leaderboard page ------------------------------------------------ */
 
@@ -4019,21 +4559,6 @@
   .leaderfull__row:nth-child(2) {
     border-top: none;
   }
-}
-
-@media (max-width: 900px) {
-  .hero {
-    grid-template-columns: minmax(0, 1fr);
-    padding: var(--s-6) var(--s-5);
-  }
-
-  .hero::after {
-    display: none;
-  }
-}
-
-:root[data-theme='dark'] .board__row {
-  box-shadow: inset 3px 0 0 var(--team-2, var(--team, transparent));
 }
 
 /* Loading / error state of the player card, before we know how tall it is. */

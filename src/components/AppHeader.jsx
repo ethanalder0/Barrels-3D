@@ -1,7 +1,6 @@
 import { useAppState } from '../state/AppState.jsx';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
 import { connectionLabel } from '../state/connectionLabel.js';
-import { Baseball } from './Icons.jsx';
 import GameMenu from './GameMenu.jsx';
 
 const NAV = [
@@ -12,9 +11,19 @@ const NAV = [
 ];
 
 // Screens reached from another screen rather than from the nav. They keep
-// their parent's pill lit, so the header still says where you are instead of
+// their parent's tab lit, so the header still says where you are instead of
 // going blank on a page that has no tab of its own.
 const NAV_PARENT = { leaderboard: 'home' };
+
+/* Feed tone → chip variant. Live is the red fill; anything still waiting on
+   the feed gets the amber dot; settled states (final, pre-game) are a plain
+   outline. */
+const CHIP = {
+  live: 'chip chip--live chip--dot',
+  wait: 'chip chip--wait',
+  warn: 'chip chip--wait',
+  muted: 'chip',
+};
 
 export default function AppHeader() {
   const { state, actions } = useAppState();
@@ -25,12 +34,9 @@ export default function AppHeader() {
   return (
     <header className="appbar">
       <div className="appbar__inner">
-        <div className="appbar__brand">
-          <Baseball size={22} />
-          <span>
-            Barrels <span className="dim">3D</span>
-          </span>
-        </div>
+        <button type="button" className="wordmark" onClick={() => actions.navigate('home')}>
+          Barrels<em>3D</em>
+        </button>
 
         <nav className="appbar__nav" aria-label="Primary">
           {NAV.map((item) => (
@@ -50,9 +56,7 @@ export default function AppHeader() {
 
         {/* Feed state, not game state — this is the answer to "is it actually
             streaming?", which matters as soon as there is a backend. */}
-        <span className={`chip chip--${status.tone === 'live' ? 'live chip--dot' : status.tone}`}>
-          {status.text}
-        </span>
+        <span className={`appbar__status ${CHIP[status.tone] ?? CHIP.muted}`}>{status.text}</span>
 
         <GameMenu />
       </div>

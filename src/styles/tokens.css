@@ -1,46 +1,62 @@
 /* ---------------------------------------------------------------------------
-   Design tokens — Barrels 3D
-   Everything colour-ish lives here as a custom property. A future dark theme is
-   a drop-in: redefine this same token set under a `[data-theme="dark"]` block
-   (and/or a `prefers-color-scheme` media query) and nothing else has to change.
-   No toggle ships today — the light "warm neutral" palette is the only theme.
+   Design tokens — Barrels 3D, "Scorecard" direction.
+
+   The app reads like the sports section of a broadsheet: newsprint paper, ink
+   rules instead of rounded cards, one press-red accent. Everything colour-ish
+   lives here as a custom property, and the dark ("ink") theme below swaps the
+   same names 1:1, so no component names a colour directly.
+
+   The scorecard set (--c-paper, --c-ink, --c-hair, --c-red) is what the
+   chrome is written against. The older names are kept and pointed at it, so
+   the replay HUD, the interludes and anything else not restyled by hand
+   follows the palette without edits.
 --------------------------------------------------------------------------- */
 
 :root {
-  /* --- Surfaces: cream → parchment, lightest first --------------------- */
-  --c-bg: #fbf7f0; /* page ground */
-  --c-surface: #ffffff; /* cards sitting on the ground */
-  --c-surface-sunken: #f4ede1; /* wells, inset panels, viewport ground */
-  --c-surface-raised: #fffdf9; /* menus / modals, a touch above cards */
+  /* --- Scorecard palette -------------------------------------------------- */
+  --c-paper: #f3efe6; /* page */
+  --c-paper-2: #e9e3d6; /* count chips, wells */
+  --c-ink: #17150f; /* text, heavy rules, filled controls */
+  --c-muted: #5a554c; /* secondary text, inactive nav */
+  --c-hair: rgba(23, 21, 15, 0.16); /* row dividers */
+  --c-red: #c23a22; /* the one accent */
+  --c-amber: #c9a227; /* "connecting" dot */
+  --c-final: #e8b24a; /* "Final" over the replay */
+
+  /* --- Surfaces ---------------------------------------------------------- */
+  --c-bg: var(--c-paper);
+  --c-surface: var(--c-paper); /* no cards: panels sit on the page itself */
+  --c-surface-sunken: var(--c-paper-2);
+  --c-surface-raised: #f8f5ee; /* menus / modals */
 
   /* --- Line work --------------------------------------------------------- */
-  --c-line: #e8dcc9; /* default hairline */
-  --c-line-strong: #d8c6ab; /* dividers that need to read */
+  --c-line: var(--c-hair);
+  --c-line-strong: rgba(23, 21, 15, 0.4);
 
   /* --- Type -------------------------------------------------------------- */
-  --c-text: #33291f; /* near-black, warm */
-  --c-text-muted: #7a6a58; /* secondary copy, labels */
-  --c-text-faint: #a3937f; /* tertiary, timestamps, empty states */
-  --c-text-on-accent: #fffaf2;
+  --c-text: var(--c-ink);
+  --c-text-muted: var(--c-muted);
+  --c-text-faint: #6b665c; /* tertiary; still clears 4.5:1 on paper */
+  --c-text-on-accent: var(--c-paper);
 
-  /* --- Accents: tan / light brown ---------------------------------------- */
-  --c-accent: #a97c50; /* primary action, active nav */
-  --c-accent-hover: #966b41;
-  --c-accent-soft: #e4d2ba; /* tinted fills, chips */
-  --c-accent-softer: #f2e7d6;
+  /* --- Accents ----------------------------------------------------------- */
+  --c-accent: var(--c-red);
+  --c-accent-hover: #a5301b;
+  --c-accent-soft: #e8cfc4;
+  --c-accent-softer: var(--c-paper-2);
 
   /* --- Baseball semantics ------------------------------------------------- */
-  --c-seam: #b4483c; /* stitching red — accent only, used sparingly */
-  --c-seam-soft: #f0d9d5;
-  --c-live: #c2542c; /* "LIVE" pulse */
-  --c-leather: #e9d9c1; /* ball / glove tone */
+  --c-seam: var(--c-red);
+  --c-seam-soft: #edd5cc;
+  --c-live: var(--c-red);
+  --c-leather: #e9d9c1;
 
   /* --- Status ------------------------------------------------------------ */
   --c-good: #4f7a52;
-  --c-warn: #b8873c;
+  --c-warn: #a5801a;
 
   /* --- Player card ---------------------------------------------------------
-     The card is the one component in the app that does NOT follow the cream
+     The card is the one component in the app that does NOT follow the page
      palette or flip with the theme. It is meant to read as a physical object
      sitting on top of the app — a printed trading card is navy-and-gold in a
      dark room too — so it carries its own closed palette and is deliberately
@@ -70,25 +86,24 @@
 
   /* --- Ability ratings ----------------------------------------------------
      Four tiers of the 0-100 percentile scale on a player card. Warm rather
-     than a red/blue heat scale: stitching red reads as "elite" in a baseball
-     context, and the two middle tiers sit on the existing tan accent so a card
-     full of average players still looks like part of this app. */
+     than a red/blue heat scale: press red reads as "elite", and the two middle
+     tiers sit on tan so a card full of average players still looks calm. */
   --c-rating-elite: #b4483c; /* 80+  */
   --c-rating-good: #a97c50;  /* 60-79 */
   --c-rating-avg: #c3ab8a;   /* 40-59 */
   --c-rating-low: #cbbda9;   /* under 40 */
-  --c-rating-track: #eee3d2;
+  --c-rating-track: #e4ddcd;
 
   /* --- Surfaces that were hardcoded before dark mode ---------------------- */
-  --c-glow: #fffdf8;                        /* the soft light at the top of a page */
-  --c-glow-fade: rgba(255, 253, 248, 0);
-  --c-appbar-bg: rgba(251, 247, 240, 0.86); /* translucent, sits over content */
-  --c-scrim: rgba(59, 47, 38, 0.32);        /* behind modals */
-  --c-glass: rgba(255, 255, 255, 0.72);     /* the splash hint pill */
-  --c-knob: #ffffff;                        /* switch handle */
+  --c-glow: var(--c-paper);                 /* no glow: newsprint is flat */
+  --c-glow-fade: rgba(243, 239, 230, 0);
+  --c-appbar-bg: var(--c-paper);            /* opaque, ruled off below */
+  --c-scrim: rgba(23, 21, 15, 0.45);        /* behind modals */
+  --c-glass: rgba(243, 239, 230, 0.85);     /* the splash hint pill */
+  --c-knob: var(--c-paper);                 /* switch handle */
   --c-drop: rgba(74, 56, 36, 0.2);          /* drop-shadow on the swing art */
-  --c-warn-soft: #f6e6cd;
-  --c-warn-ink: #8a5f1e;
+  --c-warn-soft: #f1e3c4;
+  --c-warn-ink: #7a5a12;
 
   /* Text drawn ON a filled swatch (the strike-zone dots). These need their own
      names because the fills invert between themes: seam is dark in light mode
@@ -97,21 +112,23 @@
   --c-on-warn: #2a1c08;
 
   /* --- Focus ------------------------------------------------------------- */
-  --c-focus: #6b5030;
-  --focus-ring: 0 0 0 3px var(--c-accent-soft), 0 0 0 5px var(--c-focus);
+  --c-focus: var(--c-ink);
+  --focus-ring: 0 0 0 2px var(--c-paper), 0 0 0 4px var(--c-focus);
 
-  /* --- Depth: soft and warm, never a hard grey drop shadow ---------------- */
-  --shadow-xs: 0 1px 2px rgba(74, 56, 36, 0.05);
-  --shadow-sm: 0 1px 3px rgba(74, 56, 36, 0.06), 0 4px 10px -4px rgba(74, 56, 36, 0.08);
-  --shadow-md: 0 2px 6px rgba(74, 56, 36, 0.06), 0 12px 28px -12px rgba(74, 56, 36, 0.16);
-  --shadow-lg: 0 4px 12px rgba(74, 56, 36, 0.08), 0 32px 64px -24px rgba(74, 56, 36, 0.22);
+  /* --- Depth: none. Rules carry the structure, not shadows. ---------------
+     Kept as names so existing rules resolve. Menus and the player modal get a
+     hard offset drop so they still read as lifted off the page. */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: 4px 4px 0 rgba(23, 21, 15, 0.12);
+  --shadow-lg: 6px 6px 0 rgba(23, 21, 15, 0.18);
 
-  /* --- Radii ------------------------------------------------------------- */
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 16px;
-  --r-xl: 24px;
-  --r-pill: 999px;
+  /* --- Radii: square everywhere. Discs and dots use 50% directly. --------- */
+  --r-sm: 0;
+  --r-md: 0;
+  --r-lg: 0;
+  --r-xl: 0;
+  --r-pill: 0;
 
   /* --- Space scale (4px base) -------------------------------------------- */
   --s-1: 4px;
@@ -124,10 +141,13 @@
   --s-8: 64px;
   --s-9: 96px;
 
-  /* --- Type scale --------------------------------------------------------- */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  --font-num: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  /* --- Type ----------------------------------------------------------------
+     Display: Newsreader. UI: Plex Sans Condensed. Figures: Plex Mono. All
+     self-hosted through Fontsource (imported in main.jsx), like the card faces:
+     nothing is fetched from a font CDN. */
+  --font-display: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
+  --font-sans: 'IBM Plex Sans Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --font-num: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Menlo, monospace;
 
   --t-xs: 0.6875rem; /* 11 */
   --t-sm: 0.8125rem; /* 13 */
@@ -139,7 +159,8 @@
   --t-4xl: 4.5rem; /* 72 */
 
   /* --- Layout ------------------------------------------------------------- */
-  --header-h: 64px;
+  --header-h: 68px;
+  --gutter: 48px; /* page gutter */
   --shell-max: 1560px;
 
   /* --- Motion ------------------------------------------------------------- */
@@ -150,78 +171,77 @@
   --dur-slow: 480ms;
 }
 
+/* Layout tokens step down with the window. They live here rather than beside
+   the rules that use them because this file loads after app.css: an override
+   of a :root token anywhere else would lose to the defaults above. */
+@media (max-width: 1100px) {
+  :root {
+    --gutter: 32px;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --gutter: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --header-h: 56px;
+    --tabbar-h: 58px; /* the bottom tab bar on phones (app.css) */
+  }
+}
+
 /* ---------------------------------------------------------------------------
-   Dark theme.
+   Dark theme ("ink").
 
    Opt-in only: App.jsx stamps data-theme="dark" on <html> when the setting is
    on. Deliberately not wired to prefers-color-scheme, because the setting
    ships OFF by default and a media query would override that for anyone whose
    OS is dark.
 
-   Warm dark rather than a blue-grey or true black -- the light theme is cream
-   and tan, so the counterpart is espresso and bronze. Every name below already
-   exists above; only the values change, which is why no component needed
-   editing to support this.
+   The scorecard palette swapped 1:1 — paper goes to ink and ink to paper — so
+   every alias above follows on its own.
 --------------------------------------------------------------------------- */
 
 :root[data-theme='dark'] {
-  --c-bg: #16120e;
-  --c-surface: #1f1a15;
-  --c-surface-sunken: #191410;
-  --c-surface-raised: #272019;
+  --c-paper: #16130e;
+  --c-paper-2: #2a251c;
+  --c-ink: #eee6d6;
+  --c-muted: #a8a091;
+  --c-hair: rgba(238, 230, 214, 0.14);
+  --c-red: #e86246;
 
-  --c-line: #302820;
-  --c-line-strong: #4a3d31;
+  --c-surface-raised: #211d16;
+  --c-line-strong: rgba(238, 230, 214, 0.4);
+  --c-text-faint: #9a9284;
 
-  --c-text: #f4ede3;
-  --c-text-muted: #bcab98;
-  /* Measured, not eyeballed: faint text also lands on tinted rows (the current
-     at-bat, a club wash), where #95836f dropped to 4.13:1. This clears 4.5 on
-     all three grounds. */
-  --c-text-faint: #9e8d7b;
-  --c-text-on-accent: #1a1410;
-
-  /* Accents lift: the light theme's tan is too dark to read on espresso. */
-  --c-accent: #cc9d66;
-  --c-accent-hover: #dcb07c;
-  --c-accent-soft: #3f3428;
-  --c-accent-softer: #2b241c;
-
-  --c-seam: #e56d61;
+  --c-accent-hover: #f07a60;
+  --c-accent-soft: #4a2a20;
   --c-seam-soft: #3b2320;
-  --c-live: #e8834f;
   --c-leather: #3a2f24;
 
   --c-good: #83b788;
   --c-warn: #dda85f;
 
-  /* The two lower rating tiers have to lift off espresso the way the accents
-     do; left at their light-theme values they read as darker than the track
-     they sit in, and a weak ability looked like an empty bar. */
-  --c-rating-elite: #e56d61;
+  /* The two lower rating tiers have to lift off the dark page the way the
+     accents do; left at their light-theme values they read as darker than the
+     track they sit in, and a weak ability looked like an empty bar. */
+  --c-rating-elite: #e86246;
   --c-rating-good: #cc9d66;
   --c-rating-avg: #8a7357;
   --c-rating-low: #5f5142;
-  --c-rating-track: #2b241c;
+  --c-rating-track: #2a251c;
   --c-warn-soft: #3a2e1c;
   --c-warn-ink: #e5b877;
-  --c-on-seam: #2a1512;   /* seam lifts to a light red here, so the label darkens */
+  --c-on-seam: #2a1512; /* seam lifts to a light red here, so the label darkens */
 
-  --c-focus: #ecd9bd;
-  --focus-ring: 0 0 0 3px var(--c-accent-soft), 0 0 0 5px var(--c-focus);
-
-  --c-glow: #241d16;
-  --c-glow-fade: rgba(36, 29, 22, 0);
-  --c-appbar-bg: rgba(22, 18, 14, 0.86);
+  --c-glow-fade: rgba(22, 19, 14, 0);
   --c-scrim: rgba(0, 0, 0, 0.6);
-  --c-glass: rgba(39, 32, 25, 0.78);
-  --c-knob: #f4ede3;
+  --c-glass: rgba(33, 29, 22, 0.85);
   --c-drop: rgba(0, 0, 0, 0.5);
 
-  /* Shadows do almost nothing on a dark ground; lean on deeper opacity and let
-     the raised surfaces carry the depth instead. */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 4px 10px -4px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.45), 0 12px 28px -12px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.5), 0 32px 64px -24px rgba(0, 0, 0, 0.7);
+  --shadow-md: 4px 4px 0 rgba(0, 0, 0, 0.45);
+  --shadow-lg: 6px 6px 0 rgba(0, 0, 0, 0.55);
 }

@@ -19,7 +19,7 @@ export function connectionLabel({ mode, connection, replay }) {
     case 'connecting':
     case 'starting':
     case 'open':
-      return { text: 'Connecting', tone: 'muted' };
+      return { text: 'Connecting…', tone: 'wait' };
     case 'reconnecting':
       return { text: 'Reconnecting', tone: 'warn' };
     case 'error':

@@ -41,9 +41,8 @@ export default function App() {
     // freezes a transitioned property whose value comes from a custom property
     // when that custom property changes underneath it: the variable updates,
     // but the RENDERED colour stays on the old theme until something forces a
-    // fresh style. Nav pills and buttons would keep their cream backgrounds on
-    // a dark page. (Same root cause as the scorebug's team wash — see the note
-    // on `.scoreteam` in app.css.)
+    // fresh style. Nav tabs and buttons would keep their paper backgrounds on
+    // a dark page.
     root.classList.add('theme-switching');
 
     if (dark) {

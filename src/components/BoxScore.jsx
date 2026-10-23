@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
-import { teamVars } from '../data/teamStyle.js';
 import PlayerName from './PlayerName.jsx';
 import TeamLogo from './TeamLogo.jsx';
 
@@ -10,9 +9,9 @@ const PITCHER_COLS = ['IP', 'H', 'R', 'ER', 'BB', 'K', 'ERA'];
 /**
  * Box score for either side, batting or pitching.
  *
- * The selected team's colour drives a hairline accent bar, the active tab and
- * a very light wash behind the table head — enough to tell at a glance whose
- * numbers you are reading, without the panel becoming team livery.
+ * The team switch is a pair of ink-filled tabs, each with its club disc, so
+ * whose numbers you are reading is the first thing on the line; the view
+ * switch sits right, marked with the red underline the nav uses.
  */
 export default function BoxScore() {
   const { game, boxScore } = useLiveData();
@@ -26,9 +25,7 @@ export default function BoxScore() {
   const activeAbbr = game[side]?.abbr;
 
   return (
-    <section className="panel panel--team" aria-label="Box score" style={teamVars(activeAbbr)}>
-      <div className="panel__accent" aria-hidden="true" />
-
+    <section className="panel boxscore" aria-label={`Box score, ${activeAbbr ?? ''}`}>
       <div className="panel__head">
         <div className="panel__title">
           <h3>Box score</h3>
@@ -41,16 +38,15 @@ export default function BoxScore() {
                 className="tabs__btn tabs__btn--team"
                 aria-selected={side === s}
                 onClick={() => setSide(s)}
-                style={teamVars(game[s]?.abbr)}
               >
-                <TeamLogo abbr={game[s]?.abbr} size={18} />
+                <TeamLogo abbr={game[s]?.abbr} size={16} onInk={side === s} />
                 {game[s].abbr}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="tabs" role="tablist" aria-label="Box score view">
+        <div className="tabs tabs--line" role="tablist" aria-label="Box score view">
           {[
             ['batting', 'Batting'],
             ['pitching', 'Pitching'],
@@ -74,7 +70,7 @@ export default function BoxScore() {
           <p className="atbats__empty">No {tab} lines yet.</p>
         ) : (
           <div className="statable__scroll">
-            <table className="statable statable--team">
+            <table className="statable">
               <thead>
                 <tr>
                   <th scope="col">{tab === 'batting' ? 'Batter' : 'Pitcher'}</th>

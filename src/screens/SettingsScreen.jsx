@@ -1,9 +1,7 @@
 import { useAppState } from '../state/AppState.jsx';
 import { allTeamAbbrs, MAX_FAVORITES } from '../data/favorites.js';
 import { TEAMS } from '../data/teams.js';
-import { teamVars } from '../data/teamStyle.js';
 import TeamLogo from '../components/TeamLogo.jsx';
-import { IconStar } from '../components/Icons.jsx';
 
 /**
  * Preferences. Session-local, with one exception: favourite clubs are kept in
@@ -16,155 +14,151 @@ export default function SettingsScreen() {
 
   return (
     <div className="settings">
-      <div className="page-head">
+      <header className="page-head">
         <div>
-          <h2>Settings</h2>
-          <p>Display preferences are session-local. Favourite teams are saved in this browser.</p>
+          <h1>Settings</h1>
+          <p className="page-head__deck">
+            Display preferences are session-local. Favourite teams are saved in this browser.
+          </p>
         </div>
-      </div>
+      </header>
 
       <FavoriteTeams />
 
-      <section className="panel" aria-label="Playback">
-        <div className="panel__head">
-          <div className="panel__title">
-            <h3>Replay</h3>
-          </div>
-        </div>
+      <div className="settings__columns">
+        <section className="settings__group" aria-label="Replay">
+          <h2 className="settings__title">Replay</h2>
 
-        <Setting
-          label="Render quality"
-          hint="Lower it if the replay stutters on an older computer or phone."
-        >
-          <Segmented
-            value={s.replayQuality}
-            onChange={(v) => set('replayQuality', v)}
-            options={[
-              ['low', 'Low'],
-              ['medium', 'Medium'],
-              ['high', 'High'],
-            ]}
-          />
-        </Setting>
+          <Setting
+            label="Render quality"
+            hint="Lower it if the replay stutters on an older computer or phone."
+          >
+            <Segmented
+              value={s.replayQuality}
+              onChange={(v) => set('replayQuality', v)}
+              options={[
+                ['low', 'Low'],
+                ['medium', 'Medium'],
+                ['high', 'High'],
+              ]}
+            />
+          </Setting>
 
-        <Setting
-          label="Camera"
-          hint="Where every play is watched from. Behind the plate is the catcher's view of the zone; Broadcast is the TV shot from center field, over the pitcher's shoulder at the batter. Both follow a ball in play the same way."
-        >
-          <Segmented
-            value={s.replayCamera}
-            onChange={(v) => set('replayCamera', v)}
-            options={[
-              ['catcher', 'Behind the plate'],
-              ['centerfield', 'Broadcast'],
-            ]}
-          />
-        </Setting>
+          <Setting
+            label="Camera"
+            hint="Where every play is watched from. Behind the plate is the catcher's view of the zone; Broadcast is the TV shot from center field, over the pitcher's shoulder at the batter. Both follow a ball in play the same way."
+          >
+            <Segmented
+              value={s.replayCamera}
+              onChange={(v) => set('replayCamera', v)}
+              options={[
+                ['catcher', 'Behind the plate'],
+                ['centerfield', 'Broadcast'],
+              ]}
+            />
+          </Setting>
 
-        <Setting
-          label="Zoom"
-          hint="How tight the camera's shot is, for whichever view is chosen. Left pulls back for more of the field, right moves in on the plate."
-        >
-          <Slider
-            value={s.replayZoom}
-            onChange={(v) => set('replayZoom', v)}
-            min={0.6}
-            max={2}
-            step={0.05}
-            format={(v) => `${v.toFixed(2)}×`}
-            label="Replay zoom"
-          />
-        </Setting>
+          <Setting
+            label="Zoom"
+            hint="How tight the camera's shot is, for whichever view is chosen. Left pulls back for more of the field, right moves in on the plate."
+          >
+            <Slider
+              value={s.replayZoom}
+              onChange={(v) => set('replayZoom', v)}
+              min={0.6}
+              max={2}
+              step={0.05}
+              format={(v) => `${v.toFixed(2)}×`}
+              label="Replay zoom"
+            />
+          </Setting>
 
-        <Setting
-          label="Day or night"
-          hint="Auto lights the park the way MLB scheduled the game — a night game gets a dark sky and the field under the lights. Day or Night forces one for every game."
-        >
-          <Segmented
-            value={s.nightGames}
-            onChange={(v) => set('nightGames', v)}
-            options={[
-              ['auto', 'Auto'],
-              ['day', 'Day'],
-              ['night', 'Night'],
-            ]}
-          />
-        </Setting>
+          <Setting
+            label="Day or night"
+            hint="Auto lights the park the way MLB scheduled the game — a night game gets a dark sky and the field under the lights. Day or Night forces one for every game."
+          >
+            <Segmented
+              value={s.nightGames}
+              onChange={(v) => set('nightGames', v)}
+              options={[
+                ['auto', 'Auto'],
+                ['day', 'Day'],
+                ['night', 'Night'],
+              ]}
+            />
+          </Setting>
 
-        <Setting
-          label="Ball trail"
-          hint="Draws the ball's flight path — the part already flown bright, the rest faint. Turn it off to watch the ball on its own."
-        >
-          <Switch
-            checked={s.showBallTrail}
-            onChange={(v) => set('showBallTrail', v)}
+          <Setting
             label="Ball trail"
-          />
-        </Setting>
+            hint="Draws the ball's flight path — the part already flown bright, the rest faint. Turn it off to watch the ball on its own."
+          >
+            <Switch
+              checked={s.showBallTrail}
+              onChange={(v) => set('showBallTrail', v)}
+              label="Ball trail"
+            />
+          </Setting>
 
-        <Setting
-          label="Strike zone"
-          hint="Draws the batter's strike zone at the plate, and marks where each pitch crossed it."
-        >
-          <Switch
-            checked={s.showStrikeZone}
-            onChange={(v) => set('showStrikeZone', v)}
+          <Setting
             label="Strike zone"
-          />
-        </Setting>
+            hint="Draws the batter's strike zone at the plate, and marks where each pitch crossed it."
+          >
+            <Switch
+              checked={s.showStrikeZone}
+              onChange={(v) => set('showStrikeZone', v)}
+              label="Strike zone"
+            />
+          </Setting>
 
-        <Setting label="Advanced metrics" hint="Show exit velocity, launch angle and barrel rate throughout.">
-          <Switch
-            checked={s.showAdvancedMetrics}
-            onChange={(v) => set('showAdvancedMetrics', v)}
-            label="Advanced metrics"
-          />
-        </Setting>
-      </section>
+          <Setting label="Advanced metrics" hint="Show exit velocity, launch angle and barrel rate throughout.">
+            <Switch
+              checked={s.showAdvancedMetrics}
+              onChange={(v) => set('showAdvancedMetrics', v)}
+              label="Advanced metrics"
+            />
+          </Setting>
+        </section>
 
-      <section className="panel" aria-label="Display">
-        <div className="panel__head">
-          <div className="panel__title">
-            <h3>Display &amp; motion</h3>
-          </div>
-        </div>
+        <section className="settings__group" aria-label="Display and motion">
+          <h2 className="settings__title">Display &amp; motion</h2>
 
-        <Setting
-          label="Dark mode"
-          hint="A warm dark palette — espresso and bronze rather than grey, to match the light theme's cream and tan."
-        >
-          <Switch
-            checked={s.theme === 'dark'}
-            onChange={(v) => set('theme', v ? 'dark' : 'light')}
+          <Setting
             label="Dark mode"
-          />
-        </Setting>
+            hint="The ink edition: the same pages printed light on dark, with the red lifted to read on it."
+          >
+            <Switch
+              checked={s.theme === 'dark'}
+              onChange={(v) => set('theme', v ? 'dark' : 'light')}
+              label="Dark mode"
+            />
+          </Setting>
 
-        <Setting label="Units" hint="Applies to exit velocity, pitch speed and distances.">
-          <Segmented
-            value={s.units}
-            onChange={(v) => set('units', v)}
-            options={[
-              ['imperial', 'mph / ft'],
-              ['metric', 'km/h / m'],
-            ]}
-          />
-        </Setting>
+          <Setting label="Units" hint="Applies to exit velocity, pitch speed and distances.">
+            <Segmented
+              value={s.units}
+              onChange={(v) => set('units', v)}
+              options={[
+                ['imperial', 'mph / ft'],
+                ['metric', 'km/h / m'],
+              ]}
+            />
+          </Setting>
 
-        <Setting
-          label="Reduce motion"
-          hint="'System' follows your OS preference, which also skips the opening swing animation. 'Always' forces it on for in-app motion."
-        >
-          <Segmented
-            value={s.reduceMotion}
-            onChange={(v) => set('reduceMotion', v)}
-            options={[
-              ['system', 'System'],
-              ['always', 'Always'],
-            ]}
-          />
-        </Setting>
-      </section>
+          <Setting
+            label="Reduce motion"
+            hint="'System' follows your OS preference, which also skips the opening swing animation. 'Always' forces it on for in-app motion."
+          >
+            <Segmented
+              value={s.reduceMotion}
+              onChange={(v) => set('reduceMotion', v)}
+              options={[
+                ['system', 'System'],
+                ['always', 'Always'],
+              ]}
+            />
+          </Setting>
+        </section>
+      </div>
     </div>
   );
 }
@@ -172,12 +166,13 @@ export default function SettingsScreen() {
 /* --- Favourite teams ----------------------------------------------------- */
 
 /**
- * Pick the clubs to follow. All thirty at once, as logos: this is a question
- * about which badge you recognise, so a dropdown of names is the wrong control
- * even though it would be less markup.
+ * Pick the clubs to follow. All thirty at once, as a ruled grid of discs and
+ * names: this is a question about which club you recognise, so a dropdown of
+ * names is the wrong control even though it would be less markup. A chosen
+ * club's cell prints in reverse.
  *
- * Followed clubs are listed back above the grid in pick order, because that
- * order is meaningful elsewhere — the first one is treated as the main club.
+ * Pick order is meaningful elsewhere — the first one is treated as the main
+ * club — so that cell says so.
  */
 function FavoriteTeams() {
   const { state, actions } = useAppState();
@@ -185,74 +180,50 @@ function FavoriteTeams() {
   const full = favorites.length >= MAX_FAVORITES;
 
   return (
-    <section className="panel" aria-label="Favorite teams">
-      <div className="panel__head">
-        <div className="panel__title">
-          <IconStar size={16} filled={favorites.length > 0} />
-          <h3>Favorite teams</h3>
-        </div>
-        <div className="panel__title">
-          <span className="chip">
-            {favorites.length} of {MAX_FAVORITES}
-          </span>
+    <section className="favteams" aria-label="Favorite teams">
+      <div className="sectionhead favteams__head">
+        <h2>
+          <span className="favteams__mark" aria-hidden="true">★</span> Favorite teams
+        </h2>
+        <p className="favteams__hint">
+          Their games come first on the home page and on the schedule.
+          {full && ` At ${MAX_FAVORITES}, picking another drops the one you chose first.`}
+        </p>
+        <div className="sectionhead__aside">
           {favorites.length > 0 && (
             <button type="button" className="btn btn--ghost btn--sm" onClick={actions.clearFavorites}>
               Clear
             </button>
           )}
+          <span className="chip chip--ink">
+            {favorites.length} of {MAX_FAVORITES}
+          </span>
         </div>
       </div>
 
-      <div className="panel__body">
-        <p className="setting__hint favteams__hint">
-          Their games come first on the home page and on the schedule.
-          {full && ` At ${MAX_FAVORITES}, picking another drops the one you chose first.`}
-        </p>
-
-        {favorites.length > 0 && (
-          <ol className="favteams__picked">
-            {favorites.map((abbr, i) => (
-              <li key={abbr} style={teamVars(abbr)}>
-                <button
-                  type="button"
-                  className="favteams__chip"
-                  onClick={() => actions.toggleFavorite(abbr)}
-                  title={`Stop following the ${TEAMS[abbr].name}`}
-                >
-                  <TeamLogo abbr={abbr} size={18} />
-                  <span>{TEAMS[abbr].name}</span>
-                  {i === 0 && <small>main</small>}
-                  <span className="favteams__remove" aria-hidden="true">
-                    ×
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        )}
-
-        <div className="favteams__grid">
-          {allTeamAbbrs().map((abbr) => {
-            const on = favorites.includes(abbr);
-            return (
-              <button
-                key={abbr}
-                type="button"
-                className="favteams__team"
-                aria-pressed={on}
-                style={teamVars(abbr)}
-                onClick={() => actions.toggleFavorite(abbr)}
-                title={TEAMS[abbr].fullName}
-              >
-                <TeamLogo abbr={abbr} size={26} />
-                <span className="favteams__name">{TEAMS[abbr].name}</span>
-                <span className="favteams__star" aria-hidden="true">
-                  <IconStar size={13} filled={on} />
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="favteams__grid">
+        {allTeamAbbrs().map((abbr) => {
+          const on = favorites.includes(abbr);
+          return (
+            <button
+              key={abbr}
+              type="button"
+              className="favteams__team"
+              aria-pressed={on}
+              onClick={() => actions.toggleFavorite(abbr)}
+              title={on ? `Stop following the ${TEAMS[abbr].fullName}` : TEAMS[abbr].fullName}
+            >
+              <TeamLogo abbr={abbr} size={28} onInk={on} />
+              <span className="favteams__name">{TEAMS[abbr].name}</span>
+              {on && favorites[0] === abbr && favorites.length > 1 && (
+                <small className="favteams__main">Main</small>
+              )}
+              <span className="favteams__star" aria-hidden="true">
+                {on ? '★' : '☆'}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </section>
   );
