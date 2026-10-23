@@ -3,16 +3,19 @@ import { useAppState } from '../state/AppState.jsx';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
 import Scorebug from '../components/Scorebug.jsx';
 import ReplayViewport, { forReplay } from '../components/ReplayViewport.jsx';
-import BattedBallStrip from '../components/BattedBallStrip.jsx';
+// Parked with the strip below while it is decided whether to keep it.
+// import BattedBallStrip from '../components/BattedBallStrip.jsx';
 import BoxScore from '../components/BoxScore.jsx';
 import ActionReplay from '../components/ActionReplay.jsx';
 import GameLeaders from '../components/GameLeaders.jsx';
+import TeamCompare from '../components/TeamCompare.jsx';
 import { isGameOver } from '../replay/interlude.js';
+import { atBatAtPitch } from '../replay/follow.js';
 
 /**
- * The main screen: the score band across the top, then two columns. The replay,
- * its batted-ball numbers and the box score on the left; the play picker and
- * the game leaders in a rail on the right. The viewport keeps its own fixed
+ * The main screen: the score band across the top, then two columns. The replay
+ * and the box score on the left; the play picker, the game leaders and the
+ * team comparison in a rail on the right. The viewport keeps its own fixed
  * aspect ratio, so mounting the engine cannot reflow anything.
  */
 export default function LiveGameScreen() {
@@ -20,8 +23,19 @@ export default function LiveGameScreen() {
   const { atBats, ready, mode, error, game, players } = useLiveData();
   const selected = atBats.find((a) => a.id === state.selectedAtBatId) ?? atBats[0] ?? null;
 
+  /* One pitch of it, when a game leader picked one (its fastest pitch, its
+     hardest swing): the at-bat cut off at that pitch, under its own id so the
+     replay treats it as a play of its own rather than the at-bat again. */
+  const shown = useMemo(() => {
+    const n = state.selectedPitch;
+    const pitches = selected?.pitches ?? [];
+    const index = n == null ? -1 : pitches.findIndex((p) => p.number === n);
+    if (index < 0 || index === pitches.length - 1) return selected;
+    return { ...atBatAtPitch(selected, index), id: `${selected.id}#${n}` };
+  }, [selected, state.selectedPitch]);
+
   // Dressed for the replay: both clubs, and the numbers on both backs.
-  const atBat = useMemo(() => forReplay(selected, game, players), [selected, game, players]);
+  const atBat = useMemo(() => forReplay(shown, game, players), [shown, game, players]);
 
   /* Highlights pick each next play themselves. After the newest one, a game
      still going goes back to following live; a finished one stays on its
@@ -73,9 +87,14 @@ export default function LiveGameScreen() {
               highlights={state.highlights}
               onHighlightNext={onHighlightNext}
             />
+            {/* Batted-ball strip (exit velo, launch angle, distance, barrel).
+                Commented out, not deleted: the HUD already shows the same
+                numbers, so it reads as redundant, but it may come back. To
+                restore it, uncomment this and the import above.
             {state.settings.showAdvancedMetrics && (
               <BattedBallStrip atBat={selected} metric={state.settings.units === 'metric'} />
             )}
+            */}
           </div>
           <BoxScore />
         </div>
@@ -83,6 +102,7 @@ export default function LiveGameScreen() {
         <div className="live__side">
           <ActionReplay />
           <GameLeaders />
+          <TeamCompare />
         </div>
       </div>
     </div>

@@ -41,9 +41,10 @@ export default defineConfig({
     port: Number(process.env.PORT) || 5173,
     proxy: {
       // The Python backend (server/app.py). Proxying keeps the browser on one
-      // origin, so no CORS and EventSource just works.
+      // origin, so no CORS and EventSource just works. API_PORT points it at a
+      // backend on another port, for the same reason PORT exists above.
       '/api': {
-        target: 'http://127.0.0.1:8787',
+        target: `http://127.0.0.1:${Number(process.env.API_PORT) || 8787}`,
         changeOrigin: true,
         // SSE must not be buffered or the stream arrives in one lump at the end.
         configure: (proxy) => {

@@ -8,6 +8,7 @@ import {
   getGame as getStubGame,
   lineScore as stubLineScore,
   players as stubPlayers,
+  teamStats as stubTeamStats,
 } from '../data/stubs.js';
 import { useAppState } from './AppState.jsx';
 
@@ -40,6 +41,7 @@ function demoSnapshot(gameId) {
       home: { batters: boxScoreBatters, pitchers: boxScorePitchers },
       away: { batters: boxScoreBatters, pitchers: boxScorePitchers },
     },
+    teamStats: stubTeamStats,
     atBats: stubAtBats,
     players: stubPlayers,
     meta: { demo: true },
@@ -255,6 +257,8 @@ export function LiveDataProvider({ children }) {
       bases: resolved?.bases ?? { first: null, second: null, third: null },
       matchup: resolved?.matchup ?? {},
       boxScore: resolved?.boxScore ?? { home: { batters: [], pitchers: [] }, away: { batters: [], pitchers: [] } },
+      // null from a backend that predates the team comparison.
+      teamStats: resolved?.teamStats ?? null,
       atBats: resolved?.atBats ?? [],
       players: resolved?.players ?? {},
       plays,

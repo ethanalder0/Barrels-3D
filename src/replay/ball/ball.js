@@ -8,22 +8,33 @@
 import * as THREE from 'three';
 import { BALL_RADIUS, sampleAt } from './trajectory.js';
 
-/* A real ball is 2.9 in across, which at 400 ft is under a pixel — invisible
-   at the moment it matters most. So it is inflated with distance to hold a
-   minimum on-screen size, the way a broadcast tracker does.
+/* The ball is drawn at one fixed size, a little over life-size, everywhere
+   and from every camera.
 
-   Both numbers are deliberately conservative. An earlier version held a fixed
-   angular size with no ceiling, which made the ball five feet across out by
-   the wall — bigger than home plate, and it destroyed any sense of scale in
-   the frame. The trail is what makes a distant ball followable; the sphere
-   only has to be findable, so a few pixels is enough.
+   It used to be inflated with distance to hold a minimum on-screen size, the
+   way a broadcast tracker does. That reads well for a lone dot in the sky and
+   badly everywhere else, because the ball's size relative to the world then
+   changes as it flies. From behind the plate a pitch left the hand at about
+   2.5 times life-size (3.5 on a phone, where the stage is shorter) and came
+   down to 1x by the plate, so next to the pitcher, the plate and the batter it
+   visibly shrank on its way in, which is backwards. A ball of constant size
+   gets bigger on screen as it comes at the camera and smaller as it goes away,
+   which is the one cue the eye uses to read where it is.
 
-   MAX_SCALE is the number that matters. Home plate is 1.42 ft wide, so any
-   cap at or above 6x puts the ball back at plate size out by the wall — which
-   is the thing that looked ridiculous in the first place. At 3.5x the ball
-   tops out at about 10 inches: still clearly a ball next to an 8 ft fence. */
-const MIN_PIXELS = 8; // smallest on-screen diameter, in px
-const MAX_SCALE = 3.5; // never inflate past this, whatever the distance
+   The scale stays above 1 so a pitch is still a visible dot at release on a
+   small screen. */
+const BALL_SCALE = 1.6;
+
+/* Once it is hit, and only then, a ball far from the camera is allowed to grow
+   so it never drops below FAR_MIN_PX across: at 300 ft from a following
+   camera a ball of fixed size is a single pixel, and the eye loses it. This is
+   the old distance boost, kept for the one place it earns its keep and turned
+   well down (it used to hold 16 px and go to 3.5x life-size). The pitch never
+   gets it: over sixty feet the ball is close enough to read, and a pitch that
+   changed size on its way in was the bug the fixed size above fixed. */
+const FAR_MIN_PX = 6; // smallest on-screen diameter of a batted ball, px
+const FAR_MAX_SCALE = 3; // and never more than this, times life-size
+const FAR_RAMP = 0.35; // s after contact over which the boost is let in
 
 /* ---------------------------------------------------------------------------
    The cover. A baseball is two figure-eight panels stitched together, and the
@@ -238,6 +249,7 @@ export function createBall() {
     new THREE.SphereGeometry(BALL_RADIUS, 48, 32),
     new THREE.MeshStandardMaterial({ map: texture, roughness: 0.5 }),
   );
+  mesh.scale.setScalar(BALL_SCALE);
   mesh.castShadow = true;
   group.add(mesh);
 
@@ -275,6 +287,12 @@ export function createBall() {
   marker.rotation.x = -Math.PI / 2;
   marker.position.y = 0.05;
   group.add(marker);
+
+  /* Set by the engine on resize; the far-ball sizing needs it. */
+  let viewportHeight = 810;
+  const setViewportHeight = (px) => {
+    if (px > 0) viewportHeight = px;
+  };
 
   let path = null;
   let spinAxis = new THREE.Vector3(1, 0, 0);
@@ -315,12 +333,6 @@ export function createBall() {
     mesh.quaternion.identity();
   }
 
-  /* Set by the engine on resize; the apparent-size maths needs it. */
-  let viewportHeight = 810;
-  const setViewportHeight = (px) => {
-    if (px > 0) viewportHeight = px;
-  };
-
   function update(t, camera) {
     if (!path) return;
 
@@ -331,15 +343,7 @@ export function createBall() {
        vanishTime in play.js. Only the ball: the trail stays, so the break of a
        pitch can still be read while the play holds on its result. */
     mesh.visible = path.vanishTime == null || t < path.vanishTime;
-
-    /* Hold a minimum on-screen size, never below life-size and never above
-       MAX_SCALE. Derived from the camera and the viewport rather than a fixed
-       angle, so the ball looks the same on any screen and at any field of
-       view — including while the broadcast camera is zooming. */
-    const distance = camera.position.distanceTo(mesh.position);
-    const halfFov = Math.tan((camera.fov * Math.PI) / 360);
-    const needed = (MIN_PIXELS * distance * halfFov) / viewportHeight;
-    mesh.scale.setScalar(Math.min(MAX_SCALE, Math.max(1, needed / BALL_RADIUS)));
+    mesh.scale.setScalar(scaleAt(t, camera));
 
     /* Spin stops when the flight does. A batted ball at rest in the outfield
        has no business turning over for the rest of the play. */
@@ -350,6 +354,22 @@ export function createBall() {
     let n = 1;
     while (n < path.samples.length && path.samples[n].t <= t) n++;
     trailGeometry.setDrawRange(0, n);
+  }
+
+  /* Fixed size until contact. After it, the size that keeps the ball
+     FAR_MIN_PX across from this camera, never below the fixed size and never
+     above FAR_MAX_SCALE. Let in over FAR_RAMP so a camera that is already far
+     away at contact (the broadcast shot) does not see the ball jump. */
+  const scratch = new THREE.Vector3();
+  function scaleAt(t, camera) {
+    const contact = path.contactTime;
+    if (contact == null || t <= contact || !camera) return BALL_SCALE;
+    const span = 2 * Math.tan((camera.fov * Math.PI) / 360); // view height at unit depth
+    const distance = camera.position.distanceTo(mesh.getWorldPosition(scratch));
+    const needed = (FAR_MIN_PX * distance * span) / (2 * BALL_RADIUS * viewportHeight);
+    const far = Math.min(FAR_MAX_SCALE, Math.max(BALL_SCALE, needed));
+    const ramp = Math.min(1, (t - contact) / FAR_RAMP);
+    return BALL_SCALE + (far - BALL_SCALE) * ramp;
   }
 
   /** Settings -> Replay -> Ball trail. The ball and its landing ring stay. */

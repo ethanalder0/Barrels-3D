@@ -1890,69 +1890,105 @@
   font-size: 14px;
 }
 
-/* The running play-by-play under the picker. About seven rows on show; the
-   selected one is set in reverse, like a highlighted line in a box score. */
-.pbp {
-  max-height: 300px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--c-line-strong) transparent;
+/* --- Team comparison --------------------------------------------------------
+   Away on the left, home on the right, the label between them, and under each
+   row a split bar that meets in the middle: each half grows outward from the
+   centre line. The side doing better on the stat is printed in red. */
+
+.teamcompare__teams {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0 4px;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.pbp__row {
+.teamcompare__team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.teamcompare__empty {
+  padding: var(--s-4) 0;
+  color: var(--c-muted);
+  font-size: 14px;
+}
+
+.cmp {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 16px;
-  border-top: 1px solid var(--c-hair);
-  text-align: left;
+  grid-template-columns: 64px minmax(0, 1fr) 64px;
+  grid-template-areas:
+    'away label home'
+    'bar bar bar';
+  align-items: center;
+  row-gap: 6px;
+  padding: 10px 0 11px;
+  border-bottom: 1px solid var(--c-hair);
 }
 
-.pbp__row:hover {
+.cmp__label {
+  grid-area: label;
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.cmp__value {
+  margin: 0; /* a <dd>: drop the browser's 40px indent */
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cmp__value--away {
+  grid-area: away;
+}
+
+.cmp__value--home {
+  grid-area: home;
+  text-align: right;
+}
+
+.cmp[data-better='away'] .cmp__value--away,
+.cmp[data-better='home'] .cmp__value--home {
+  color: var(--c-red);
+}
+
+.cmp__bar {
+  grid-area: bar;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  height: 4px;
+}
+
+.cmp__half {
+  display: flex;
   background: var(--c-paper-2);
 }
 
-.pbp__row:focus-visible {
-  border-radius: 0;
+/* The away half fills from the centre out to the left. */
+.cmp__half--away {
+  justify-content: flex-end;
 }
 
-.pbp__row[aria-current='true'] {
+.cmp__half > span {
   background: var(--c-ink);
-  color: var(--c-paper);
-  border-top-color: var(--c-ink);
+  opacity: 0.28;
+  transition: width var(--dur-med) var(--ease-out);
 }
 
-.pbp__inning {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--c-muted);
-}
-
-.pbp__play {
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pbp__who {
-  font-weight: 400;
-  color: var(--c-muted);
-}
-
-.pbp__ev {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--c-muted);
-}
-
-.pbp__row[aria-current='true'] .pbp__inning,
-.pbp__row[aria-current='true'] .pbp__who,
-.pbp__row[aria-current='true'] .pbp__ev {
-  color: inherit;
+.cmp[data-better='away'] .cmp__half--away > span,
+.cmp[data-better='home'] .cmp__half--home > span {
+  background: var(--c-red);
+  opacity: 1;
 }
 
 /* --- Game leaders ------------------------------------------------------------ */
@@ -4384,8 +4420,7 @@
 /* A list that scrolls inside the page must hand the scroll back to the page at
    its ends on a touchscreen, or a thumb that lands on it is stuck there. */
 @media (pointer: coarse) {
-  .gameleaders__list,
-  .pbp {
+  .gameleaders__list {
     overscroll-behavior: auto;
   }
 }

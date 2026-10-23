@@ -964,7 +964,7 @@ export function createEngine() {
     if (phase === 'play') cueContact();
     updateBallVisibility();
     // Order matters: the director reads the playhead to place the camera, and
-    // the ball sizes itself from the camera. Also runs while paused, so
+    // a batted ball sizes itself from the camera. Also runs while paused, so
     // scrubbing the transport moves the shot instead of freezing it.
     if (locked) direct();
     ball.update(playhead, camera);

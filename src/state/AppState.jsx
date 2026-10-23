@@ -17,6 +17,11 @@ const initialState = {
   entered: false, // past the splash; nothing is fetched until then
   selectedGameId: defaultGameId,
   selectedAtBatId: atBats[0].id,
+  /* One pitch of the selected at-bat to replay instead of the whole thing, by
+     its number; null for the at-bat as it ended. Set by the game leaders,
+     whose fastest pitch or swing is often not the one that ended the at-bat.
+     Any other pick clears it. */
+  selectedPitch: null,
   /* Which day's scoreboard the games screen is showing. null means today, so
      the common case needs no date in state and the app opens on today without
      having to know what today is. Seeded from ?date= so the URL still works. */
@@ -93,6 +98,7 @@ function reducer(state, action) {
       return {
         ...state,
         selectedAtBatId: action.atBatId,
+        selectedPitch: action.pitch ?? null,
         followLatest: !!action.auto,
         highlights: action.highlight ? state.highlights : null,
       };
@@ -102,6 +108,7 @@ function reducer(state, action) {
       return {
         ...state,
         selectedAtBatId: action.atBatId,
+        selectedPitch: null,
         followLatest: false,
         highlights: state.highlightRuns + 1,
         highlightRuns: state.highlightRuns + 1,
@@ -148,8 +155,8 @@ export function AppStateProvider({ children }) {
       selectGame: (gameId) => dispatch({ type: 'selectGame', gameId }),
       setScoreboardDate: (date) => dispatch({ type: 'setScoreboardDate', date }),
       hydrateGame: (gameId) => dispatch({ type: 'hydrateGame', gameId }),
-      selectAtBat: (atBatId, { auto = false, highlight = false } = {}) =>
-        dispatch({ type: 'selectAtBat', atBatId, auto, highlight }),
+      selectAtBat: (atBatId, { auto = false, highlight = false, pitch = null } = {}) =>
+        dispatch({ type: 'selectAtBat', atBatId, auto, highlight, pitch }),
       setFollowLatest: (value) => dispatch({ type: 'setFollowLatest', value }),
       startHighlights: (atBatId) => dispatch({ type: 'startHighlights', atBatId }),
       stopHighlights: () => dispatch({ type: 'stopHighlights' }),

@@ -16,6 +16,7 @@ FIELDERS, not runners; only `offense` describes who is on base.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 
 # result.eventType -> the `kind` the UI colour-codes on
@@ -248,6 +249,70 @@ def _box_score(feed: dict) -> dict:
     for side in ("away", "home"):
         s = teams.get(side) or {}
         out[side] = {"batters": _batter_rows(s), "pitchers": _pitcher_rows(s)}
+    return out
+
+
+# --- team comparison ----------------------------------------------------------
+
+# A ball hit this hard or harder is "hard-hit", by Statcast's own line.
+_HARD_HIT_MPH = 95.0
+
+
+def _risp(team: dict) -> dict | None:
+    """Hits and at-bats with runners in scoring position, from "Team RISP"."""
+    for section in team.get("info") or []:
+        for field in section.get("fieldList") or []:
+            if field.get("label") == "Team RISP":
+                m = re.search(r"(\d+)-for-(\d+)", field.get("value") or "")
+                if m:
+                    return {"h": int(m.group(1)), "ab": int(m.group(2))}
+    return None
+
+
+def _contact(feed: dict) -> dict:
+    """Balls in play, hard-hit balls and average exit velocity per side.
+
+    Read from the in-play pitch of each plate appearance, not from whatever
+    event last carried hit data: on a strikeout that is an earlier foul, which
+    is not a ball in play.
+    """
+    out = {side: {"battedBalls": 0, "hardHit": 0, "veloSum": 0.0} for side in ("away", "home")}
+    for play in (feed.get("liveData") or {}).get("plays", {}).get("allPlays") or []:
+        side = "away" if (play.get("about") or {}).get("halfInning") == "top" else "home"
+        for ev in play.get("playEvents") or []:
+            if not (ev.get("details") or {}).get("isInPlay"):
+                continue
+            speed = (ev.get("hitData") or {}).get("launchSpeed")
+            if isinstance(speed, (int, float)):
+                out[side]["battedBalls"] += 1
+                out[side]["veloSum"] += speed
+                out[side]["hardHit"] += speed >= _HARD_HIT_MPH
+    return out
+
+
+def _team_stats(feed: dict) -> dict:
+    """Team batting totals for the side-by-side comparison on the live page."""
+    teams = ((feed.get("liveData") or {}).get("boxscore") or {}).get("teams") or {}
+    contact = _contact(feed)
+    out = {}
+    for side in ("away", "home"):
+        team = teams.get(side) or {}
+        bat = (team.get("teamStats") or {}).get("batting") or {}
+        c = contact[side]
+        out[side] = {
+            "hits": bat.get("hits", 0),
+            "doubles": bat.get("doubles", 0),
+            "triples": bat.get("triples", 0),
+            "homeRuns": bat.get("homeRuns", 0),
+            "xbh": bat.get("doubles", 0) + bat.get("triples", 0) + bat.get("homeRuns", 0),
+            "walks": bat.get("baseOnBalls", 0),
+            "strikeOuts": bat.get("strikeOuts", 0),
+            "stolenBases": bat.get("stolenBases", 0),
+            "risp": _risp(team),
+            "battedBalls": c["battedBalls"],
+            "hardHit": c["hardHit"],
+            "avgExitVelo": round(c["veloSum"] / c["battedBalls"], 1) if c["battedBalls"] else None,
+        }
     return out
 
 
@@ -758,6 +823,7 @@ def snapshot(feed: dict) -> dict:
             "pitcherId": _id_str((defense.get("pitcher") or {}).get("id")),
         },
         "boxScore": _box_score(feed),
+        "teamStats": _team_stats(feed),
         "atBats": at_bats,
         "players": _players(feed, at_bats),
         "meta": {

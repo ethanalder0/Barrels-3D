@@ -44,22 +44,47 @@ export function pitchReady(atBat, index) {
 }
 
 /**
+ * Balls and strikes going into each pitch: [before, after] for `index`.
+ *
+ * A foul with two strikes leaves the count alone; the display caps at 3-2,
+ * the way a scorebug does (ball four and strike three are the result, not a
+ * count).
+ */
+export function countAt(pitches, index) {
+  let balls = 0;
+  let strikes = 0;
+  const apply = (p) => {
+    if (p?.isBall || p?.outcome === 'ball') balls += 1;
+    else if (p?.isStrike && !(p.outcome === 'foul' && strikes >= 2)) strikes += 1;
+  };
+  for (let i = 0; i < index; i++) apply(pitches[i]);
+  const before = { balls: Math.min(balls, 3), strikes: Math.min(strikes, 2) };
+  apply(pitches[index]);
+  return [before, { balls: Math.min(balls, 3), strikes: Math.min(strikes, 2) }];
+}
+
+/**
  * The at-bat as it stood the instant this pitch was thrown.
  *
  * The engine shows the last pitch of whatever at-bat it is given, so replaying
  * pitch two of a seven-pitch at-bat means handing it the at-bat with two
  * pitches in it. Anything the at-bat only knew later — how it ended, the
- * batted ball it ended with — belongs to the final pitch and is stripped from
- * every earlier one.
+ * batted ball it ended with, the count it ended on — belongs to the final
+ * pitch and is stripped from every earlier one. The count is recounted from
+ * the pitches before it, so the scorebug over pitch two does not read the
+ * full count the at-bat finished on.
  */
 export function atBatAtPitch(atBat, index) {
   const pitches = atBat.pitches.slice(0, index + 1);
   const pitch = pitches[index];
   if (index === atBat.pitches.length - 1) return { ...atBat, pitches, pitch };
+  const [before, after] = countAt(atBat.pitches, index);
+  const at = atBat.situation?.before;
   return {
     ...atBat,
     pitches,
     pitch,
+    situation: at ? { before: { ...at, ...before }, after: { ...at, ...after } } : atBat.situation,
     kind: 'live',
     live: true,
     result: 'At bat',

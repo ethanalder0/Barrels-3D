@@ -154,6 +154,19 @@ const DEFAULT_PARK = createPark();
    hop and roll to the tracked spot, which is what a grounder does. */
 const maxSpinFor = (launchAngle) =>
   300 + (Math.max(0, Math.min(30, launchAngle)) / 30) * 3500; // rpm
+/* The highest a fielder can glove a ball, ft. A catch the solver places above
+   this is not a catch anyone made; see the intercept branch. */
+const REACH_HEIGHT = 8;
+
+/* Launched at or above this, a caught ball is a fly ball or a pop-up, and its
+   replay ends on the grass at the fielder's spot rather than in his glove. A
+   flatter ball is a liner, and those are caught in the air. */
+const LOFTED_ANGLE = 20; // degrees
+
+/* How far the landing solve for an out-of-reach catch may thicken the air.
+   Past this the flight stops looking like a baseball, so it gives up. */
+const DRAG_BOUNDS = [1, 6];
+
 const DT = 1 / 480; // integration step
 const OUT_HZ = 120; // sample rate of the returned path
 const MAX_TIME = 15; // s, a hard stop so nothing can loop forever
@@ -459,6 +472,29 @@ export function solveTrajectory(p, park = DEFAULT_PARK) {
   // caught. Fly the nominal arc and stop there; that height is the catch.
   if (distance < lo.carry) {
     const hit = crossing(natural.samples, distance);
+
+    /* ...unless that height is out of reach. On a lofted ball this was most
+       of them: across six real games, half of all fly outs and pop outs came
+       back as a "catch" between 20 and 200 ft up, frozen in the sky. The model
+       carries a steep ball further than a real one goes (a 102 mph pop-up at
+       67 degrees still carries 123 ft at 6000 rpm against an 85 ft catch), so
+       no spin brings it down on the fielder.
+
+       What is known for sure is that it was caught, and where. So keep the
+       measured launch, solve the one number that is least trustworthy for a
+       ball hit nearly straight up — how hard the air pushes back — so the
+       flight comes down on the fielder's spot, and end it there on the grass.
+
+       Every lofted ball ends that way, reachable or not: a fly ball is read by
+       where it comes down, and one that stops five feet up looks like it hung
+       there. A low liner he could actually reach (one at the shortstop's
+       chest) is still caught in the air, at that height. */
+    const lofted = p.launchAngle >= LOFTED_ANGLE;
+    if (p.caught && hit && (lofted || hit.y > REACH_HEIGHT)) {
+      const landed = landOn(distance);
+      if (landed) return result(landed);
+    }
+
     if (hit) {
       return result({
         samples: truncate(natural.samples, hit),
@@ -469,6 +505,34 @@ export function solveTrajectory(p, park = DEFAULT_PARK) {
         solved: true,
       });
     }
+  }
+
+  /** Bring a caught ball down on `target` by solving drag; null if it can't. */
+  function landOn(target) {
+    const flyWith = (dragScale) => {
+      const f = flight({ ...base, dragScale: base.dragScale * dragScale, spinRpm: nominal });
+      return { f, carry: groundDistance(f.samples[f.samples.length - 1]) };
+    };
+    if (flyWith(DRAG_BOUNDS[1]).carry > target) return null;
+    let a = DRAG_BOUNDS[0];
+    let b = DRAG_BOUNDS[1];
+    let best = flyWith(a);
+    for (let i = 0; i < 30 && b - a > 0.001; i++) {
+      const mid = (a + b) / 2;
+      best = flyWith(mid);
+      if (best.carry > target) a = mid; // still too far: more drag
+      else b = mid;
+    }
+    return {
+      samples: best.f.samples,
+      carry: best.carry,
+      hangTime: best.f.hangTime,
+      trackedTime: best.f.hangTime,
+      spinRpm: nominal,
+      dragScale: base.dragScale * ((a + b) / 2),
+      mode: 'caught',
+      solved: Math.abs(best.carry - target) < 2,
+    };
   }
 
   // 2. CARRY — land it exactly on the number by solving backspin.

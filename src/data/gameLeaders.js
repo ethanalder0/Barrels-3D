@@ -1,10 +1,13 @@
 /* ---------------------------------------------------------------------------
    Game leaders: who hit it hardest, swung fastest, threw hardest — this game.
 
-   Every board ranks PLAYERS by their single best event, not events: otherwise
-   one flamethrower's twenty 98s fill the pitch-velocity board and it says
-   nothing about anyone else. Each row keeps the at-bat its best event came
-   from, so the UI can replay it.
+   Every board ranks EVENTS, not players: if one pitcher threw the three
+   fastest pitches of the game, he holds the top three rows. Each row keeps the
+   at-bat its event came from AND the pitch within it, so the UI replays that
+   pitch. Pitch velocity,
+   spin rate and bat speed are often not the pitch that ended the at-bat (a
+   99 mph fastball taken for ball one, a 78 mph swing fouled off), and an
+   at-bat on its own replays only its last pitch.
 
    Exit velocity, distance and pitch velocity come straight off the at-bats the
    snapshot already carries. Bat speed and spin rate are not in the statsapi
@@ -32,8 +35,8 @@ export const DEFAULT_LEADER_CATEGORY = 'exitVelo';
 --------------------------------------------------------------------------- */
 export const GAME_LEADER_VISIBLE = 5;
 
-/* How many a board holds in all, below the ones on show. More than any one
-   game's list of players, so in practice it is everyone. */
+/* How many a board holds in all, below the ones on show. Events, not players,
+   so this is a cut rather than everyone: a game has ~300 pitches. */
 export const GAME_LEADER_LIMIT = 50;
 
 /** Which club a side of the at-bat plays for: the away team bats in the top. */
@@ -48,7 +51,16 @@ function pitchByNumber(ab, n) {
   return (ab.pitches ?? []).find((p) => p.number === n) ?? null;
 }
 
-/** One candidate event per (player, value). Only the best per player survives. */
+/* The pitch a row should replay, or null for "the at-bat as it ended", which
+   is what replaying the at-bat already shows. Keeping the final pitch as null
+   means a row and a pick of the same at-bat elsewhere count as the same play. */
+function pitchOf(ab, n) {
+  if (n == null) return null;
+  const last = ab.pitches?.[ab.pitches.length - 1]?.number;
+  return n === last ? null : n;
+}
+
+/** Every event a board can rank, one per batted ball, pitch or swing. */
 function events(categoryId, atBats, statcast, game) {
   const out = [];
 
@@ -79,6 +91,7 @@ function events(categoryId, atBats, statcast, game) {
           value: p.velo,
           context: p.type && p.type !== '—' ? p.type : 'Pitch',
           ab,
+          pitchNumber: pitchOf(ab, p.number),
         });
       }
     }
@@ -101,6 +114,7 @@ function events(categoryId, atBats, statcast, game) {
           // swing reads as what happened on that pitch (foul, whiff).
           context: pitch?.isInPlay ? ab.result : pitch?.call ?? 'Swing',
           ab,
+          pitchNumber: pitchOf(ab, row.n),
         });
       } else {
         if (row.spinRate == null) continue;
@@ -111,6 +125,7 @@ function events(categoryId, atBats, statcast, game) {
           value: row.spinRate,
           context: pitch?.type ?? 'Pitch',
           ab,
+          pitchNumber: pitchOf(ab, row.n),
         });
       }
     }
@@ -120,8 +135,12 @@ function events(categoryId, atBats, statcast, game) {
 }
 
 /**
- * The top `limit` players for a category, best event each, highest first.
- * Rows: { rank, playerId, name, team, value, context, ab }.
+ * The top `limit` events for a category, highest first. The same player can
+ * hold any number of rows.
+ *
+ * Rows: { key, rank, playerId, name, team, value, context, ab, pitchNumber },
+ * where pitchNumber is null when the event was the at-bat's last pitch and
+ * `key` is unique to the event (its at-bat and pitch).
  *
  * `limit` defaults to GAME_LEADER_LIMIT above — change it there, not here.
  */
@@ -129,14 +148,8 @@ export function gameLeaders(
   categoryId,
   { atBats = [], statcast = null, game = null, limit = GAME_LEADER_LIMIT } = {},
 ) {
-  const best = new Map();
-  for (const ev of events(categoryId, atBats, statcast, game)) {
-    const key = ev.playerId || ev.name;
-    const prev = best.get(key);
-    if (!prev || ev.value > prev.value) best.set(key, ev);
-  }
-  return [...best.values()]
+  return events(categoryId, atBats, statcast, game)
     .sort((a, b) => b.value - a.value)
     .slice(0, limit)
-    .map((row, i) => ({ ...row, rank: i + 1 }));
+    .map((row, i) => ({ ...row, key: `${row.ab.id}#${row.pitchNumber ?? 'end'}`, rank: i + 1 }));
 }

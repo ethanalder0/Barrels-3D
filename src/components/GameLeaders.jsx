@@ -17,7 +17,9 @@ const STATCAST_REFRESH_MS = 30_000;
 
 /**
  * This game's best: hardest hit, fastest swing, hardest thrown. One row per
- * player (their best event), and each row replays the play it came from.
+ * event, so a player can hold several, and each row replays that event: the
+ * pitch itself when it was not the one that ended the at-bat (see
+ * gameLeaders.js).
  *
  * Bat speed and spin rate come from Savant, fetched only while one of those
  * boards is open and refreshed while the game is live.
@@ -77,16 +79,23 @@ export default function GameLeaders() {
           {rows.map((row) => {
             const { value, unit } = format(row.value, category.unit, metric);
             return (
-              <li key={`${row.playerId || row.name}`} style={teamVars(row.team)}>
+              <li key={row.key} style={teamVars(row.team)}>
                 <button
                   type="button"
                   className="gameleaders__row"
-                  aria-current={row.ab.id === state.selectedAtBatId}
+                  aria-current={
+                    row.ab.id === state.selectedAtBatId && row.pitchNumber === state.selectedPitch
+                  }
                   onClick={() => {
-                    actions.selectAtBat(row.ab.id);
+                    // The pitch itself, not the at-bat it was part of.
+                    actions.selectAtBat(row.ab.id, { pitch: row.pitchNumber });
                     scrollReplayIntoView();
                   }}
-                  title={`Replay: ${row.ab.detail ?? row.context}`}
+                  title={
+                    row.pitchNumber == null
+                      ? `Replay: ${row.ab.detail ?? row.context}`
+                      : `Replay pitch ${row.pitchNumber} of ${row.ab.batter}'s at-bat (${row.ab.inningLabel})`
+                  }
                 >
                   <span className="gameleaders__rank u-num">{row.rank}</span>
                   <TeamLogo abbr={row.team} size={30} />
