@@ -25,7 +25,12 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest. When that label moved to Ubuntu 26 (Oct 2026)
+    # every push to Heroku's registry timed out before a single response came
+    # back, on a deploy that had worked on 24.04. The registry is behind a CDN
+    # that also publishes IPv6 addresses, and hosted runners have no IPv6, so
+    # the likeliest cause is the newer image's Docker trying those first.
+    runs-on: ubuntu-24.04
     env:
       HEROKU_APP: ${{ vars.HEROKU_APP }}
       HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
@@ -64,9 +69,22 @@ jobs:
 
       - name: Push to Heroku
         if: env.HEROKU_APP != '' && env.HEROKU_API_KEY != ''
+        # Retried: a registry that is slow to answer once should not cost a
+        # whole deploy. Three tries each, 15 s apart.
         run: |
-          echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
-          docker push "registry.heroku.com/$HEROKU_APP/web"
+          retry() {
+            for attempt in 1 2 3; do
+              "$@" && return 0
+              echo "::warning::attempt $attempt failed: $*"
+              sleep 15
+            done
+            return 1
+          }
+          login() {
+            echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
+          }
+          retry login
+          retry docker push "registry.heroku.com/$HEROKU_APP/web"
 
       # The CLI's `container:release`, done through the Platform API directly
       # so the runner does not need the Heroku CLI installed.
