@@ -8,4 +8,7 @@ __pycache__/
 Thumbs.db
 # Raw Mixamo downloads: kept locally, not redistributable (see README credits)
 assets/animations/*.fbx
+# Machine Learning
+ml/.venv/
+ml/data/
 
