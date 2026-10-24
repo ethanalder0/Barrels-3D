@@ -13,27 +13,33 @@ import TeamLogo from './TeamLogo.jsx';
  * neither side.
  *
  * Everything comes from the snapshot's `teamStats` (server/projection.py), so
- * it is the same for a live game and for one being watched back.
+ * it is the same for a live game and for one being watched back. xBA and xSLG
+ * are the outcome model's running team lines: expected hits and total bases
+ * over official at-bats, so they read straight against AVG and SLG.
  */
+
+/* .261, not 0.261: the way a batting average is written. */
+const rate = (v) => (v == null ? '—' : v >= 1 ? v.toFixed(3) : v.toFixed(3).replace(/^0/, ''));
+
 const ROWS = [
   { id: 'hits', label: 'Hits', value: (t) => t.hits },
-  { id: 'xbh', label: 'Extra-base hits', value: (t) => t.xbh },
   { id: 'walks', label: 'Walks', value: (t) => t.walks },
   { id: 'k', label: 'Strikeouts', value: (t) => t.strikeOuts, lowerIsBetter: true },
-  {
-    id: 'risp',
-    label: 'With RISP',
-    // Compared by average, shown as hits-for-at-bats the way a box score does.
-    value: (t) => (t.risp && t.risp.ab ? t.risp.h / t.risp.ab : null),
-    show: (t) => (t.risp ? `${t.risp.h}-${t.risp.ab}` : '—'),
-  },
-  { id: 'hard', label: 'Hard-hit balls', value: (t) => t.hardHit },
+  { id: 'xba', label: 'xBA', value: (t) => t.xBA, show: (t) => rate(t.xBA) },
+  { id: 'xslg', label: 'xSLG', value: (t) => t.xSLG, show: (t) => rate(t.xSLG) },
   {
     id: 'ev',
     label: 'Avg exit velo',
     value: (t) => t.avgExitVelo,
     show: (t, metric) =>
       t.avgExitVelo == null ? '—' : (metric ? t.avgExitVelo * 1.60934 : t.avgExitVelo).toFixed(1),
+  },
+  {
+    id: 'risp',
+    label: 'With RISP',
+    // Compared by average, shown as hits-for-at-bats the way a box score does.
+    value: (t) => (t.risp && t.risp.ab ? t.risp.h / t.risp.ab : null),
+    show: (t) => (t.risp ? `${t.risp.h}-${t.risp.ab}` : '—'),
   },
   { id: 'sb', label: 'Stolen bases', value: (t) => t.stolenBases },
 ];

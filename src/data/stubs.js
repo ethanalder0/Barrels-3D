@@ -72,14 +72,12 @@ export function getGame(id) {
    server/projection.py's _team_stats() emits. */
 export const teamStats = {
   away: {
-    hits: 5, doubles: 1, triples: 0, homeRuns: 1, xbh: 2, walks: 3, strikeOuts: 8,
-    stolenBases: 1, risp: { h: 1, ab: 6 },
-    battedBalls: 21, hardHit: 7, avgExitVelo: 88.9,
+    hits: 5, walks: 3, strikeOuts: 8, stolenBases: 1, risp: { h: 1, ab: 6 },
+    atBats: 29, xBA: 0.214, xSLG: 0.341, avgExitVelo: 88.9,
   },
   home: {
-    hits: 7, doubles: 2, triples: 0, homeRuns: 2, xbh: 4, walks: 2, strikeOuts: 6,
-    stolenBases: 0, risp: { h: 3, ab: 7 },
-    battedBalls: 24, hardHit: 11, avgExitVelo: 92.4,
+    hits: 7, walks: 2, strikeOuts: 6, stolenBases: 0, risp: { h: 3, ab: 7 },
+    atBats: 30, xBA: 0.268, xSLG: 0.452, avgExitVelo: 92.4,
   },
 };
 

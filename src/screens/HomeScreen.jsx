@@ -80,7 +80,7 @@ export default function HomeScreen() {
 
       {mode === 'demo' && (
         <p className="notice">
-          Showing placeholder data — the live backend isn’t reachable
+          Showing placeholder data. The live backend isn’t reachable
           {error ? ` (${error})` : ''}. Run <code>python server/app.py</code> for real games
           and league leaders.
         </p>
@@ -188,7 +188,7 @@ function Leaders({ demo }) {
       </div>
 
       {demo && <p className="leaders__empty">League leaders need the live backend.</p>}
-      {!demo && error && <p className="notice">Couldn’t load leaders — <code>{error}</code></p>}
+      {!demo && error && <p className="notice">Couldn’t load leaders: <code>{error}</code></p>}
       {!demo && !error && !data && <LeaderSkeleton />}
 
       {data && (
@@ -237,7 +237,7 @@ function LeaderBoard({ groupId, category }) {
               playerId={row.playerId}
               name={row.name}
               className="board__name"
-              title={row.teamName ? `${row.name} — ${row.teamName}` : row.name}
+              title={row.teamName ? `${row.name}, ${row.teamName}` : row.name}
             />
             <span className="board__value u-num">{row.display}</span>
             <span

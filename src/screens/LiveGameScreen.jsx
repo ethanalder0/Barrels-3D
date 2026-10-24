@@ -13,10 +13,13 @@ import { isGameOver } from '../replay/interlude.js';
 import { atBatAtPitch } from '../replay/follow.js';
 
 /**
- * The main screen: the score band across the top, then two columns. The replay
- * and the box score on the left; the play picker, the game leaders and the
- * team comparison in a rail on the right. The viewport keeps its own fixed
- * aspect ratio, so mounting the engine cannot reflow anything.
+ * The main screen: the score band across the top, then a two-by-two grid. The
+ * replay beside the play picker and game leaders; the box score beside the
+ * team comparison. Sharing rows is what keeps the box score and the team
+ * comparison heads on one line whatever the window width: the replay grows
+ * with the window and the rail does not, so separate columns only lined up at
+ * one size. The viewport keeps its own fixed aspect ratio, so mounting the
+ * engine cannot reflow anything.
  */
 export default function LiveGameScreen() {
   const { state, actions } = useAppState();
@@ -58,7 +61,7 @@ export default function LiveGameScreen() {
     <div className="live">
       {mode === 'demo' && (
         <p className="notice">
-          Showing placeholder data — the live backend isn't reachable
+          Showing placeholder data. The live backend isn't reachable
           {error ? ` (${error})` : ''}. Run <code>python server/app.py</code> for real games.
         </p>
       )}
@@ -67,41 +70,45 @@ export default function LiveGameScreen() {
       <Scorebug />
 
       <div className="live__body">
-        <div className="live__main">
-          {/* The numbers sit flush under the stage, so the two read as one. */}
-          <div>
-            <ReplayViewport
-              atBat={atBat}
-              quality={state.settings.replayQuality}
-              camera={state.settings.replayCamera}
-              zoom={state.settings.replayZoom}
-              night={night}
-              trail={state.settings.showBallTrail}
-              zone={state.settings.showStrikeZone}
-              units={state.settings.units}
-              sound={state.settings.sound}
-              venue={game?.venue}
-              homeTeam={game?.home?.abbr}
-              followLatest={state.followLatest}
-              onFollowLatest={() => actions.setFollowLatest(true)}
-              highlights={state.highlights}
-              onHighlightNext={onHighlightNext}
-            />
-            {/* Batted-ball strip (exit velo, launch angle, distance, barrel).
-                Commented out, not deleted: the HUD already shows the same
-                numbers, so it reads as redundant, but it may come back. To
-                restore it, uncomment this and the import above.
-            {state.settings.showAdvancedMetrics && (
-              <BattedBallStrip atBat={selected} metric={state.settings.units === 'metric'} />
-            )}
-            */}
-          </div>
+        {/* The numbers sit flush under the stage, so the two read as one. */}
+        <div className="live__replay">
+          <ReplayViewport
+            atBat={atBat}
+            quality={state.settings.replayQuality}
+            camera={state.settings.replayCamera}
+            zoom={state.settings.replayZoom}
+            night={night}
+            trail={state.settings.showBallTrail}
+            zone={state.settings.showStrikeZone}
+            units={state.settings.units}
+            sound={state.settings.sound}
+            venue={game?.venue}
+            homeTeam={game?.home?.abbr}
+            followLatest={state.followLatest}
+            onFollowLatest={() => actions.setFollowLatest(true)}
+            highlights={state.highlights}
+            onHighlightNext={onHighlightNext}
+          />
+          {/* Batted-ball strip (exit velo, launch angle, distance, barrel).
+              Commented out, not deleted: the HUD already shows the same
+              numbers, so it reads as redundant, but it may come back. To
+              restore it, uncomment this and the import above.
+          {state.settings.showAdvancedMetrics && (
+            <BattedBallStrip atBat={selected} metric={state.settings.units === 'metric'} />
+          )}
+          */}
+        </div>
+
+        <div className="live__rail">
+          <ActionReplay />
+          <GameLeaders />
+        </div>
+
+        <div className="live__box">
           <BoxScore />
         </div>
 
-        <div className="live__side">
-          <ActionReplay />
-          <GameLeaders />
+        <div className="live__compare">
           <TeamCompare />
         </div>
       </div>

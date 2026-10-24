@@ -38,7 +38,7 @@ export default function PlayerName({
       type="button"
       className={`linkish playername ${className}`.trim()}
       onClick={() => actions.openPlayer(String(playerId))}
-      aria-label={name ? `${name} — player card` : 'Player card'}
+      aria-label={name ? `${name}, player card` : 'Player card'}
       title={title}
       {...rest}
     >

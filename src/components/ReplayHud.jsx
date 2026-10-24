@@ -67,7 +67,7 @@ export default function ReplayHud({
               className="hud__btn"
               onClick={onCycleCamera}
               aria-label={`Camera: ${mode.label}. Switch camera`}
-              title={`Camera: ${mode.label} — switch (L)`}
+              title={`Camera: ${mode.label}. Press L to switch`}
             >
               <IconCamera />
             </button>
@@ -371,6 +371,55 @@ function PlayCard({ atBat, moment, units }) {
           {trajectory && landedUp && <span className="hud__traj">{trajectory}</span>}
         </div>
       )}
+
+      {/* Shown with exit velocity, not held for the landing: it is what the
+          contact deserved, worked out from the same numbers, so it gives
+          nothing away that the exit velocity and launch angle do not. */}
+      {hasHit && contactUp && atBat.outcome && <Expected odds={atBat.outcome} />}
+    </div>
+  );
+}
+
+const OUTCOMES = [
+  ['out', 'Out'],
+  ['1B', '1B'],
+  ['2B', '2B'],
+  ['3B', '3B'],
+  ['HR', 'HR'],
+];
+
+/* "17%", "<1%" for a sliver that is not zero, "0%" only when it is. */
+const pct = (p) => (p >= 0.995 ? '100%' : p >= 0.005 ? `${Math.round(p * 100)}%` : p > 0 ? '<1%' : '0%');
+
+/**
+ * The model's expected outcome for this ball (server/outcome_model.py): one
+ * bar split five ways, the five chances under it with the likeliest lit, and
+ * xBA, written the way a batting average is.
+ */
+function Expected({ odds }) {
+  const likeliest = OUTCOMES.reduce((best, [id]) => (odds[id] > odds[best] ? id : best), 'out');
+  const xba = odds.xBA >= 1 ? '1.000' : odds.xBA.toFixed(3).replace(/^0/, '');
+  return (
+    <div className="hud__expected" aria-label={`Expected outcome. xBA ${xba}`}>
+      <div className="hud__xhead">
+        <span className="hud__eyebrow">Expected</span>
+        <span className="hud__xba u-num">
+          <small>xBA</small> {xba}
+        </span>
+      </div>
+      <div className="hud__xbar" aria-hidden="true">
+        {OUTCOMES.map(([id]) => (
+          <span key={id} data-outcome={id} style={{ flexGrow: odds[id] }} />
+        ))}
+      </div>
+      <dl className="hud__xgrid">
+        {OUTCOMES.map(([id, label]) => (
+          <div key={id} data-outcome={id} data-top={id === likeliest || undefined}>
+            <dt>{label}</dt>
+            <dd className="u-num">{pct(odds[id])}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }

@@ -85,7 +85,7 @@ export default function LeaderboardScreen() {
       {mode === 'demo' && <p className="atbats__empty">League leaders need the live backend.</p>}
       {mode !== 'demo' && error && (
         <p className="notice">
-          Couldn’t load the leaderboard — <code>{error}</code>
+          Couldn’t load the leaderboard: <code>{error}</code>
         </p>
       )}
       {mode !== 'demo' && !error && !data && <LeaderPageSkeleton />}

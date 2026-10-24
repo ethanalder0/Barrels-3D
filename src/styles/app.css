@@ -428,7 +428,7 @@
 }
 
 .panel--boxed > .panel__head {
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--c-ink);
 }
 
@@ -475,22 +475,48 @@
 .live__body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 420px;
+  grid-template-areas:
+    'replay rail'
+    'box compare';
   gap: 40px;
   padding-top: 32px;
   align-items: start;
 }
 
-.live__main,
-.live__side {
+.live__replay {
+  grid-area: replay;
+  min-width: 0;
+}
+
+/* The play picker and the leaders sit closer than the sections around them,
+   so with a full five-row leader board the pair is no taller than the replay
+   beside it, and the row below starts where the replay ends. */
+.live__rail {
+  grid-area: rail;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 16px;
+  min-width: 0;
+}
+
+.live__box {
+  grid-area: box;
+  min-width: 0;
+}
+
+.live__compare {
+  grid-area: compare;
   min-width: 0;
 }
 
 @media (max-width: 1100px) {
   .live__body {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'replay'
+      'box'
+      'rail'
+      'compare';
   }
 }
 
@@ -1500,6 +1526,100 @@
   padding-bottom: 0.2em;
 }
 
+/* The expected outcome under the batted-ball numbers: a bar split five ways
+   (outs in a quiet grey, hits brightening toward the home run in red) and the
+   five chances under it, the likeliest lit. */
+.hud__expected {
+  display: grid;
+  gap: 0.3em;
+  padding-top: 0.45em;
+  border-top: 1px solid var(--hud-line);
+  animation: hud-in var(--dur-med) var(--ease-out);
+}
+
+.hud__xhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.hud__xba {
+  font-size: 0.95em;
+  font-weight: 700;
+}
+
+.hud__xba small {
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--hud-muted);
+}
+
+.hud__xbar {
+  display: flex;
+  gap: 1px;
+  height: 0.4em;
+}
+
+.hud__xbar > span {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+.hud__xbar [data-outcome='out'] {
+  background: rgba(243, 239, 230, 0.28);
+}
+
+.hud__xbar [data-outcome='1B'] {
+  background: #f3efe6;
+}
+
+.hud__xbar [data-outcome='2B'] {
+  background: #f2c4b3;
+}
+
+.hud__xbar [data-outcome='3B'] {
+  background: #ee9476;
+}
+
+.hud__xbar [data-outcome='HR'] {
+  background: var(--hud-accent);
+}
+
+.hud__xgrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0 0.4em;
+  margin: 0;
+}
+
+.hud__xgrid > div {
+  display: grid;
+  gap: 0.05em;
+  color: var(--hud-muted);
+}
+
+.hud__xgrid dt {
+  font-size: 0.62em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hud__xgrid dd {
+  margin: 0;
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
+.hud__xgrid [data-top] {
+  color: var(--hud-text);
+}
+
+.hud__xgrid [data-top] dt {
+  color: var(--hud-accent);
+}
+
 /* --- Interlude: between half innings, and the final ---------------------
    Replaces the HUD while there is nothing to play (ReplayInterlude.jsx). The
    same dark glass and container-relative sizing as the HUD, so it reads the
@@ -1835,8 +1955,8 @@
 .actionreplay__body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px;
+  gap: 8px;
+  padding: 12px 16px;
 }
 
 .actionreplay__steps {
@@ -4306,11 +4426,6 @@
 
   .live__body {
     padding-top: 20px;
-    gap: 28px;
-  }
-
-  .live__main,
-  .live__side {
     gap: 28px;
   }
 

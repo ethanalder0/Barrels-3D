@@ -109,7 +109,7 @@ export default function ActionReplay() {
           <p className="actionreplay__empty">
             {mode === 'connecting' || connection === 'connecting'
               ? 'Connecting to the feed…'
-              : 'No plays yet — waiting for first pitch.'}
+              : 'No plays yet. Waiting for first pitch.'}
           </p>
         ) : (
           <>

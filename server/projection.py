@@ -19,6 +19,8 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
+import outcome_model
+
 # result.eventType -> the `kind` the UI colour-codes on
 _HIT_EVENTS = {"single", "double", "triple"}
 _WALK_EVENTS = {"walk", "intent_walk", "hit_by_pitch", "catcher_interf"}
@@ -254,8 +256,9 @@ def _box_score(feed: dict) -> dict:
 
 # --- team comparison ----------------------------------------------------------
 
-# A ball hit this hard or harder is "hard-hit", by Statcast's own line.
-_HARD_HIT_MPH = 95.0
+# Balls in play that are not at-bats, so they stay out of xBA and xSLG the way
+# a sacrifice stays out of a batting average.
+_SACRIFICES = {"sac_fly", "sac_fly_double_play", "sac_bunt", "sac_bunt_double_play"}
 
 
 def _risp(team: dict) -> dict | None:
@@ -270,13 +273,13 @@ def _risp(team: dict) -> dict | None:
 
 
 def _contact(feed: dict) -> dict:
-    """Balls in play, hard-hit balls and average exit velocity per side.
+    """Balls in play and their summed exit velocity per side, for the average.
 
     Read from the in-play pitch of each plate appearance, not from whatever
     event last carried hit data: on a strikeout that is an earlier foul, which
     is not a ball in play.
     """
-    out = {side: {"battedBalls": 0, "hardHit": 0, "veloSum": 0.0} for side in ("away", "home")}
+    out = {side: {"battedBalls": 0, "veloSum": 0.0} for side in ("away", "home")}
     for play in (feed.get("liveData") or {}).get("plays", {}).get("allPlays") or []:
         side = "away" if (play.get("about") or {}).get("halfInning") == "top" else "home"
         for ev in play.get("playEvents") or []:
@@ -286,31 +289,51 @@ def _contact(feed: dict) -> dict:
             if isinstance(speed, (int, float)):
                 out[side]["battedBalls"] += 1
                 out[side]["veloSum"] += speed
-                out[side]["hardHit"] += speed >= _HARD_HIT_MPH
     return out
 
 
-def _team_stats(feed: dict) -> dict:
-    """Team batting totals for the side-by-side comparison on the live page."""
+def _expected_line(at_bats: list[dict]) -> dict:
+    """Expected hits and expected total bases per side, from the model's
+    odds on each completed ball in play (outcome_model.py). The ball still
+    in the air on a live at-bat waits until the at-bat is over, so the totals
+    and the box score's at-bat count always describe the same at-bats."""
+    out = {side: {"hits": 0.0, "bases": 0.0} for side in ("away", "home")}
+    for ab in at_bats:
+        odds = ab.get("outcome")
+        if not odds or ab.get("kind") == "live" or ab.get("eventType") in _SACRIFICES:
+            continue
+        side = "away" if ab.get("half") == "top" else "home"
+        out[side]["hits"] += odds["xBA"]
+        out[side]["bases"] += odds["xSLG"]
+    return out
+
+
+def _team_stats(feed: dict, at_bats: list[dict]) -> dict:
+    """Team batting totals for the side-by-side comparison on the live page.
+
+    xBA and xSLG are a team's expected hits and expected total bases over its
+    official at-bats, the same denominator as a batting average: a strikeout
+    is an 0-for-1 here too, so these read directly against AVG and SLG.
+    """
     teams = ((feed.get("liveData") or {}).get("boxscore") or {}).get("teams") or {}
     contact = _contact(feed)
+    expected = _expected_line(at_bats)
     out = {}
     for side in ("away", "home"):
         team = teams.get(side) or {}
         bat = (team.get("teamStats") or {}).get("batting") or {}
         c = contact[side]
+        at_bat_count = bat.get("atBats", 0)
+        x = expected[side]
         out[side] = {
             "hits": bat.get("hits", 0),
-            "doubles": bat.get("doubles", 0),
-            "triples": bat.get("triples", 0),
-            "homeRuns": bat.get("homeRuns", 0),
-            "xbh": bat.get("doubles", 0) + bat.get("triples", 0) + bat.get("homeRuns", 0),
             "walks": bat.get("baseOnBalls", 0),
             "strikeOuts": bat.get("strikeOuts", 0),
             "stolenBases": bat.get("stolenBases", 0),
             "risp": _risp(team),
-            "battedBalls": c["battedBalls"],
-            "hardHit": c["hardHit"],
+            "atBats": at_bat_count,
+            "xBA": round(x["hits"] / at_bat_count, 3) if at_bat_count else None,
+            "xSLG": round(x["bases"] / at_bat_count, 3) if at_bat_count else None,
             "avgExitVelo": round(c["veloSum"] / c["battedBalls"], 1) if c["battedBalls"] else None,
         }
     return out
@@ -601,6 +624,11 @@ def _at_bats(feed: dict) -> list[dict]:
         pitches = [_pitch_view(e, bat_side) for e in events
                    if e.get("isPitch") or e.get("type") == "pitch"]
         hit = next((_hit_view(e) for e in reversed(events) if e.get("hitData")), None)
+        # The model judges the ball that was put in play, and only that one.
+        # `hit` above is the latest event with hit data, which mid at-bat can be
+        # an earlier foul; a foul has no expected outcome.
+        in_play = next((e for e in reversed(events)
+                        if (e.get("details") or {}).get("isInPlay") and e.get("hitData")), None)
         complete = bool(about.get("isComplete"))
         half = (about.get("halfInning") or "").lower()
 
@@ -631,6 +659,10 @@ def _at_bats(feed: dict) -> list[dict]:
             "exitVelo": hit.get("launchSpeed") if hit else None,
             "launchAngle": hit.get("launchAngle") if hit else None,
             "distance": hit.get("totalDistance") if hit else None,
+            # Expected outcome of the ball in play: xOut/x1B/x2B/x3B/xHR, xBA,
+            # xSLG (outcome_model.py). Available the moment the tracking is, like
+            # exit velocity; None for an at-bat with no ball in play.
+            "outcome": _expected_outcome(in_play, bat_side),
             "pitch": pitches[-1] if pitches else {"type": "—", "velo": None, "zone": ""},
             "pitches": pitches,
             "hit": hit,
@@ -642,6 +674,17 @@ def _at_bats(feed: dict) -> list[dict]:
             "situation": situations.get(idx),
         })
     return out
+
+
+def _expected_outcome(event: dict | None, bat_side: str | None) -> dict | None:
+    if not event:
+        return None
+    hd = event.get("hitData") or {}
+    coords = hd.get("coordinates") or {}
+    return outcome_model.expected(
+        _num(hd.get("launchSpeed")), _num(hd.get("launchAngle")),
+        _num(coords.get("coordX")), _num(coords.get("coordY")), bat_side,
+    )
 
 
 def _in_progress_detail(play: dict) -> str:
@@ -823,7 +866,7 @@ def snapshot(feed: dict) -> dict:
             "pitcherId": _id_str((defense.get("pitcher") or {}).get("id")),
         },
         "boxScore": _box_score(feed),
-        "teamStats": _team_stats(feed),
+        "teamStats": _team_stats(feed, at_bats),
         "atBats": at_bats,
         "players": _players(feed, at_bats),
         "meta": {

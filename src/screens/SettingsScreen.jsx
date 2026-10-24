@@ -75,7 +75,7 @@ export default function SettingsScreen() {
 
           <Setting
             label="Day or night"
-            hint="Auto lights the park the way MLB scheduled the game — a night game gets a dark sky and the field under the lights. Day or Night forces one for every game."
+            hint="Auto lights the park the way MLB scheduled the game: a night game gets a dark sky and the field under the lights. Day or Night forces one for every game."
           >
             <Segmented
               value={s.nightGames}
@@ -90,7 +90,7 @@ export default function SettingsScreen() {
 
           <Setting
             label="Ball trail"
-            hint="Draws the ball's flight path — the part already flown bright, the rest faint. Turn it off to watch the ball on its own."
+            hint="Draws the ball's flight path, with the part already flown bright and the rest faint. Turn it off to watch the ball on its own."
           >
             <Switch
               checked={s.showBallTrail}

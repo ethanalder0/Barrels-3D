@@ -745,7 +745,7 @@ export default function ReplayViewport({
           </p>
           {atBat?.hasReplay && (
             <p className="viewport__note viewport__note--data">
-              {atBat.batter} · {atBat.result} — {atBat.exitVelo} mph off the bat at{' '}
+              {atBat.batter} · {atBat.result} · {atBat.exitVelo} mph off the bat at{' '}
               {atBat.launchAngle}°, {atBat.distance} ft
               {atBat.hit?.trajectory ? ` (${atBat.hit.trajectory.replace('_', ' ')})` : ''}
             </p>

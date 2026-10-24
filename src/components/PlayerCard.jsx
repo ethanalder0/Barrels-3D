@@ -156,7 +156,7 @@ export default function PlayerCard() {
                 <div className="skeleton" style={{ height: 14, width: '35%', marginTop: 10 }} />
               </>
             ) : (
-              <p className="atbats__empty">Couldn’t load this player — {loadError}</p>
+              <p className="atbats__empty">Couldn’t load this player: {loadError}</p>
             )}
           </div>
         </div>

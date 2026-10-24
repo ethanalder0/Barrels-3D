@@ -53,7 +53,7 @@ export default function GameListScreen() {
             {mode === 'live' && stale != null && (
               <>
                 {' · '}
-                <span className="stale-note">cached {formatAge(stale)} ago — live feed unreachable</span>
+                <span className="stale-note">cached {formatAge(stale)} ago, live feed unreachable</span>
               </>
             )}
           </p>
@@ -103,7 +103,7 @@ export default function GameListScreen() {
 
       {mode === 'demo' && error && (
         <p className="notice">
-          Live feed unavailable — <code>{error}</code>. Start the backend with{' '}
+          Live feed unavailable: <code>{error}</code>. Start the backend with{' '}
           <code>python server/app.py</code> to stream real games.
         </p>
       )}
@@ -301,7 +301,7 @@ function EmptyDay({ date, isToday, onGoto, demo }) {
         <h2 className="emptyday__title">The diamond’s dark {isToday ? 'tonight' : 'that day'}.</h2>
         <p className="emptyday__text">
           Nothing was on the schedule for {dayOf(date, { weekday: 'long', month: 'long', day: 'numeric' })}.
-          Every replay from the season is still here — step back to the last day with baseball.
+          Every replay from the season is still here, so step back to the last day with baseball.
         </p>
       </div>
 

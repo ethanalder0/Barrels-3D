@@ -126,4 +126,56 @@ assert kinds(evs4) == ["play_result"], f"expected one result, got {kinds(evs4)}"
 assert evs4[0]["event"] == "Home Run" and evs4[0]["rbi"] == 1
 print("poll 4 emitted:", kinds(evs4), "OK")
 
+# --- expected outcomes ------------------------------------------------------
+# The exported trees must still give LightGBM's own answers (export_model.py
+# stored a sample of them in the file), and the projection must attach them to
+# the ball put in play -- never to a foul that happened to carry hit data.
+import outcome_model  # noqa: E402
+import projection  # noqa: E402
+
+trees = outcome_model._model()
+assert trees, "server/models/outcome_trees.json is missing"
+worst = 0.0
+for case in trees["checks"]:
+    x = [float("nan") if v is None else v for v in case["x"]]
+    got = outcome_model.probabilities(x)
+    worst = max(worst, max(abs(a - b) for a, b in zip(got, case["p"])))
+assert worst < 1e-9, f"exported trees drifted from LightGBM by {worst}"
+print(f"outcome model reproduces {len(trees['checks'])} stored LightGBM answers (worst {worst:.1e}) OK")
+
+feed5 = copy.deepcopy(feed4)
+play5 = feed5["liveData"]["plays"]["currentPlay"]
+play5["matchup"]["batSide"] = {"code": "L"}
+play5["playEvents"][0]["details"]["isInPlay"] = True
+ab5 = next(a for a in projection._at_bats(feed5) if a["atBatIndex"] == 1)
+odds = ab5["outcome"]
+assert odds and set(odds) == {"out", "1B", "2B", "3B", "HR", "xBA", "xSLG"}, odds
+assert abs(sum(odds[c] for c in ("out", "1B", "2B", "3B", "HR")) - 1) < 1e-3
+# Direction has to matter the right way: the same contact pulled toward the
+# right-field corner by this left-hander leaves more often than it does to
+# straightaway center, the deepest part of the park.
+pulled = outcome_model.expected(104.2, 24.0, 200.0, 120.0, "L")
+assert pulled["HR"] > odds["HR"], f"pulled {pulled['HR']} should beat center {odds['HR']}"
+
+play5["playEvents"][0]["details"]["isInPlay"] = False  # the same contact, as a foul
+foul = next(a for a in projection._at_bats(feed5) if a["atBatIndex"] == 1)
+assert foul["outcome"] is None and foul["exitVelo"] == 104.2, "a foul must not get odds"
+print(f"ball in play gets odds (xHR {odds['HR']:.2f}, xBA {odds['xBA']}), foul gets none OK")
+
+# Team xBA / xSLG: expected hits and bases over official at-bats. Two at-bats
+# for the away side, one a ball in play with odds and one a strikeout (no odds,
+# still an at-bat); a sacrifice fly would count toward neither.
+play5["playEvents"][0]["details"]["isInPlay"] = True
+feed5["liveData"]["boxscore"] = {"teams": {
+    "away": {"teamStats": {"batting": {"atBats": 2, "hits": 1}}},
+    "home": {"teamStats": {"batting": {"atBats": 0}}},
+}}
+line = projection._team_stats(feed5, projection._at_bats(feed5))
+assert abs(line["away"]["xBA"] - round(odds["xBA"] / 2, 3)) < 1e-9, line["away"]
+assert abs(line["away"]["xSLG"] - round(odds["xSLG"] / 2, 3)) < 1e-9, line["away"]
+assert line["home"]["xBA"] is None, "no at-bats, no xBA"
+sac = [dict(a, eventType="sac_fly") for a in projection._at_bats(feed5)]
+assert projection._team_stats(feed5, sac)["away"]["xBA"] == 0, "a sacrifice is not an at-bat"
+print(f"team xBA {line['away']['xBA']} / xSLG {line['away']['xSLG']} over 2 at-bats OK")
+
 print("\nAll assertions passed.")

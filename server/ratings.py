@@ -450,7 +450,7 @@ def profile(person_id, is_pitcher: bool, season_year: int) -> dict:
 
     note = None
     if ratings is None:
-        note = (f"No {season_year} ratings — under the {threshold} needed to be "
+        note = (f"No {season_year} ratings: under the {threshold} needed to be "
                 f"ranked against the league.")
     elif age:
         note = f"Statcast data cached {round(age / 3600)}h ago."

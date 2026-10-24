@@ -94,6 +94,7 @@ export function atBatAtPitch(atBat, index) {
     exitVelo: null,
     launchAngle: null,
     distance: null,
+    outcome: null,
     hit: null,
     hasReplay: false,
   };

@@ -54,7 +54,7 @@ async function getJSON(path, { signal } = {}) {
   const res = await fetch(`${API}${path}`, { signal, headers: { Accept: 'application/json' } });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    throw new Error(`${res.status} ${res.statusText}${detail ? ` — ${detail.slice(0, 200)}` : ''}`);
+    throw new Error(`${res.status} ${res.statusText}${detail ? `: ${detail.slice(0, 200)}` : ''}`);
   }
   return res.json();
 }
