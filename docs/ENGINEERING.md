@@ -149,7 +149,7 @@ replay/
     spec.js                every field dimension, in feet — one source
     layout.js              the playing surface, painted top-down on a canvas
     field.js               ground, mound, plate, bases, walls, lighting
-  strikezone.js            the zone box, sized per batter from the pitch
+  strikezone.js            the zone box, the batter's fixed ABS zone
   play.js                  pitch + batted ball composed onto one clock
   follow.js                following live: which new pitches to play, and when
   interlude.js             between innings, or over? from the game's own state
@@ -1624,9 +1624,15 @@ cameras and publishes the fit in `pitchData`:
 | `strikeZoneWidth` | 17.0 inches, constant |
 | `zone` | MLB's own 1–9 grid, 11–14 for the outside quadrants |
 
-Top and bottom are per batter and re-measured every pitch (league averages 3.21
-and 1.62 ft, ranging 2.95–3.54 and 1.49–1.79), so `StrikeZone.jsx` averages them
-across an at-bat to stop the box jittering between pitches.
+Top and bottom are per batter and, as of 2026, **fixed**: MLB's ABS zone, 53.5%
+and 27% of the batter's measured height (league averages 3.20 and 1.62 ft). Over
+2,299 pitches in 8 September games every batter had exactly one top/bottom pair
+for the whole game. `projection.py` puts that pair on each at-bat as `zone`
+{top, bottom, source} — tracked when the batter has seen a pitch, from his
+listed height (within 0.3 in) when he has not — so the 3D replay draws his zone
+from the moment he steps in rather than a generic one that jumps on the first
+pitch. The replay draws it exactly as given; it once padded short zones to 1.3
+plate widths tall, which put the bottom edge 1.5 in too low.
 
 **The sign convention was verified, not assumed** — getting it backwards
 silently mislabels every pitch. Two independent checks over 12 games:

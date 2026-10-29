@@ -25,6 +25,7 @@ import { solveTrajectory, sampleAt, nominalSpin } from './trajectory.js';
 import { solvePitch, PLATE_FRONT_Z } from '../pitch/trajectory.js';
 import { buildPlay, isAwaitingDetail, playKey } from '../play.js';
 import { FINISH_TAIL, WINDUP_LEAD_IN } from '../tuning.js';
+import { zoneFor } from '../strikezone.js';
 
 let failures = 0;
 
@@ -273,6 +274,23 @@ check(
   'pitches carry per-batter strike-zone bounds',
   zoned.szTop > zoned.szBottom && zoned.szTop < 5 && zoned.szBottom > 1,
   `${zoned.szBottom} to ${zoned.szTop} ft`,
+);
+
+/* One zone per batter, never moving: the at-bat's own zone wins, a payload
+   without one uses the pitch bounds, and a batter yet to see a pitch still
+   gets his server-supplied zone rather than nothing. */
+const fromPitches = zoneFor(liveAtBats[0]);
+check(
+  'an at-bat without a zone falls back to its pitches',
+  fromPitches?.top === zoned.szTop && fromPitches?.bottom === zoned.szBottom,
+);
+check(
+  "the at-bat's zone wins over pitch bounds",
+  zoneFor({ ...liveAtBats[0], zone: { top: 3.3, bottom: 1.66 } })?.bottom === 1.66,
+);
+check(
+  'a batter with no pitches yet keeps his zone',
+  zoneFor({ pitches: [], zone: { top: 3.1, bottom: 1.57 } })?.top === 3.1,
 );
 
 /* --- 5. Pitches --------------------------------------------------------- */
