@@ -13,13 +13,13 @@
 import * as THREE from 'three';
 import { buildField } from './field/field.js';
 import { createPark, parkFor } from './field/park.js';
-import { createStrikeZone } from './strikezone.js';
+import { createStrikeZone, zoneFor } from './strikezone.js';
 import { createFreeRoam } from './freeroam.js';
 import { createBall } from './ball/ball.js';
 import { createSky } from './sky/sky.js';
 import { PITCH_VELOCITY } from './tuning.js';
 import { sampleAt } from './ball/trajectory.js';
-import { buildPlay, isAwaitingDetail, lastPitch, playKey } from './play.js';
+import { buildPlay, isAwaitingDetail, playKey } from './play.js';
 import { CLIPS, MOMENT, batterStance, pitcherStance, createPlayers } from './player/player.js';
 
 /* ---------------------------------------------------------------------------
@@ -752,7 +752,7 @@ export function createEngine() {
       endsPlateAppearance(stagedAtBat) ||
       (stagedAtBat.id === loadedAtBat?.id && endsPlateAppearance(loadedAtBat));
     players.batter.setVisible(!over);
-    zone.set(lastPitch(stagedAtBat)?.plate ?? null);
+    zone.set(zoneFor(stagedAtBat));
   }
 
   /** Start the next queued play, if there is one. */
@@ -803,8 +803,8 @@ export function createEngine() {
     path = buildPlay(atBat, park);
     ball.setPath(path);
 
-    // Zone bounds are per-batter and ride on the pitch, in either payload shape.
-    zone.set(lastPitch(atBat)?.plate ?? null);
+    // The batter's zone, fixed for the game (see strikezone.js).
+    zone.set(zoneFor(atBat));
     zone.setMark(path?.pitch?.crossing ?? null);
 
     playhead = 0;

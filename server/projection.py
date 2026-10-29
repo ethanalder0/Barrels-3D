@@ -373,10 +373,15 @@ def _kind(result: dict) -> str:
 # straight onto a left-to-right axis therefore matches MLB's own zone numbering.
 #
 # The zone is always 17 inches wide (strikeZoneWidth is 17.0 in every pitch we
-# have seen), so the half-width is 0.708 ft. Top and bottom are per batter, per
-# pitch: 3.21 / 1.62 ft on average, ranging 2.95-3.54 and 1.49-1.79.
+# have seen), so the half-width is 0.708 ft. Top and bottom are per batter, and
+# they are NOT re-measured per pitch: over 2,299 pitches in 8 games of September
+# 2026, every batter had exactly one top/bottom pair for the whole game. They
+# are MLB's ABS zone -- 53.5% and 27% of the batter's measured height (within
+# 0.3 in of his listed height) -- 3.20 / 1.62 ft on average.
 
 ZONE_HALF_WIDTH_FT = 17.0 / 2 / 12     # 0.708
+ZONE_TOP_OF_HEIGHT = 0.535
+ZONE_BOTTOM_OF_HEIGHT = 0.27
 BALL_RADIUS_FT = 2.9 / 2 / 12          # 0.121 -- a pitch is a strike if any part
                                        # of the ball clips the zone, which is why
                                        # called strikes reach |pX| ~ 0.83 ft
@@ -590,6 +595,46 @@ def _situations(merged: dict[int, dict]) -> dict[int, dict]:
     return out
 
 
+def _height_inches(height: str | None) -> int | None:
+    """A bio height like 6' 2" -> 74."""
+    m = re.match(r"\s*(\d+)'\s*(\d+)", height or "")
+    return int(m[1]) * 12 + int(m[2]) if m else None
+
+
+def _batter_zones(feed: dict, plays: list[dict]) -> dict[str, dict]:
+    """Each batter's strike zone, in feet: one top and bottom for the game.
+
+    The tracked value is preferred -- any pitch to him carries it, and it never
+    changes. A batter who has not seen a pitch yet (stepping in for his first
+    plate appearance) falls back to the ABS rule applied to his listed height,
+    so the zone is his own from the moment he is in the box rather than a
+    generic one that jumps when the first pitch lands.
+    """
+    zones: dict[str, dict] = {}
+    for play in plays:
+        bid = str(((play.get("matchup") or {}).get("batter") or {}).get("id") or "")
+        if not bid or bid in zones:
+            continue
+        for e in play.get("playEvents") or []:
+            pd = e.get("pitchData") or {}
+            top, bot = _num(pd.get("strikeZoneTop")), _num(pd.get("strikeZoneBottom"))
+            if top is not None and bot is not None and top > bot:
+                zones[bid] = {"top": top, "bottom": bot, "source": "tracked"}
+                break
+
+    bios = (feed.get("gameData") or {}).get("players") or {}
+    for key, bio in bios.items():
+        bid = str(bio.get("id") or key.removeprefix("ID"))
+        inches = _height_inches(bio.get("height"))
+        if bid not in zones and inches:
+            zones[bid] = {
+                "top": round(inches * ZONE_TOP_OF_HEIGHT / 12, 3),
+                "bottom": round(inches * ZONE_BOTTOM_OF_HEIGHT / 12, 3),
+                "source": "height",
+            }
+    return zones
+
+
 def _at_bats(feed: dict) -> list[dict]:
     """Every at-bat, newest first. The in-progress one is flagged `live`."""
     plays = (feed.get("liveData") or {}).get("plays") or {}
@@ -605,6 +650,7 @@ def _at_bats(feed: dict) -> list[dict]:
         merged[cur_index] = cur
 
     situations = _situations(merged)
+    zones = _batter_zones(feed, [merged[i] for i in sorted(merged)])
     out = []
     for idx in sorted(merged, reverse=True):
         play = merged[idx]
@@ -665,6 +711,9 @@ def _at_bats(feed: dict) -> list[dict]:
             "outcome": _expected_outcome(in_play, bat_side),
             "pitch": pitches[-1] if pitches else {"type": "—", "velo": None, "zone": ""},
             "pitches": pitches,
+            # The batter's strike zone, fixed for the game: {top, bottom, source}
+            # in feet, or None for a batter with neither tracking nor a height.
+            "zone": zones.get(str((matchup.get("batter") or {}).get("id") or "")),
             "hit": hit,
             # A replay needs a batted ball with landing coordinates to rebuild.
             "hasReplay": bool(hit and hit.get("coordinates", {}).get("x") is not None),
