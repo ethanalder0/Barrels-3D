@@ -416,6 +416,13 @@ export function solveTrajectory(p, park = DEFAULT_PARK) {
       { samples: solve.samples },
       Math.min(solve.trackedTime ?? end.t, end.t),
     );
+    /* Where the flight first came down, and whether that was past the wall
+       and nobody caught it — a home run. Display only: the path itself is
+       unchanged, but there is nothing out there to land on, so the ball
+       renderer flies it on into space instead (see ball.js). */
+    const touchdown = sampleAt({ samples: solve.samples }, solve.hangTime ?? end.t);
+    const gone =
+      !p.caught && touchdown.y <= BALL_RADIUS * 1.01 && beyondFence(park, touchdown);
     return {
       rollFriction: null,
       ...solve,
@@ -428,6 +435,7 @@ export function solveTrajectory(p, park = DEFAULT_PARK) {
       endHeight: end.y,
       endDistance: groundDistance(end),
       rollDistance: groundDistance(end) - groundDistance(at),
+      gone,
     };
   };
 

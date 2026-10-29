@@ -162,6 +162,8 @@ export const COLORS = {
   wall: '#23472f',
   wallTop: '#e8c53a',
   beyond: '#2b3a2e',
+  slab: '#4f586e', // the field's edge and the back of the wall, out in space
+  slabUnder: '#141821',
 };
 
 /* ---------------------------------------------------------------------------

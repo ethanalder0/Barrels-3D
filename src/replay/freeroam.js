@@ -27,7 +27,7 @@ import * as THREE from 'three';
 const FOV = { min: 8, max: 80, enter: [30, 60] };
 const PITCH_LIMIT = Math.PI / 2 - 0.001;
 const HEIGHT = [1.5, 900]; // ft — never under the grass, never out of the sky
-const RADIUS = 1500; // ft from home plate before the fog has swallowed the park
+const RADIUS = 1500; // ft from home plate before the park is a speck in space
 const RESPONSE = 9; // 1/s — how quickly movement reaches speed and stops
 const TRACK_RESPONSE = 12; // 1/s — how tightly B keeps the ball in the middle
 

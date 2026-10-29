@@ -36,6 +36,14 @@ const FAR_MIN_PX = 6; // smallest on-screen diameter of a batted ball, px
 const FAR_MAX_SCALE = 3; // and never more than this, times life-size
 const FAR_RAMP = 0.35; // s after contact over which the boost is let in
 
+/* A home run has nowhere to land: past the wall there is only space. From the
+   moment it comes down it keeps falling, through where the seats would be and
+   on below the field, fading as it goes. The solved path still has it landing
+   and stopping in the seats — that is the data, and the camera and the readout
+   use it — so this is purely how the ball is drawn. */
+const GONE_FADE = 0.9; // s to fade out after it passes the landing point
+const GRAVITY = 32.17; // ft/s^2
+
 /* ---------------------------------------------------------------------------
    The cover. A baseball is two figure-eight panels stitched together, and the
    seam between them is the curve that draws the two "horseshoes". On a unit
@@ -295,6 +303,7 @@ export function createBall() {
   };
 
   let path = null;
+  let gone = null; // { index, t, at, vel, fade } for a home run — see GONE_FADE
   let spinAxis = new THREE.Vector3(1, 0, 0);
   let spinRate = 0; // rad/s
 
@@ -314,7 +323,26 @@ export function createBall() {
       g.setAttribute('position', attribute);
       g.computeBoundingSphere();
     }
-    ghostGeometry.setDrawRange(0, path.samples.length);
+    gone = null;
+    if (path.gone && path.hangTime != null) {
+      const s = path.samples;
+      let k = s.findIndex((q) => q.t >= path.hangTime);
+      if (k < 0) k = s.length - 1;
+      // Velocity over the last fiftieth of a second of flight, not the last
+      // sample pair: the landing sample is interpolated and can sit a hair
+      // after the one before it.
+      let j = k - 1;
+      while (j > 0 && s[k].t - s[j].t < 0.02) j--;
+      const dt = Math.max(1e-3, s[k].t - s[j].t);
+      gone = {
+        index: k,
+        t: s[k].t,
+        at: new THREE.Vector3(s[k].x, s[k].y, s[k].z),
+        vel: new THREE.Vector3((s[k].x - s[j].x) / dt, (s[k].y - s[j].y) / dt, (s[k].z - s[j].z) / dt),
+        fade: Math.max(0.2, Math.min(GONE_FADE, (path.duration ?? Infinity) - s[k].t)),
+      };
+    }
+    ghostGeometry.setDrawRange(0, gone ? gone.index + 1 : path.samples.length);
 
     marker.visible = !!path.tracked;
     if (path.tracked) marker.position.set(path.tracked.x, 0.05, path.tracked.z);
@@ -336,13 +364,27 @@ export function createBall() {
   function update(t, camera) {
     if (!path) return;
 
-    const at = sampleAt(path, t);
-    mesh.position.set(at.x, at.y, at.z);
+    let opacity = 1;
+    if (gone && t > gone.t) {
+      const dt = t - gone.t;
+      mesh.position.copy(gone.at).addScaledVector(gone.vel, dt);
+      mesh.position.y -= 0.5 * GRAVITY * dt * dt;
+      opacity = Math.max(0, 1 - dt / gone.fade);
+    } else {
+      const at = sampleAt(path, t);
+      mesh.position.set(at.x, at.y, at.z);
+    }
+    const fading = opacity < 1;
+    if (mesh.material.transparent !== fading) {
+      mesh.material.transparent = fading;
+      mesh.material.needsUpdate = true;
+    }
+    mesh.material.opacity = opacity;
 
     /* Gone once it is past the plate (or at the backstop, for a foul) — see
        vanishTime in play.js. Only the ball: the trail stays, so the break of a
        pitch can still be read while the play holds on its result. */
-    mesh.visible = path.vanishTime == null || t < path.vanishTime;
+    mesh.visible = (path.vanishTime == null || t < path.vanishTime) && opacity > 0;
     mesh.scale.setScalar(scaleAt(t, camera));
 
     /* Spin stops when the flight does. A batted ball at rest in the outfield
@@ -353,7 +395,7 @@ export function createBall() {
     // Draw the trail up to the current sample.
     let n = 1;
     while (n < path.samples.length && path.samples[n].t <= t) n++;
-    trailGeometry.setDrawRange(0, n);
+    trailGeometry.setDrawRange(0, gone ? Math.min(n, gone.index + 1) : n);
   }
 
   /* Fixed size until contact. After it, the size that keeps the ball

@@ -262,6 +262,8 @@ export function buildPlay(
     carry: ball?.carry ?? null,
     apexHeight: ball?.apexHeight ?? null,
     hangTime: ball ? leadIn + contactTime + ball.hangTime : null,
+    /* Came down past the wall: out of the park, and out of the world. */
+    gone: !!ball?.gone,
     rollDistance: ball?.rollDistance ?? 0,
     endDistance: ball?.endDistance ?? null,
     endHeight: end.y,

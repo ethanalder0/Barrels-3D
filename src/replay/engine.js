@@ -16,6 +16,7 @@ import { createPark, parkFor } from './field/park.js';
 import { createStrikeZone } from './strikezone.js';
 import { createFreeRoam } from './freeroam.js';
 import { createBall } from './ball/ball.js';
+import { createSky } from './sky/sky.js';
 import { PITCH_VELOCITY } from './tuning.js';
 import { sampleAt } from './ball/trajectory.js';
 import { buildPlay, isAwaitingDetail, lastPitch, playKey } from './play.js';
@@ -208,10 +209,10 @@ export const VIEWS = {
   },
 };
 
-/* The sky, by day and by night. The fog is the same colour so the far edge of
-   the world fades into it rather than drawing a line. */
-const DAY_SKY = '#8fb8de';
-const NIGHT_SKY = '#0a1120';
+/* Behind the sky dome, for the frame before it paints. There is no fog: it was
+   only there to fade out the far edge of the ground, and the ground now ends
+   at the wall. See sky/sky.js. */
+const BACKDROP = '#05070f';
 
 /* How far Settings can zoom the catcher's shot either way. */
 const ZOOM_RANGE = [0.6, 2];
@@ -224,8 +225,9 @@ const QUALITY = {
 
 export function createEngine() {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(DAY_SKY);
-  scene.fog = new THREE.Fog(DAY_SKY, 600, 1400);
+  scene.background = new THREE.Color(BACKDROP);
+  const sky = createSky();
+  scene.add(sky.group);
 
   const camera = new THREE.PerspectiveCamera(38, 16 / 9, 0.5, 2000);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -559,16 +561,14 @@ export function createEngine() {
   }
 
   /* --- Night games ------------------------------------------------------
-     Settings -> Replay -> Night games. The sky goes dark and the field is lit
-     from the light towers instead of the sun. The lights belong to the field
-     (they turn with each park), so the field applies it — and is told again
-     whenever setPark() builds a new one. */
+     Settings -> Replay -> Night games. The dust gives way to stars and the
+     moon, and the field is lit from the light towers instead of the sun. The
+     lights belong to the field (they turn with each park), so the field
+     applies it — and is told again whenever setPark() builds a new one. */
   let night = false;
 
   function applyNight() {
-    const sky = night ? NIGHT_SKY : DAY_SKY;
-    scene.background.set(sky);
-    scene.fog.color.set(sky);
+    sky.setNight(night);
     renderer.toneMappingExposure = night ? 0.92 : 1.08;
     field.userData.setNight?.(night);
   }
@@ -1058,6 +1058,7 @@ export function createEngine() {
 
     if (locked) direct();
     else roam?.update(dt);
+    sky.update(now / 1000, camera, renderer.getPixelRatio());
     renderer.render(scene, camera);
   }
 
@@ -1122,6 +1123,7 @@ export function createEngine() {
     roam = null;
     renderer.domElement.remove();
     field.userData.dispose();
+    sky.dispose();
     players?.dispose();
     players = null;
     zone.dispose();

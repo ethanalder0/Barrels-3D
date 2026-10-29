@@ -37,24 +37,171 @@ const decal = (material) => {
 
 /* --- The playing surface ------------------------------------------------ */
 
+/* A closed run of ground points as a flat Shape, ready to be laid on the
+   ground. Shapes are built in XY and rotated onto it, where plane +Y becomes
+   world -Z — hence the sign on z. */
+function groundShape(points) {
+  const shape = new THREE.Shape();
+  points.forEach((p, i) => (i ? shape.lineTo(p.x, -p.z) : shape.moveTo(p.x, -p.z)));
+  return shape;
+}
+
+/* Nothing outside the walls exists: the surface is cut to the boundary, so the
+   world ends exactly at the base of the wall. The texture is still painted over
+   the whole square and sampled by world position, so every line on the field
+   lands precisely where it did on the old square plane. */
 function buildGround(park) {
   const texture = new THREE.CanvasTexture(fieldCanvas(S.GROUND.texture, undefined, park));
-  // The painter puts world z = +60 on the canvas's top row, and PlaneGeometry
-  // puts uv v = 0 at the -Y edge, which this plane's rotation maps to that same
-  // z. Without flipY = false the whole field paints back-to-front.
+  // The painter puts world z = +60 on the canvas's top row and uvOf() maps it
+  // to v = 0. Without flipY = false the whole field paints back-to-front.
   texture.flipY = false;
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 16;
 
+  const geometry = new THREE.ShapeGeometry(groundShape(park.boundary()));
+  geometry.rotateX(-Math.PI / 2);
+  const position = geometry.attributes.position;
+  const uv = geometry.attributes.uv;
+  for (let i = 0; i < position.count; i++) {
+    uv.setXY(i, ...uvOf(position.getX(i), position.getZ(i)));
+  }
+
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(S.GROUND.span, S.GROUND.span),
+    geometry,
     new THREE.MeshStandardMaterial({ map: texture, roughness: 1, metalness: 0 }),
   );
-  mesh.rotation.x = -Math.PI / 2;
-  mesh.position.z = S.GROUND.centerZ;
   mesh.receiveShadow = true;
   mesh.name = 'ground';
   return { mesh, texture };
+}
+
+/* --- The slab ----------------------------------------------------------- */
+
+/* How deep the field's edge runs below the grass, and how far out from the
+   boundary the back of the wall sits, in feet. */
+const SLAB_DEPTH = 7;
+const WALL_THICK = 1.5;
+
+/**
+ * The boundary pushed outward by `d` feet, one point per boundary point.
+ *
+ * Each point moves along the average of its two neighbouring edges' outward
+ * normals, lengthened to keep the offset edges parallel (a miter), and capped
+ * so a sharp authored corner cannot throw a spike.
+ */
+function offsetOutward(points, d) {
+  // Shoelace sign: which side of each edge is outside.
+  let area = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    area += a.x * b.z - b.x * a.z;
+  }
+  const out = area > 0 ? 1 : -1;
+  const n = points.length;
+  const normal = (a, b) => {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const len = Math.hypot(dx, dz) || 1;
+    return { x: (out * dz) / len, z: (-out * dx) / len };
+  };
+  return points.map((p, i) => {
+    const n0 = normal(points[(i - 1 + n) % n], p);
+    const n1 = normal(p, points[(i + 1) % n]);
+    let mx = n0.x + n1.x;
+    let mz = n0.z + n1.z;
+    const len = Math.hypot(mx, mz) || 1;
+    mx /= len;
+    mz /= len;
+    const miter = Math.min(2, 1 / Math.max(0.5, mx * n1.x + mz * n1.z));
+    return { x: p.x + mx * d * miter, z: p.z + mz * d * miter };
+  });
+}
+
+/**
+ * The field as a floating slab: the outside face of the wall carried down past
+ * the grass to a flat underside, so from anywhere the park reads as one solid
+ * island rather than a painted sheet hanging in space. All of it stands
+ * outside the boundary; nothing here touches the playing surface.
+ */
+function buildSlab(park, heightAt) {
+  const group = new THREE.Group();
+  group.name = 'slab';
+  // The boundary repeats a point where the foul wall meets the pole; a
+  // zero-length edge has no normal to offset along.
+  const inner = park
+    .boundary()
+    .filter((p, i, all) => {
+      const q = all[(i + 1) % all.length];
+      return Math.hypot(p.x - q.x, p.z - q.z) > 1e-6;
+    });
+  const outer = offsetOutward(inner, WALL_THICK);
+
+  /* Darker toward the bottom, so the edge fades into space rather than
+     ending on a hard line. */
+  const shell = ribbon(
+    [...outer, outer[0]],
+    -SLAB_DEPTH,
+    (p, i) => heightAt(inner[i % inner.length]),
+    new THREE.MeshStandardMaterial({
+      color: S.COLORS.slab,
+      roughness: 0.85,
+      metalness: 0.2,
+      side: THREE.DoubleSide,
+      vertexColors: true,
+    }),
+    'slab-edge',
+  );
+  const shade = [];
+  const pos = shell.geometry.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const k = pos.getY(i) < 0 ? 0.5 : 1;
+    shade.push(k, k, k);
+  }
+  shell.geometry.setAttribute('color', new THREE.Float32BufferAttribute(shade, 3));
+  group.add(shell);
+
+  /* The top of the wall, inside edge to outside edge, in the cap's yellow. */
+  const positions = [];
+  const indices = [];
+  inner.forEach((p, i) => {
+    const h = heightAt(p);
+    const q = outer[i];
+    positions.push(p.x, h, p.z, q.x, h, q.z);
+  });
+  for (let i = 0; i < inner.length; i++) {
+    const a = i * 2;
+    const b = ((i + 1) % inner.length) * 2;
+    indices.push(a, a + 1, b, a + 1, b + 1, b);
+  }
+  const top = new THREE.BufferGeometry();
+  top.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  top.setIndex(indices);
+  top.computeVertexNormals();
+  const topMesh = new THREE.Mesh(
+    top,
+    new THREE.MeshStandardMaterial({
+      color: S.COLORS.wallTop,
+      roughness: 0.8,
+      side: THREE.DoubleSide,
+    }),
+  );
+  topMesh.name = 'wall-top';
+  group.add(topMesh);
+
+  /* The underside, facing down. */
+  const under = new THREE.ShapeGeometry(groundShape(outer));
+  under.rotateX(Math.PI / 2);
+  under.scale(1, 1, -1); // rotating the other way mirrors z; put it back
+  under.translate(0, -SLAB_DEPTH, 0);
+  const underMesh = new THREE.Mesh(
+    under,
+    new THREE.MeshStandardMaterial({ color: S.COLORS.slabUnder, roughness: 1, side: THREE.DoubleSide }),
+  );
+  underMesh.name = 'slab-under';
+  group.add(underMesh);
+
+  return group;
 }
 
 /**
@@ -230,12 +377,12 @@ const WALL_CAP = 4 / 12;
  * park's does, and Fenway's changes by 32 feet.
  */
 function ribbon(points, bottom, top, material, name) {
-  const at = (v, p) => (typeof v === 'function' ? v(p) : v);
+  const at = (v, p, i) => (typeof v === 'function' ? v(p, i) : v);
   const positions = [];
   const indices = [];
-  for (const p of points) {
-    positions.push(p.x, at(bottom, p), p.z, p.x, at(top, p), p.z);
-  }
+  points.forEach((p, i) => {
+    positions.push(p.x, at(bottom, p, i), p.z, p.x, at(top, p, i), p.z);
+  });
   for (let i = 0; i < points.length - 1; i++) {
     const a = i * 2;
     indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
@@ -251,21 +398,22 @@ function ribbon(points, bottom, top, material, name) {
   return mesh;
 }
 
+/* Wall height at a point on the boundary.
+   In fair territory it is the park's, which may change along the wall. Past
+   the foul poles it is the low side wall: a park's tall wall stops at its
+   pole, and carrying Fenway's 37 ft round into foul ground would wall the
+   third-base dugout in behind a Green Monster. */
+const wallHeight = (park) => (p) => {
+  const theta = S.thetaOf(p.x, p.z);
+  return Math.abs(theta) <= 45 ? park.fenceHeight(theta) : S.FOUL_WALL_HEIGHT;
+};
+
 function buildWalls(park) {
   const group = new THREE.Group();
   group.name = 'walls';
   const line = park.boundary();
   const closed = [...line, line[0]];
-
-  /* Wall height at a point on the boundary.
-     In fair territory it is the park's, which may change along the wall. Past
-     the foul poles it is the low side wall: a park's tall wall stops at its
-     pole, and carrying Fenway's 37 ft round into foul ground would wall the
-     third-base dugout in behind a Green Monster. */
-  const heightAt = (p) => {
-    const theta = S.thetaOf(p.x, p.z);
-    return Math.abs(theta) <= 45 ? park.fenceHeight(theta) : S.FOUL_WALL_HEIGHT;
-  };
+  const heightAt = wallHeight(park);
 
   /* The wall stops where the cap starts. Running the green to the top and
      laying the cap over it put two surfaces in one plane, and the depth buffer
@@ -396,6 +544,7 @@ export function buildField(park = createPark()) {
   group.add(buildBases());
   group.add(buildRubber());
   group.add(buildWalls(park));
+  group.add(buildSlab(park, wallHeight(park)));
   const lights = buildLights(park);
   group.add(lights);
   group.userData.setNight = lights.userData.setNight;
