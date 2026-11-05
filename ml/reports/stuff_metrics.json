@@ -1,0 +1,269 @@
+{
+  "choose": {
+    "report": {
+      "mean": {
+        "pitch_rv": 0.085,
+        "pitch_whiff": 0.054,
+        "pitch_next_rv_from_stuff": 0.101,
+        "pitch_next_rv_from_rv": 0.196,
+        "pitch_next_whiff_from_stuff": 0.057,
+        "pitch_pairs": 741,
+        "pitcher_rv": 0.121,
+        "pitcher_whiff": 0.02,
+        "pitcher_next_rv_from_stuff": 0.046,
+        "pitcher_next_rv_from_rv": 0.387,
+        "pitcher_pairs": 165
+      },
+      "movement": {
+        "pitch_rv": 0.019,
+        "pitch_whiff": -0.069,
+        "pitch_next_rv_from_stuff": 0.038,
+        "pitch_next_rv_from_rv": 0.196,
+        "pitch_next_whiff_from_stuff": -0.072,
+        "pitch_pairs": 741,
+        "pitcher_rv": 0.18,
+        "pitcher_whiff": 0.141,
+        "pitcher_next_rv_from_stuff": 0.054,
+        "pitcher_next_rv_from_rv": 0.387,
+        "pitcher_pairs": 165
+      },
+      "velo": {
+        "pitch_rv": 0.146,
+        "pitch_whiff": 0.111,
+        "pitch_next_rv_from_stuff": 0.151,
+        "pitch_next_rv_from_rv": 0.196,
+        "pitch_next_whiff_from_stuff": 0.129,
+        "pitch_pairs": 741,
+        "pitcher_rv": 0.278,
+        "pitcher_whiff": 0.358,
+        "pitcher_next_rv_from_stuff": 0.308,
+        "pitcher_next_rv_from_rv": 0.387,
+        "pitcher_pairs": 165
+      },
+      "live": {
+        "pitch_rv": 0.19,
+        "pitch_whiff": 0.16,
+        "pitch_next_rv_from_stuff": 0.262,
+        "pitch_next_rv_from_rv": 0.196,
+        "pitch_next_whiff_from_stuff": 0.157,
+        "pitch_pairs": 741,
+        "pitcher_rv": 0.347,
+        "pitcher_whiff": 0.478,
+        "pitcher_next_rv_from_stuff": 0.388,
+        "pitcher_next_rv_from_rv": 0.387,
+        "pitcher_pairs": 165
+      },
+      "full": {
+        "pitch_rv": 0.196,
+        "pitch_whiff": 0.17,
+        "pitch_next_rv_from_stuff": 0.272,
+        "pitch_next_rv_from_rv": 0.196,
+        "pitch_next_whiff_from_stuff": 0.166,
+        "pitch_pairs": 741,
+        "pitcher_rv": 0.349,
+        "pitcher_whiff": 0.513,
+        "pitcher_next_rv_from_stuff": 0.413,
+        "pitcher_next_rv_from_rv": 0.387,
+        "pitcher_pairs": 165
+      }
+    },
+    "percentiles": {
+      "mean": {
+        "Cease, Dylan": 71,
+        "Skubal, Tarik": 19,
+        "Misiorowski, Jacob": 24,
+        "Schlittler, Cam": 14,
+        "Skenes, Paul": 64,
+        "Sale, Chris": 77,
+        "Crochet, Garrett": 60,
+        "Duran, Jhoan": 85,
+        "Webb, Logan": 64,
+        "Valdez, Framber": 24,
+        "Gausman, Kevin": 90
+      },
+      "movement": {
+        "Cease, Dylan": 29,
+        "Skubal, Tarik": 11,
+        "Misiorowski, Jacob": 31,
+        "Schlittler, Cam": 51,
+        "Skenes, Paul": 16,
+        "Sale, Chris": 86,
+        "Crochet, Garrett": 52,
+        "Duran, Jhoan": 52,
+        "Webb, Logan": 83,
+        "Valdez, Framber": 97,
+        "Gausman, Kevin": 89
+      },
+      "velo": {
+        "Cease, Dylan": 93,
+        "Skubal, Tarik": 84,
+        "Misiorowski, Jacob": 98,
+        "Schlittler, Cam": 95,
+        "Skenes, Paul": 96,
+        "Sale, Chris": 33,
+        "Crochet, Garrett": 76,
+        "Duran, Jhoan": 100,
+        "Webb, Logan": 60,
+        "Valdez, Framber": 41,
+        "Gausman, Kevin": 44
+      },
+      "live": {
+        "Cease, Dylan": 92,
+        "Skubal, Tarik": 81,
+        "Misiorowski, Jacob": 97,
+        "Schlittler, Cam": 93,
+        "Skenes, Paul": 91,
+        "Sale, Chris": 38,
+        "Crochet, Garrett": 76,
+        "Duran, Jhoan": 99,
+        "Webb, Logan": 91,
+        "Valdez, Framber": 74,
+        "Gausman, Kevin": 56
+      },
+      "full": {
+        "Cease, Dylan": 94,
+        "Skubal, Tarik": 72,
+        "Misiorowski, Jacob": 98,
+        "Schlittler, Cam": 90,
+        "Skenes, Paul": 79,
+        "Sale, Chris": 41,
+        "Crochet, Garrett": 81,
+        "Duran, Jhoan": 99,
+        "Webb, Logan": 80,
+        "Valdez, Framber": 82,
+        "Gausman, Kevin": 67
+      }
+    },
+    "rounds": {
+      "velo": 18,
+      "live": 51,
+      "full": 56
+    }
+  },
+  "final": {
+    "report": {
+      "mean": {
+        "pitch_rv": 0.074,
+        "pitch_whiff": -0.107,
+        "pitch_next_rv_from_stuff": null,
+        "pitch_next_rv_from_rv": null,
+        "pitch_next_whiff_from_stuff": null,
+        "pitch_pairs": 0,
+        "pitcher_rv": -0.004,
+        "pitcher_whiff": -0.015,
+        "pitcher_next_rv_from_stuff": null,
+        "pitcher_next_rv_from_rv": null,
+        "pitcher_pairs": 0
+      },
+      "movement": {
+        "pitch_rv": 0.021,
+        "pitch_whiff": -0.049,
+        "pitch_next_rv_from_stuff": null,
+        "pitch_next_rv_from_rv": null,
+        "pitch_next_whiff_from_stuff": null,
+        "pitch_pairs": 0,
+        "pitcher_rv": 0.131,
+        "pitcher_whiff": 0.143,
+        "pitcher_next_rv_from_stuff": null,
+        "pitcher_next_rv_from_rv": null,
+        "pitcher_pairs": 0
+      },
+      "velo": {
+        "pitch_rv": 0.144,
+        "pitch_whiff": 0.03,
+        "pitch_next_rv_from_stuff": null,
+        "pitch_next_rv_from_rv": null,
+        "pitch_next_whiff_from_stuff": null,
+        "pitch_pairs": 0,
+        "pitcher_rv": 0.294,
+        "pitcher_whiff": 0.421,
+        "pitcher_next_rv_from_stuff": null,
+        "pitcher_next_rv_from_rv": null,
+        "pitcher_pairs": 0
+      },
+      "live": {
+        "pitch_rv": 0.255,
+        "pitch_whiff": 0.158,
+        "pitch_next_rv_from_stuff": null,
+        "pitch_next_rv_from_rv": null,
+        "pitch_next_whiff_from_stuff": null,
+        "pitch_pairs": 0,
+        "pitcher_rv": 0.446,
+        "pitcher_whiff": 0.494,
+        "pitcher_next_rv_from_stuff": null,
+        "pitcher_next_rv_from_rv": null,
+        "pitcher_pairs": 0
+      },
+      "full": {
+        "pitch_rv": 0.268,
+        "pitch_whiff": 0.142,
+        "pitch_next_rv_from_stuff": null,
+        "pitch_next_rv_from_rv": null,
+        "pitch_next_whiff_from_stuff": null,
+        "pitch_pairs": 0,
+        "pitcher_rv": 0.437,
+        "pitcher_whiff": 0.53,
+        "pitcher_next_rv_from_stuff": null,
+        "pitcher_next_rv_from_rv": null,
+        "pitcher_pairs": 0
+      }
+    },
+    "percentiles": {
+      "mean": {
+        "Cease, Dylan": 47,
+        "Skubal, Tarik": 19,
+        "Misiorowski, Jacob": 15,
+        "Schlittler, Cam": 35,
+        "Skenes, Paul": 66,
+        "Sale, Chris": 75,
+        "Webb, Jacob": 2,
+        "Valdez, Framber": 23,
+        "Gausman, Kevin": 89
+      },
+      "movement": {
+        "Cease, Dylan": 8,
+        "Skubal, Tarik": 15,
+        "Misiorowski, Jacob": 50,
+        "Schlittler, Cam": 71,
+        "Skenes, Paul": 20,
+        "Sale, Chris": 97,
+        "Webb, Jacob": 70,
+        "Valdez, Framber": 88,
+        "Gausman, Kevin": 81
+      },
+      "velo": {
+        "Cease, Dylan": 80,
+        "Skubal, Tarik": 78,
+        "Misiorowski, Jacob": 99,
+        "Schlittler, Cam": 98,
+        "Skenes, Paul": 88,
+        "Sale, Chris": 55,
+        "Webb, Jacob": 26,
+        "Valdez, Framber": 34,
+        "Gausman, Kevin": 39
+      },
+      "live": {
+        "Cease, Dylan": 84,
+        "Skubal, Tarik": 77,
+        "Misiorowski, Jacob": 97,
+        "Schlittler, Cam": 97,
+        "Skenes, Paul": 73,
+        "Sale, Chris": 87,
+        "Webb, Jacob": 55,
+        "Valdez, Framber": 49,
+        "Gausman, Kevin": 60
+      },
+      "full": {
+        "Cease, Dylan": 86,
+        "Skubal, Tarik": 74,
+        "Misiorowski, Jacob": 100,
+        "Schlittler, Cam": 98,
+        "Skenes, Paul": 61,
+        "Sale, Chris": 79,
+        "Webb, Jacob": 71,
+        "Valdez, Framber": 40,
+        "Gausman, Kevin": 61
+      }
+    }
+  }
+}
