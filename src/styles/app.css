@@ -119,6 +119,246 @@
   margin-right: -32px;
 }
 
+/* --- Player search ---------------------------------------------------------- */
+
+.psearch {
+  position: relative;
+  /* Two sets of colours, so the same markup sits on the paper header and on a
+     card's stock. */
+  --ps-ink: var(--c-ink);
+  --ps-muted: var(--c-text-muted);
+  --ps-line: var(--c-line);
+  --ps-strong: var(--c-line-strong);
+  --ps-hover: var(--c-paper-2);
+  --ps-accent: var(--c-red);
+  --ps-font: var(--font-sans);
+}
+
+.psearch--card {
+  --ps-ink: var(--card-navy-ink);
+  --ps-muted: var(--card-label);
+  --ps-line: rgba(23, 69, 111, 0.16);
+  --ps-strong: rgba(23, 69, 111, 0.4);
+  --ps-hover: var(--card-stock-3);
+  --ps-accent: var(--card-navy);
+  margin-bottom: 4px;
+}
+
+.psearch--header {
+  flex: 0 1 270px;
+  min-width: 150px;
+  margin-left: -16px;
+}
+
+.psearch__icon {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--ps-strong);
+  background: transparent;
+  color: var(--ps-ink);
+  cursor: pointer;
+}
+
+.psearch__box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  border: 1px solid var(--ps-strong);
+  background: transparent;
+  color: var(--ps-ink);
+}
+
+.psearch__box:focus-within {
+  border-color: var(--ps-ink);
+  box-shadow: inset 0 0 0 1px var(--ps-ink);
+}
+
+.psearch__glass {
+  display: inline-flex;
+  flex: none;
+  padding: 0 7px 0 9px;
+  color: var(--ps-muted);
+}
+
+.psearch__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 4px 0 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ps-ink);
+  font-family: var(--ps-font);
+  /* 16px on a phone (below): anything smaller makes iOS zoom the page on focus. */
+  font-size: 13px;
+}
+
+/* The box carries the focus ring, so the input inside it must not add its own. */
+.psearch__input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.psearch__input::placeholder {
+  color: var(--ps-muted);
+  opacity: 1;
+}
+
+.psearch__hint {
+  flex: none;
+  margin-right: 7px;
+  padding: 0 5px;
+  border: 1px solid var(--ps-line);
+  font-family: var(--font-num);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ps-muted);
+}
+
+.psearch__clear {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ps-muted);
+  cursor: pointer;
+}
+
+.psearch__clear:hover {
+  color: var(--ps-ink);
+}
+
+/* A dropdown in the header, over the page and the replay. */
+.psearch--header .psearch__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  width: max(100%, 380px);
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  border: 1px solid var(--c-line-strong);
+  background: var(--c-surface-raised);
+  box-shadow: var(--shadow-lg);
+}
+
+/* In the flow on a card: its back scrolls, and would clip a dropdown. */
+.psearch--card .psearch__panel {
+  margin-top: 4px;
+  border: 1px solid var(--ps-line);
+  background: var(--card-stock-2);
+}
+
+.psearch__list,
+.psearch__list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.psearch__group {
+  margin: 0;
+  padding: 9px 11px 4px;
+  font-family: var(--font-num);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ps-muted);
+}
+
+.psearch__note {
+  margin: 0;
+  padding: 11px;
+  font-family: var(--ps-font);
+  font-size: 12.5px;
+  color: var(--ps-muted);
+}
+
+.psearch__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 11px;
+  cursor: pointer;
+  color: var(--ps-ink);
+}
+
+.psearch__row[data-active='true'] {
+  background: var(--ps-hover);
+}
+
+.psearch__shot {
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.psearch__who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 1px;
+}
+
+.psearch__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--ps-font);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.psearch__meta {
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--ps-font);
+  font-size: 11.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ps-muted);
+}
+
+.psearch__live {
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--ps-font);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ps-accent);
+  cursor: pointer;
+}
+
+.psearch__live:hover {
+  text-decoration: underline;
+}
+
+.psearch__ovr {
+  flex: none;
+  min-width: 26px;
+  font-family: var(--font-num);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* --- Game switcher menu ----------------------------------------------------- */
 
 .gamemenu {
@@ -3593,6 +3833,463 @@
   text-wrap: pretty;
 }
 
+/* --- Ratings: the wheel, the rows, the scale toggle ------------------------ */
+
+/* The section heading carries the toggle at its right end, after the rule. */
+.pcard__rule--tools::after {
+  order: 1;
+}
+
+.pcard__rule--tools .scaletoggle {
+  order: 2;
+}
+
+.scaletoggle {
+  display: inline-flex;
+  border: 1px solid rgba(23, 69, 111, 0.28);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.scaletoggle button {
+  font-family: var(--font-card-label);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  color: var(--card-navy-ink);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.scaletoggle button[aria-pressed='true'] {
+  background: var(--card-navy);
+  color: var(--card-gold-pale);
+}
+
+.scaletoggle button:focus-visible {
+  outline: 2px solid var(--card-gold);
+  outline-offset: -2px;
+}
+
+.ratingtags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 4px;
+  padding: 0;
+}
+
+.ratingtags li {
+  font-family: var(--font-card-label);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--card-gold-dark);
+  border: 1px solid rgba(217, 164, 65, 0.55);
+  padding: 2px 6px;
+}
+
+.wheelwrap {
+  margin: 2px 0 0;
+}
+
+.wheel {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* The full 0-100 under every slice: a faint disc the slices grow across. */
+.wheel__track {
+  fill: #efeee8;
+}
+
+/* A rating too thin to show still holds its place, hatched. */
+.wheel__hatchbg {
+  fill: #f3f2ec;
+}
+
+.wheel__hatch {
+  stroke: rgba(23, 69, 111, 0.2);
+  stroke-width: 1.3;
+}
+
+.wheel__ring {
+  fill: none;
+  stroke: rgba(23, 69, 111, 0.14);
+  stroke-width: 0.8;
+  stroke-dasharray: 2 3;
+}
+
+/* League average: the one ring worth reading against. Drawn under the slices
+   in navy, then again over them in white, so it runs unbroken round the disc. */
+.wheel__ring--avg {
+  stroke: rgba(23, 69, 111, 0.4);
+  stroke-width: 1;
+  stroke-dasharray: none;
+}
+
+.wheel__ring--over {
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 1;
+  stroke-dasharray: none;
+}
+
+.wheel__value {
+  font-family: var(--font-card-display);
+  font-size: 11.5px;
+  font-weight: 800;
+  fill: var(--card-navy-ink);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.wheel__label {
+  font-family: var(--font-card-label);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  fill: var(--card-label);
+}
+
+.wheel__label--empty {
+  fill: #8c8373;
+}
+
+.wheel__hub {
+  fill: var(--card-navy);
+  stroke: var(--card-gold);
+  stroke-width: 1.5;
+}
+
+.wheel__ovr {
+  font-family: var(--font-card-display);
+  font-size: 17px;
+  font-weight: 800;
+  fill: var(--card-gold-pale);
+}
+
+.wheel__ovrlabel {
+  font-family: var(--font-card-label);
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  fill: rgba(242, 220, 174, 0.8);
+}
+
+/* Key under the wheel: the group colours, the average ring, the band tint. */
+.wheellegend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 14px;
+  margin-top: 8px;
+  font-family: var(--font-card-label);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--card-label);
+}
+
+.wheellegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.wheellegend i {
+  width: 8px;
+  height: 8px;
+}
+
+.wheellegend i.wheellegend__avg {
+  width: 14px;
+  height: 0;
+  border-top: 1px solid rgba(23, 69, 111, 0.55);
+}
+
+/* The other player's outline, in the card's gold so it reads over every slice
+   colour, with a dark edge so it reads over the gold running slices too. */
+.wheel__vs {
+  fill: none;
+  stroke: var(--card-gold);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  paint-order: stroke;
+  filter: drop-shadow(0 0 0.6px rgba(15, 47, 80, 0.9));
+}
+
+.wheellegend i.wheellegend__vs {
+  width: 14px;
+  height: 0;
+  border-top: 2.4px solid var(--card-gold);
+}
+
+/* --- Similar players ------------------------------------------------------- */
+
+.similar {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.similar li + li {
+  border-top: 1px dotted var(--card-rule-dot);
+}
+
+.similar__row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 2px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.similar__row:hover,
+.similar__row:focus-visible {
+  background: var(--card-stock-3);
+}
+
+.similar__row:focus-visible {
+  outline: 2px solid var(--card-gold);
+  outline-offset: -2px;
+}
+
+.similar__row[aria-pressed='true'] {
+  background: rgba(217, 164, 65, 0.16);
+}
+
+.similar__score {
+  font-family: var(--font-card-display);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--card-navy-ink);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.similar__score small {
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 1px;
+  color: var(--card-label);
+}
+
+.similar__who {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.similar__name {
+  font-family: var(--font-card-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--card-navy-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.similar__meta {
+  font-family: var(--font-card-label);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--card-gold-dark);
+}
+
+.similar__why {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--card-label);
+}
+
+.similar__go {
+  font-size: 13px;
+  color: var(--card-navy);
+  text-align: center;
+}
+
+/* --- Two cards: the comparison --------------------------------------------- */
+
+.pcards {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  outline: none;
+}
+
+.pcards__slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform;
+}
+
+/* The way back on a phone, where only the right-hand card shows. Hidden
+   wherever both fit. */
+.pcards__back {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .pcards[data-count='2'] .pcards__slot[data-side='left'] {
+    display: none;
+  }
+
+  .pcards__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding: 6px 12px;
+    border: 1px solid rgba(242, 220, 174, 0.55);
+    border-radius: 99px;
+    background: var(--card-navy);
+    color: var(--card-gold-pale);
+    font-family: var(--font-card-label);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+}
+
+.ratinggroups {
+  margin-top: 6px;
+}
+
+.ratinggroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 0 3px;
+  font-family: var(--font-card-label);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--card-label);
+}
+
+.ratinggroup i {
+  width: 6px;
+  height: 6px;
+}
+
+.ratingrows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ratingrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px 22px 42px;
+  align-items: center;
+  column-gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--card-rule-dot);
+}
+
+.ratingrow__label {
+  font-family: var(--font-card-label);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--card-navy-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 0-100 track: the band in its group's tint, a tick at 50, the rating as a dot. */
+.ratingrow__bar {
+  position: relative;
+  height: 6px;
+  background: #ecebe4;
+}
+
+.ratingrow__band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.ratingrow__avg {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 50%;
+  width: 1px;
+  background: rgba(23, 69, 111, 0.4);
+}
+
+.ratingrow__dot {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px var(--card-stock-2);
+}
+
+.ratingrow__val {
+  font-family: var(--font-card-display);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: right;
+  color: var(--card-navy-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ratingrow__range {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  color: var(--card-label);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A hidden rating: the reason runs across the track, number and range. */
+.ratingrow__hidden {
+  grid-column: 2 / 5;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-style: italic;
+  color: var(--card-label);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Bio: label and value on ONE line, two pairs per row, hung on a dotted rule
    the way a printed form is. */
 .biogrid {
@@ -4355,6 +5052,15 @@
   }
 }
 
+/* The narrowest phones cannot fit the wordmark, status, game picker and search
+   across one bar. The status chip is what goes: the game picker and the search
+   are things to use, and the status is only something to read. */
+@media (max-width: 380px) {
+  .appbar__inner .appbar__status {
+    display: none;
+  }
+}
+
 /* --- Phones ----------------------------------------------------------------
    Four tabs, the feed status, the game picker and a wordmark do not fit
    across a phone. So the nav moves to a tab bar along the bottom, where a
@@ -4363,6 +5069,55 @@
 @media (max-width: 640px) {
   .appbar__inner {
     gap: 10px;
+  }
+
+  /* Search is an icon until it is wanted, then the width of the screen. */
+  .psearch--header {
+    flex: none;
+    min-width: 0;
+    margin-left: 0;
+    order: 3;
+  }
+
+  .psearch--header .psearch__icon {
+    display: inline-flex;
+  }
+
+  .psearch--header .psearch__box,
+  .psearch--header .psearch__hint {
+    display: none;
+  }
+
+  .psearch--header[data-expanded='true'] {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 45;
+    padding: 8px var(--gutter);
+    background: var(--c-paper);
+    border-bottom: 2px solid var(--c-ink);
+  }
+
+  .psearch--header[data-expanded='true'] .psearch__icon {
+    display: none;
+  }
+
+  .psearch--header[data-expanded='true'] .psearch__box {
+    display: flex;
+    height: 38px;
+  }
+
+  .psearch--header .psearch__panel {
+    position: static;
+    width: auto;
+    max-height: calc(100vh - 140px);
+    margin-top: 8px;
+    box-shadow: none;
+  }
+
+  .psearch__input {
+    font-size: 16px;
   }
 
   .wordmark {

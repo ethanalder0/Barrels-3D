@@ -1,36 +1,35 @@
 import CardEdges from './CardEdges.jsx';
 import PlayerHeadshot from './PlayerHeadshot.jsx';
 import { IconClose } from './Icons.jsx';
+import { SHORT_LABELS, valueOf } from './RatingsWheel.jsx';
 
-/* The four abilities each side of the ball is graded on, in reading order.
-   Labels live here so the card and its tooltips cannot disagree about what a
-   number means. */
-const HITTER_ABILITIES = [
-  ['contact', 'Contact'],
-  ['power', 'Power'],
-  ['speed', 'Speed'],
-  ['fielding', 'Fielding'],
-];
-
-const PITCHER_ABILITIES = [
-  ['stuff', 'Stuff'],
-  ['command', 'Command'],
-  ['velocity', 'Velocity'],
-  ['runPrevention', 'Run Prev.'],
-];
+/* Placeholders while the ratings load, so the plate does not jump. */
+const HITTER_PLACEHOLDER = ['gamePower', 'batToBall', 'speed', 'range'];
+const PITCHER_PLACEHOLDER = ['stuff', 'batMissing', 'command', 'contactManagement'];
 
 /**
  * The face of the card: the portrait, the overall, and four numbers.
  *
- * Everything statistical is on the back. The front's job is to be readable in
- * a glance without leaving the game, which is why the ratings are four bare
- * numerals rather than bars — at this size a number is faster than a length,
- * and it leaves the photograph the whole card.
+ * Everything statistical is on the back, including the full wheel. The front's
+ * job is to be readable in a glance without leaving the game, which is why the
+ * ratings are four bare numerals rather than bars — at this size a number is
+ * faster than a length, and it leaves the photograph the whole card. Which
+ * four is the server's call (`headline`): the glove slot belongs to whatever
+ * his position is rated on, or to Swing Decisions for a DH.
  */
-export default function PlayerCardFront({ player, loadingRatings, onFlip, onClose }) {
-  const ratings = player.ratings ?? null;
-  const abilities = player.isPitcher ? PITCHER_ABILITIES : HITTER_ABILITIES;
-  const overall = ratings?.overall ?? null;
+export default function PlayerCardFront({
+  player,
+  nameId = 'playercard-name',
+  loadingRatings,
+  scale = 'pct',
+  onFlip,
+  onClose,
+}) {
+  const ratings = player.ratings?.version === 2 ? player.ratings : null;
+  const byKey = Object.fromEntries((ratings?.attributes ?? []).map((a) => [a.key, a]));
+  const headline =
+    ratings?.headline ?? (player.isPitcher ? PITCHER_PLACEHOLDER : HITTER_PLACEHOLDER);
+  const overall = valueOf(ratings?.overall, scale);
 
   const number =
     player.number && player.number !== '—' ? String(player.number).replace(/^#/, '') : null;
@@ -93,7 +92,7 @@ export default function PlayerCardFront({ player, loadingRatings, onFlip, onClos
 
       <div className="pcard__platewrap">
         <div className="pcard__plate">
-          <h3 id="playercard-name" className="pcard__name">
+          <h3 id={nameId} className="pcard__name">
             {player.name}
           </h3>
           <p className="pcard__team">
@@ -101,14 +100,21 @@ export default function PlayerCardFront({ player, loadingRatings, onFlip, onClos
           </p>
 
           <div className="pcard__ratings">
-            {abilities.map(([key, label]) => (
-              <div className="pcard__rating" key={key} title={ratings?.basis?.[key]}>
-                <span className="pcard__ratingval">
-                  {loadingRatings && !ratings ? '·' : (ratings?.[key] ?? '—')}
-                </span>
-                <span className="pcard__ratinglabel">{label}</span>
-              </div>
-            ))}
+            {headline.map((key) => {
+              const a = byKey[key];
+              return (
+                <div
+                  className="pcard__rating"
+                  key={key}
+                  title={a ? `${a.label}: ${a.question}` : undefined}
+                >
+                  <span className="pcard__ratingval">
+                    {loadingRatings && !ratings ? '·' : (valueOf(a, scale) ?? '—')}
+                  </span>
+                  <span className="pcard__ratinglabel">{SHORT_LABELS[key] ?? key}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

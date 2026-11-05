@@ -139,6 +139,10 @@ def scoreboard(schedule_payload: dict) -> list[dict]:
                     "outs": ls.get("outs") or 0,
                     "balls": ls.get("balls") or 0,
                     "strikes": ls.get("strikes") or 0,
+                    # Who is up right now, for player search's live badge.
+                    "batterId": _id_str(((ls.get("offense") or {}).get("batter") or {}).get("id")),
+                    "batterName": ((ls.get("offense") or {}).get("batter") or {}).get("fullName"),
+                    "pitcherId": _id_str(((ls.get("defense") or {}).get("pitcher") or {}).get("id")),
                 }
 
             games.append({
@@ -157,6 +161,35 @@ def scoreboard(schedule_payload: dict) -> list[dict]:
                 "state": state,
             })
     return games
+
+
+# --- player search ----------------------------------------------------------
+
+def player_index(people: list[dict], teams: dict, playing_time: dict | None = None) -> list[dict]:
+    """statsapi's roster list -> the small rows player search matches against.
+
+    The browser loads this once and matches locally, so every byte here is
+    paid for on a phone. `w` is playing time (PA, or batters faced for a
+    pitcher, from the Savant boards when they are loaded): it decides who comes
+    first when a name is shared, so "smith" finds the everyday catcher before a
+    September call-up.
+    """
+    playing_time = playing_time or {}
+    rows = []
+    for person in people:
+        pid = person.get("id")
+        name = person.get("fullName")
+        if not pid or not name:
+            continue
+        team = teams.get((person.get("currentTeam") or {}).get("id")) or {}
+        rows.append({
+            "id": str(pid),
+            "name": name,
+            "team": team.get("abbreviation"),
+            "pos": (person.get("primaryPosition") or {}).get("abbreviation"),
+            "w": playing_time.get(str(pid), 0),
+        })
+    return rows
 
 
 # --- line score -------------------------------------------------------------

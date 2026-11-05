@@ -141,6 +141,21 @@ def get_teams(season: int | None = None) -> dict:
     return {t["id"]: t for t in resp.json().get("teams", [])}
 
 
+def get_players(season: int) -> list[dict]:
+    """Everyone on an MLB roster this season, for player search. About 1,560 people.
+
+    `fields` trims the response from 1.5 MB to about 200 KB.
+    """
+    url = f"{BASE}/v1/sports/1/players"
+    params = {
+        "season": season,
+        "fields": "people,id,fullName,primaryNumber,currentTeam,primaryPosition,abbreviation",
+    }
+    resp = session().get(url, params=params, timeout=TIMEOUT)
+    resp.raise_for_status()
+    return resp.json().get("people") or []
+
+
 def get_person(person_id: int, season: int) -> dict | None:
     """One player with their season line, for the player card.
 

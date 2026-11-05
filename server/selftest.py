@@ -143,6 +143,16 @@ for case in trees["checks"]:
 assert worst < 1e-9, f"exported trees drifted from LightGBM by {worst}"
 print(f"outcome model reproduces {len(trees['checks'])} stored LightGBM answers (worst {worst:.1e}) OK")
 
+# The Stuff model's exported trees, the same contract (ml/stuff_export.py).
+import stuff_model  # noqa: E402
+
+stuff = stuff_model._model()
+assert stuff, "server/models/stuff_trees.json is missing"
+worst = max(abs(stuff_model.predict([float("nan") if v is None else v for v in c["x"]]) - c["y"])
+            for c in stuff["checks"])
+assert worst < 1e-9, f"exported Stuff trees drifted from LightGBM by {worst}"
+print(f"stuff model reproduces {len(stuff['checks'])} stored LightGBM answers (worst {worst:.1e}) OK")
+
 feed5 = copy.deepcopy(feed4)
 play5 = feed5["liveData"]["plays"]["currentPlay"]
 play5["matchup"]["batSide"] = {"code": "L"}
@@ -177,5 +187,33 @@ assert line["home"]["xBA"] is None, "no at-bats, no xBA"
 sac = [dict(a, eventType="sac_fly") for a in projection._at_bats(feed5)]
 assert projection._team_stats(feed5, sac)["away"]["xBA"] == 0, "a sacrifice is not an at-bat"
 print(f"team xBA {line['away']['xBA']} / xSLG {line['away']['xSLG']} over 2 at-bats OK")
+
+# --- player search ------------------------------------------------------------
+# The index the search box matches against, and who is up in a live game.
+rows = projection.player_index(
+    [
+        {"id": 660271, "fullName": "Shohei Ohtani", "currentTeam": {"id": 119},
+         "primaryPosition": {"abbreviation": "TWP"}},
+        {"id": 1, "fullName": "No Team", "primaryPosition": {"abbreviation": "P"}},
+        {"id": None, "fullName": "No Id"},
+    ],
+    {119: {"abbreviation": "LAD"}},
+    {"660271": 691},
+)
+assert len(rows) == 2, "a row with no id cannot open a card"
+assert rows[0] == {"id": "660271", "name": "Shohei Ohtani", "team": "LAD", "pos": "TWP", "w": 691}, rows[0]
+assert rows[1]["team"] is None and rows[1]["w"] == 0, rows[1]
+
+board = projection.scoreboard({"dates": [{"games": [{
+    "gamePk": 7,
+    "status": {"abstractGameState": "Live", "detailedState": "In Progress"},
+    "teams": {"away": {"team": {"id": 1}}, "home": {"team": {"id": 2}}},
+    "linescore": {"currentInning": 3, "inningState": "Top",
+                  "offense": {"batter": {"id": 11, "fullName": "A Batter"}},
+                  "defense": {"pitcher": {"id": 22}}},
+}]}]})
+assert board[0]["state"]["batterId"] == "11" and board[0]["state"]["batterName"] == "A Batter", board[0]["state"]
+assert board[0]["state"]["pitcherId"] == "22", board[0]["state"]
+print("player index rows and live batter / pitcher ids OK")
 
 print("\nAll assertions passed.")

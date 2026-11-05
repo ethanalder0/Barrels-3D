@@ -2,6 +2,7 @@ import { useAppState } from '../state/AppState.jsx';
 import { useLiveData } from '../state/LiveDataProvider.jsx';
 import { connectionLabel } from '../state/connectionLabel.js';
 import GameMenu from './GameMenu.jsx';
+import PlayerSearch from './PlayerSearch.jsx';
 
 const NAV = [
   { id: 'home', label: 'Home' },
@@ -51,6 +52,13 @@ export default function AppHeader() {
             </button>
           ))}
         </nav>
+
+        <PlayerSearch
+          variant="header"
+          suggestions
+          onPick={actions.openPlayer}
+          onJump={actions.selectGame}
+        />
 
         <div className="appbar__spacer" />
 

@@ -50,6 +50,15 @@ export function IconChevron({ size = 16, dir = 'right' }) {
   );
 }
 
+export function IconSearch({ size = 16 }) {
+  return (
+    <svg viewBox="0 0 16 16" width={size} height={size} fill="none" aria-hidden="true">
+      <circle cx="7" cy="7" r="4.6" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M10.6 10.6 14 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function IconClose({ size = 16 }) {
   return (
     <svg viewBox="0 0 16 16" width={size} height={size} aria-hidden="true">

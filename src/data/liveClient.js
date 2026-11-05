@@ -95,6 +95,29 @@ export async function fetchLeaders({ season, per, signal } = {}) {
   return getJSON(`/leaders${qs ? `?${qs}` : ''}`, { signal });
 }
 
+/**
+ * Everyone on a roster, for player search. Asked for once per page load, on the
+ * first focus of a search box -- 118 KB nobody should pay for until they search.
+ */
+let playerIndex = null;
+export function loadPlayerIndex() {
+  if (!playerIndex) {
+    playerIndex = getJSON('/players')
+      .then((payload) => payload.players ?? [])
+      .catch((err) => {
+        playerIndex = null; // a later focus may try again
+        throw err;
+      });
+  }
+  return playerIndex;
+}
+
+/** Overall and top rating for a page of search results: { id: summary | null }. */
+export async function fetchPlayerSummaries(ids, { signal } = {}) {
+  const payload = await getJSON(`/players/summary?ids=${ids.join(',')}`, { signal });
+  return payload.summaries ?? {};
+}
+
 /** One player card for someone outside the current game (e.g. a league leader). */
 export function fetchPlayer(personId, { season, signal } = {}) {
   const qs = season ? `?season=${encodeURIComponent(season)}` : '';

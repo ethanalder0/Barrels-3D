@@ -6,6 +6,8 @@ backend stays `python server/app.py` with no extra install.
     GET /api/health
     GET /api/games?date=YYYY-MM-DD      today's scoreboard (date optional)
     GET /api/leaders?season=YYYY        advanced-stat league leaders
+    GET /api/players                    everyone on a roster, for player search
+    GET /api/players/summary?ids=1,2    overall and top rating, for search results
     GET /api/player/<personId>          one player card: bio, season line,
                                         percentile ability ratings, season
                                         Statcast, and a pitcher's arsenal
@@ -33,6 +35,7 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -78,6 +81,10 @@ GAME_STATCAST_STALE_MAX = 900.0
 # by everyone reading the home page. Ten minutes is far fresher than a season
 # line moves.
 PLAYER_TTL = 600.0
+# Rosters change by the day at most; a search box does not need them fresher.
+PLAYERS_TTL = 3600.0
+# A page of search results. Each id is a rating to work out, so it stays small.
+SUMMARY_MAX_IDS = 12
 
 # One game's snapshot, for a first paint. Short, because a live game moves; the
 # point is only that a burst of visitors arriving together costs one fetch.
@@ -110,6 +117,7 @@ _teams_cache: dict[int, tuple[float, dict]] = {}
 _saber_cache: dict[int, tuple[float, dict]] = {}
 _game_statcast_cache: dict[int, tuple[float, list]] = {}
 _player_cache: dict[tuple[int, int], tuple[float, dict]] = {}
+_players_cache: dict[int, tuple[float, list]] = {}
 _snapshot_cache: dict[int, tuple[float, dict]] = {}
 
 
@@ -273,6 +281,40 @@ def _game_statcast(game_pk: int):
     return rows, 0.0
 
 
+def _roster_people(season: int) -> list[dict]:
+    """Everyone on a roster this season, cached, and stale rather than absent."""
+    hit = _players_cache.get(season)
+    now = time.monotonic()
+    if hit and now - hit[0] < PLAYERS_TTL:
+        return hit[1]
+    try:
+        people = mlb_api.get_players(season)
+    except Exception as exc:
+        if hit:
+            sys.stderr.write(f"[players] {season} failed ({type(exc).__name__}); serving cache\n")
+            return hit[1]
+        raise
+    # Over the winter the new season has no rosters yet; last year's are the
+    # answer, not an empty search box.
+    if not people and season > FIRST_SEASON:
+        return _roster_people(season - 1)
+    _players_cache[season] = (now, people)
+    return people
+
+
+def _players(season: int) -> list[dict]:
+    """The rows player search matches against. Playing time is added fresh each time."""
+    return projection.player_index(_roster_people(season), _teams(season),
+                                   ratings_mod.playing_time(season))
+
+
+def _player_summaries(ids: list[str], season: int) -> dict:
+    """Ratings for a page of search results. Hitter or pitcher is decided as the card does."""
+    positions = {str(p.get("id")): (p.get("primaryPosition") or {}).get("abbreviation")
+                 for p in _roster_people(season)}
+    return ratings_mod.summaries({i: positions.get(i) == "P" for i in ids}, season)
+
+
 def _player(person_id: int, season: int) -> dict | None:
     """One player card, cached. None if statsapi has no such player."""
     key = (person_id, season)
@@ -399,6 +441,15 @@ class Handler(BaseHTTPRequestHandler):
                     payload["stale"] = True
                     payload["ageSeconds"] = round(age)
                 return self._json(payload)
+
+            if path == "/api/players":
+                return self._json({"players": _players(_season(query))})
+
+            if path == "/api/players/summary":
+                ids = [i for i in (query.get("ids") or [""])[0].split(",") if i.isdigit()]
+                if not ids or len(ids) > SUMMARY_MAX_IDS:
+                    return self._json({"error": f"ids must be 1-{SUMMARY_MAX_IDS} player ids"}, status=400)
+                return self._json({"summaries": _player_summaries(ids, _season(query))})
 
             if path.startswith("/api/player/"):
                 person_id = int(path.rsplit("/", 1)[1])
@@ -527,6 +578,10 @@ def main() -> None:
     args = parser.parse_args()
 
     server = Server((args.host, args.port), Handler)
+    # Player-card ratings need three seasons of Savant boards; fetch them now
+    # rather than on the first card someone opens.
+    threading.Thread(target=ratings_mod.warm, args=(datetime.now().year,),
+                     name="ratings-warm", daemon=True).start()
     print(f"Barrels 3D backend on http://{args.host}:{args.port}")
     if static_files.available():
         print(f"  serving the built site from {static_files.ROOT}")

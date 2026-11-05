@@ -1,5 +1,9 @@
+import { useMemo } from 'react';
 import CardEdges from './CardEdges.jsx';
 import { IconClose } from './Icons.jsx';
+import PlayerSearch from './PlayerSearch.jsx';
+import RatingsWheel, { GROUP_STYLES, groupStyle, valueOf } from './RatingsWheel.jsx';
+import { isPitcherRow } from '../data/playerSearch.js';
 
 /* ---------------------------------------------------------------------------
    The back of the card: the bio, and every number that did not earn a slot on
@@ -46,7 +50,18 @@ function debut(iso) {
     : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-export default function PlayerCardBack({ player, units, onFlip, onClose }) {
+export default function PlayerCardBack({
+  player,
+  units,
+  scale = 'pct',
+  onScale,
+  compare = null,
+  comparingWith = null,
+  onCompare,
+  onFlip,
+  onClose,
+}) {
+  const ratings = player.ratings?.version === 2 ? player.ratings : null;
   const metric = units === 'metric';
   const speed = (v) =>
     v == null ? '—' : metric ? `${(v * 1.60934).toFixed(1)}` : `${Number(v).toFixed(1)}`;
@@ -74,8 +89,8 @@ export default function PlayerCardBack({ player, units, onFlip, onClose }) {
 
       <div className="pcard__backinner">
         <header className="pcard__backhead">
-          <div className="pcard__ovr pcard__ovr--sm" data-empty={player.ratings?.overall == null}>
-            <span className="pcard__ovrval">{player.ratings?.overall ?? '—'}</span>
+          <div className="pcard__ovr pcard__ovr--sm" data-empty={valueOf(ratings?.overall, scale) == null}>
+            <span className="pcard__ovrval">{valueOf(ratings?.overall, scale) ?? '—'}</span>
           </div>
 
           <div className="pcard__backid">
@@ -94,6 +109,25 @@ export default function PlayerCardBack({ player, units, onFlip, onClose }) {
         </header>
 
         <div className="pcard__body bk">
+          <RatingsSection
+            ratings={ratings}
+            note={player.ratingsNote}
+            season={player.ratingsSeason}
+            scale={scale}
+            onScale={onScale}
+            compare={compare}
+          />
+
+          {ratings && (
+            <SimilarSection
+              player={player}
+              similar={ratings.similar ?? []}
+              scale={scale}
+              comparingWith={comparingWith}
+              onCompare={onCompare}
+            />
+          )}
+
           <Section label="Player">
             {/* Paired down the columns rather than across: physique on the
                 left, handedness and position on the right. */}
@@ -308,6 +342,225 @@ export default function PlayerCardBack({ player, units, onFlip, onClose }) {
         </footer>
       </div>
     </div>
+  );
+}
+
+/* The ratings, in full: the wheel, then every attribute as a row with its band,
+   then what the numbers are measured against. The wheel is for the shape of a
+   player; the rows are for the exact numbers and for screen readers. */
+function RatingsSection({ ratings, note, season, scale, onScale, compare }) {
+  if (!ratings) {
+    return (
+      <Section label="Ratings" note={note || 'Ratings are unavailable for this player.'}>
+        {null}
+      </Section>
+    );
+  }
+
+  const unit = ratings.kind === 'pitcher' ? 'pitchers' : 'hitters';
+  const pool = ratings.overall?.pool;
+  const priors = ratings.priorSeasons ?? [];
+  const grade = scale === 'grade';
+  // Rows grouped the way the wheel is, in the wheel's order.
+  const groups = [...new Set(ratings.attributes.map((a) => a.group))].map((g) => ({
+    key: g,
+    rows: ratings.attributes.filter((a) => a.group === g),
+  }));
+  const multi = groups.length > 1;
+
+  return (
+    <section className="pcard__section">
+      <div className="pcard__rule pcard__rule--tools">
+        <span>Ratings</span>
+        <div className="scaletoggle" role="group" aria-label="Rating scale">
+          <button type="button" aria-pressed={!grade} onClick={() => onScale?.('pct')}>
+            Percentile
+          </button>
+          <button type="button" aria-pressed={grade} onClick={() => onScale?.('grade')}>
+            20–80
+          </button>
+        </div>
+      </div>
+
+      {ratings.tags?.length > 0 && (
+        <ul className="ratingtags" aria-label="Profile">
+          {ratings.tags.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+      )}
+
+      <div className="wheelwrap">
+        <RatingsWheel ratings={ratings} scale={scale} compare={compare?.ratings ?? null} />
+      </div>
+
+      <div className="wheellegend" aria-hidden="true">
+        {multi &&
+          groups.map((g) => (
+            <span key={g.key}>
+              <i style={{ background: groupStyle(g.key).fill }} />
+              {groupStyle(g.key).name}
+            </span>
+          ))}
+        <span>
+          <i className="wheellegend__avg" />
+          League avg
+        </span>
+        <span>
+          <i style={{ background: GROUP_STYLES.hitting.band }} />
+          Likely range
+        </span>
+        {compare && (
+          <span>
+            <i className="wheellegend__vs" />
+            {compare.name}
+          </span>
+        )}
+      </div>
+
+      <div className="ratinggroups">
+        {groups.map((g) => (
+          <div key={g.key}>
+            {multi && (
+              <h4 className="ratinggroup">
+                <i style={{ background: groupStyle(g.key).fill }} />
+                {groupStyle(g.key).name}
+              </h4>
+            )}
+            <ul className="ratingrows">
+              {g.rows.map((a) => (
+                <RatingRow key={a.key} a={a} scale={scale} />
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      <p className="pcard__note">
+        {grade
+          ? '20–80 scouting grades: 50 is MLB average, each 10 is one standard deviation.'
+          : `Percentile against ${pool ?? 'the'} MLB ${unit}${season ? ` in ${season}` : ''}.`}{' '}
+        Adjusted for sample size
+        {priors.length ? ` using ${priors.join(' and ')}` : ''}; the range is where his true
+        talent likely sits (80%).
+      </p>
+    </section>
+  );
+}
+
+/* The five players whose ratings are closest to his. Strictly the numbers --
+   see Model.similar in server/ratings.py for what "closest" means -- and each
+   one says why: what the two share, and where they differ most. Picking one
+   opens his card alongside this one (PlayerCard.jsx). */
+function SimilarSection({ player, similar, scale, comparingWith, onCompare }) {
+  const grade = scale === 'grade';
+  /* Anyone can be compared, not just the five. Same side of the ball only: a
+     hitter and a pitcher share no ratings, so the wheels would have nothing to
+     outline. A two-way player's card is his hitting, so he counts as a hitter. */
+  const pitcher = Boolean(player.isPitcher);
+  const accept = useMemo(
+    () => (row) => isPitcherRow(row) === pitcher && String(row.id) !== String(player.id),
+    [pitcher, player.id],
+  );
+  return (
+    <section className="pcard__section">
+      <div className="pcard__rule">
+        <span>Similar players</span>
+      </div>
+      <PlayerSearch
+        variant="card"
+        label={`Compare with any ${pitcher ? 'pitcher' : 'hitter'}`}
+        placeholder={`Compare with any ${pitcher ? 'pitcher' : 'hitter'}`}
+        accept={accept}
+        scale={scale}
+        onPick={onCompare}
+      />
+      <ul className="similar">
+        {similar.map((s) => {
+          const d = s.differs;
+          const mine = grade ? d.mine?.grade : d.mine?.pct;
+          const theirs = grade ? d.theirs?.grade : d.theirs?.pct;
+          const active = String(comparingWith) === String(s.id);
+          return (
+            <li key={s.id}>
+              <button
+                type="button"
+                className="similar__row"
+                aria-pressed={active}
+                onClick={() => onCompare?.(String(s.id))}
+                title={`${s.similarity}% similar, compared on ${s.compared} ratings`}
+              >
+                <span className="similar__score">
+                  {s.similarity}
+                  <small>%</small>
+                </span>
+                <span className="similar__who">
+                  <span className="similar__name">{s.name ?? 'Unknown'}</span>
+                  <span className="similar__meta">
+                    {[s.position ?? (s.role === 'DH' ? 'DH' : null), `OVR ${valueOf(s.overall, scale) ?? '—'}`]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                  <span className="similar__why">
+                    Alike: {s.alike.map((a) => a.label).join(', ')}
+                  </span>
+                  {mine != null && theirs != null && (
+                    <span className="similar__why">
+                      Differs: {d.label} {mine} vs {theirs}
+                    </span>
+                  )}
+                </span>
+                <span className="similar__go" aria-hidden="true">
+                  {active ? '✓' : '→'}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="pcard__note">
+        Closest ratings, compared in standard deviations with each skill counted once.
+        Fielding counts only between players in the same role.
+      </p>
+    </section>
+  );
+}
+
+/* One attribute: label, a 0-100 track with the band and the rating on it, the
+   number, the range. The track always runs on the percentile scale, so its
+   length means the same thing whichever number is printed beside it; the
+   tick at its middle is league average, the wheel's solid ring. */
+function RatingRow({ a, scale }) {
+  const grade = scale === 'grade';
+  const v = valueOf(a, scale);
+  const g = groupStyle(a.group);
+  const title = `${a.question}${a.basis ? ` ${a.basis}.` : ''}`;
+
+  if (v == null) {
+    return (
+      <li className="ratingrow ratingrow--empty" title={title}>
+        <span className="ratingrow__label">{a.label}</span>
+        <span className="ratingrow__hidden">{a.hidden || 'Not rated'}</span>
+      </li>
+    );
+  }
+
+  const lo = grade ? a.gradeLo : a.lo;
+  const hi = grade ? a.gradeHi : a.hi;
+  return (
+    <li className="ratingrow" title={title}>
+      <span className="ratingrow__label">{a.label}</span>
+      <span className="ratingrow__bar" aria-hidden="true">
+        <span
+          className="ratingrow__band"
+          style={{ left: `${a.lo}%`, width: `${Math.max(1, a.hi - a.lo)}%`, background: g.band }}
+        />
+        <span className="ratingrow__avg" />
+        <span className="ratingrow__dot" style={{ left: `${a.pct}%`, background: g.fill }} />
+      </span>
+      <span className="ratingrow__val">{v}</span>
+      <span className="ratingrow__range">{`${lo}–${hi}`}</span>
+    </li>
   );
 }
 

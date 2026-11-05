@@ -62,7 +62,7 @@ state, the pitch feed renders the event stream.
 | `projection.py` | GUMBO → the view models the frontend renders |
 | `leaders.py` | advanced-stat league leaders (WAR, wRC+, wOBA, FIP, ERA-) |
 | `statcast.py` | Baseball Savant season leaderboards (xBA, xERA, sprint speed, OAA, arsenal) |
-| `ratings.py` | percentile ability ratings for the player card |
+| `ratings.py` | player-card ratings: sample-adjusted percentiles, 20–80 grades, bands |
 | `mlb_api.py` | HTTP client (schedule, feed/live, timestamps) |
 | `game_state.py` | pitch/at-bat change detection — from the live_score prototype, unchanged |
 | `formatter.py` | terminal view of events — from the prototype, unchanged |
@@ -122,8 +122,10 @@ components/
   AtBatList.jsx            at-bat feed, follows the live at-bat
   PitchFeed.jsx            the raw event stream (formatter.py, on screen)
   PlayerCard.jsx           the flippable card, in a modal over the game
-  PlayerCardFront.jsx      portrait, overall, four ability ratings
-  PlayerCardBack.jsx       bio, season line, Statcast, pitch arsenal
+  PlayerSearch.jsx         find a player: header box, and Compare with on a card
+  PlayerCardFront.jsx      portrait, overall, four headline ratings
+  PlayerCardBack.jsx       ratings wheel and rows, bio, season line, Statcast, arsenal
+  RatingsWheel.jsx         the pizza-chart wheel: one slice per attribute, with bands
   PlayerHeadshot.jsx       MLB headshot from a player id, with fallback
   PlayerName.jsx           any player name → their card
   CardEdges.jsx            the stamp's perforated edge and inner frame
@@ -1388,138 +1390,211 @@ initials instead of quietly rendering a stranger's silhouette.
 The big cut-out loads eagerly. It is the subject of a dialog the user just
 opened, and `loading="lazy"` left a shimmer where the player should be.
 
-### Ability ratings
+### Ability ratings (v2)
 
-Every rating is a **percentile against the actual major-league population**,
-not a hand-tuned curve from a stat to a grade. "Power 72" means "a better ISO
-than 72% of the hitters in the pool", and the card says which pool underneath
-the bars.
+Every attribute on the card answers one question from at most three Statcast
+inputs with published weights, and is shown two ways from one number: a
+**percentile** against the major-league pool (the default) or a **20–80
+scouting grade** (`50 + 10 × z`, rounded to 5). The card back draws them as a
+wheel — one equal slice per attribute, pushed out by its rating — with a row
+per attribute underneath carrying the exact number and its band.
 
-|  | hitter | pitcher |
-|---|---|---|
-| | **Contact** xBA | **Stuff** whiff%, K%, velocity |
-| | **Power** ISO (SLG − AVG) | **Command** BB% and edge% |
-| | **Speed** Sprint speed | **Velocity** average fastball |
-| | **Fielding** OAA within position; run value for catchers | **Run prevention** xERA |
-| | **Overall** xwOBA-anchored | **Overall** weighted composite |
+| group | attribute | question | inputs (weight) |
+|---|---|---|---|
+| Hitting | Raw Power | How hard can he hit it? | bat speed .5, best-half exit velo .5 |
+| | Game Power | How often does power turn into damage? | barrel/BBE .65, ISO .35 |
+| | Contact Quality | What is each ball in play worth? | xwOBAcon |
+| | Contact Consistency | Does he square it up at a useful angle? | squared-up/contact .5, sweet-spot .5 |
+| | Bat-to-Ball | Does he avoid swinging and missing? | zone contact .5, whiff (inv) .3, K% (inv) .2 |
+| | Swing Decisions | Does he swing at the right pitches? | chase (inv) .5, BB% .3, meatball swing .2 |
+| Baserunning | Speed | How fast is he? | sprint speed |
+| | Baserunning | Does he create value on the bases? | baserunning run value per opportunity |
+| Fielding | Range (IF, OF) | Ground covered, for his position | range runs per 1000 outs, within position |
+| | Arm (IF, OF) | Strong and useful? | arm strength .5, arm runs per 1000 outs .5, within IF/OF |
+| | Jump (OF) | First step on a fly ball | feet vs average in the first 3 s |
+| | Framing / Blocking / Throwing (C) | | run values per 1000 pitches; pop time .5 + throwing runs .5 |
+| Pitching | Velocity | How hard does he throw? | fastball velo |
+| | Stuff | How good are his pitches on velocity, shape and release alone? | the Stuff model's runs per 100 pitches, usage-weighted (see below) |
+| | Bat-Missing | Does he get whiffs? | whiff .5, zone contact (inv) .3, K% .2 |
+| | Chase | Swings outside the zone | chase induced |
+| | Command (proxy) | Does he hit his spots? | BB% (inv) .55, edge% .45 |
+| | Contact Management | Is contact against him weak? | xwOBAcon (inv) .5, barrels (inv) .3, GB% .2 |
+| | Arsenal Depth | How many good pitches? | effective pitches (usage entropy) × share above league for type |
 
-Four decisions in `server/ratings.py` that are easy to get silently wrong, and
-which `ratingstest.py` pins down:
+Pull and fly-ball / ground-ball rates are **tags** ("Pull hitter"), not
+ratings — neither end is better. Overall is the **value layer**, not the
+average of the slices: a hitter's is xwOBA .70, fielding .20, baserunning .10;
+a pitcher's is xERA .40, bat-missing .20, command .15, contact management .10,
+stuff .10, chase .05. Velocity and depth are left out of the pitcher's because
+they are ingredients of the whiffs and weak contact already in it; Stuff is in
+at a modest weight because it predicts next season as well as this season's
+results do.
 
-* **Ties take the midpoint of the block they share.** `percentile = 100 ×
-  (below + tied/2) / N`. OAA is a small integer, so dozens of fielders sit on
-  the same value; counting ties as "beaten" would hand every one of them the
-  top of the block.
-* **Composites are re-percentiled, not averaged.** A weighted mean of
-  percentiles is not itself a percentile — averaging pulls everything toward
-  50, so a player at the 90th percentile in four skills would score in the low
-  70s and nobody would ever look elite. Overall, Stuff and Command are each
-  scored for the whole pool and then ranked again, so they are true percentiles
-  of their own distribution. A pitcher at the 90th in every component comes out
-  at 90.
-* **Missing components are dropped, never defaulted.** A designated hitter has
-  no fielding sample at all. Scoring that as 0 would call every DH the worst
-  fielder alive; scoring it 50 would invent an average defender. The bar
-  disappears and the composite renormalises over the weights it does have.
-* **Catchers are graded on run value, not on OAA they do not have.** They are
-  absent from the OAA board because catching is not a range skill, so Savant
-  models it as framing, blocking and throwing instead. `statcast.py` sums those
-  three published run values into catcher Fielding Run Value and the catcher is
-  ranked against other catchers; the back of the card shows the split.
-* **Fielding needs a real sample.** `min` on the OAA board is *attempts*, and it
-  was briefly set to 1. OAA is a counting stat, so a thin sample sits near zero
-  and lands mid-pack rather than nowhere: Yordan Alvarez, a DH, picked up −2 OAA
-  from a handful of left-field innings and was graded 25th percentile against 88
-  full-time left fielders, which cost him 10 points of Overall. The threshold is
-  now 50 chances (and 500 pitches caught for a catcher).
-* **Fielding is graded within a position.** OAA is a counting stat gated by
-  opportunity, and opportunity depends on where you stand — +4 is a very
-  different season at shortstop and at first base.
+**The pipeline**, the same for every attribute (`server/ratings.py`):
 
-**A hitter's Overall is not the average of his bars.** Contact and Power are two
-partial views of one swing, and averaging them misreads anyone lopsided: a
-hitter can sit 95th in xBA and 12th in ISO — a high-average bat who walks and
-does not slug — and the blend calls that mediocre when his run production is
-well above average. So Overall is anchored on **xwOBA**, which weights every
-outcome by the runs it is actually worth: xwOBA .70, fielding .20, speed .10,
-re-percentiled. The bars still say what a hitter does well; Overall says how
-much he is worth. That trade is real and the card owns it — the badge carries
-its basis on hover, because otherwise a lopsided hitter's number looks like it
-disagrees with his own card.
+1. **Adjust for sample size.** `(n0·x0 + 0.6·n1·x1 + 0.3·n2·x2 + k·μ) / (n0 +
+   0.6·n1 + 0.3·n2 + k)`: this season blended with his previous two and the
+   league average, by sample. A star's slow April leans on his history; a
+   rookie's on the league.
+2. **k is measured, not borrowed.** Per input, the same players' numbers in
+   the last two complete seasons are correlated; `k = n·(1−r)/r` at the typical
+   sample n. Physical tools come out with tiny k (sprint speed ≈ 9 runs), noisy
+   ones with huge k (arm runs ≈ 41,000 outs — nearly no year-to-year signal).
+3. **Rank against true talent.** Each pool player contributes eight draws of
+   his plausible true value; that cloud is the ladder. A player's rating is the
+   median of 200 draws of his own ranked against it, the band the middle 80%.
+   Ranking against the pool's *adjusted averages* instead made every band too
+   wide, because shrinking squeezes those toward the middle.
+4. **Re-rank composites.** Inputs are blended and the blend ranked again, so a
+   player 90th in every input comes out ~90, not low 70s.
+5. **Hide what we do not know.** Not shown when the band is wider than 75
+   points, or when under 20% of the estimate is his own data (`n / (n + k)`).
+   The first cutoff was 50; at that width it hid half the league's Overall,
+   because one season of baseball is that noisy. The second rule exists
+   because blending two independent noisy inputs narrows a band by itself.
 
-The remaining 30% splits the way value does, defence ahead of baserunning,
-matching the ordering of WAR's components. For pitchers, preventing runs is the
-job and velocity is already inside Stuff, so counting it fully would count the
-same fastball twice: run prevention .40, stuff .30, command .20, velocity .10.
+Fielding rules that guard real cases: a hitter under **2 defensive outs per
+PA** is a DH (Yordan Alvarez fields 0.84, a regular ~5.9), so a few
+left-field innings cannot drag his card down; under 150 defensive outs the
+glove is not shown or counted; ranges are ranked within position.
 
-A player under the pool threshold gets **no ratings and a stated reason**
-("under the 100 plate appearances needed to be ranked against the league")
-rather than a number invented from a small sample.
+### The Stuff model
+
+Stuff replaced a Movement slice that rated break against the league's average
+pitch of the same type. That idea turned out to say almost nothing: 0.13
+correlation with a pitcher's run value in 2026, and *negative* before its
+vertical sign was fixed (Savant's `diff_z` is positive for **less** drop).
+Cease rated 2nd percentile on it. Elite arms are elite on velocity, arm angle
+and how their pitches play off their own fastball, which it never saw.
+
+`ml/stuff_prepare.py` builds a per-pitch table from the raw Statcast pitches
+(2.84M, 2023–26); `ml/stuff_train.py` fits LightGBM to each pitch's run value
+(`delta_run_exp`) from velocity, arm-side horizontal break, induced vertical
+break, arm angle, and the gaps in all three to his primary fastball. Location is
+never an input — that is command. Fit on 2023–24, settings chosen on 2025,
+refit on 2023–25 and scored once on 2026:
+
+| pitcher level, 1000+ pitches | 2026 run value | 2026 whiff% | next season's run value |
+|---|---|---|---|
+| Movement (old slice) | 0.13 | 0.15 | 0.05 |
+| velocity only | 0.29 | 0.42 | 0.31 |
+| **Stuff** | **0.45** | **0.49** | **0.39** (2025 → 2026) |
+| this season's own run value | — | — | 0.39 |
+
+The deployed server sees only Savant's season boards, so the model is trained
+on inputs coarsened to match: arm angle is the pitcher's season average, and
+knuckle curves count as curveballs (the board folds KC into CU). The board's
+horizontal break is unsigned; `stuff_model.py` re-signs it by pitch type, which
+is right for 98.9% of pitcher-pitches. Run on those averages, a pitcher's Stuff
+tracks the every-pitch version at r = 0.94. `ml/stuff_export.py` writes the 51
+trees to `server/models/stuff_trees.json` (210 KB) after checking the plain
+walker against LightGBM; `selftest.py` re-checks a stored sample. Year to year,
+Stuff repeats at r = 0.78, so k is ~300 pitches.
+
+Known lean: sinkerballers rate lower than their results (Valdez ~50), as in
+public Stuff+ models — their value is weak contact, which Contact Management
+carries.
+
+### Similar players
+
+The back of every card lists the five players with the closest ratings —
+strictly the numbers, nothing about team, age or reputation
+(`Model.similar` in `server/ratings.py`):
+
+* **Grade space.** Attributes are compared in standard deviations from
+  average, not percentile points, which squash the ends (95 vs 99 is a real
+  gap; 45 vs 55 a small one).
+* **Each skill counted once.** Mahalanobis distance against the league's
+  correlation of attributes, so Raw Power, Game Power and Contact Quality share
+  their weight instead of tripling it. A small ridge keeps the inverse stable;
+  `_invert` is a plain Gauss-Jordan because the server has no numpy.
+* **What they share.** Compared on the attributes both have; fielding only
+  between players in the same role (IF, OF, C). So a DH's top match can be a
+  shortstop who hits like him, matched on the bat alone. Distance is per
+  attribute compared, and a pair must share 70% of the target's attributes.
+* Hidden ratings are left out of both sides, and a match needs a shown Overall.
+  Similarity is shown as `100 · exp(−d²/2)`, with the three attributes the two
+  are most alike on (weighted toward notable ones) and where they differ most.
+
+Pitchers only match pitchers; starters and relievers can match each other.
+Picking a match opens its card to the right (`PlayerCard.jsx`) with each wheel
+outlining the other player; picking from the right-hand card moves the chain
+along. On a phone only the right-hand card shows, with a way back.
+
+### Player search
+
+A box in the header (an icon on a phone; `/` from anywhere) opens any player's
+card, and the same component on a card's back compares with any player on the
+same side of the ball. The browser loads the whole roster once, on first focus
+(`/api/players`, ~1,560 rows, 118 KB), and matches locally in
+`src/data/playerSearch.js`, so results keep up with typing. Names are folded
+first — accents, case, punctuation — so "acuna" finds Acuña and "ohoppe" finds
+O'Hoppe; then exact > starts-with > word prefixes > initials ("pca") > anywhere
+> team abbreviation > typos. Ties go to whoever has played more. Each result's
+overall and top rating come from `/api/players/summary` (at most 12 ids), from
+the same `Model.rate()` as the card, which is remembered per data refresh, so
+the number in the list is the number on the card. With nothing typed the box
+offers who is at the plate in live games (the scoreboard now carries the batter
+and pitcher ids from the line score) and recently viewed cards; a live badge
+jumps to the game.
 
 ### Where the numbers come from
 
-statsapi carries none of this: the GUMBO feed has a game's tracked contact but
-no season Statcast totals, and `stats=sabermetrics` stops at WAR/FIP/wOBA. So
-`statcast.py` pulls Baseball Savant's CSV leaderboards, which key every row on
-`player_id` — the same MLBAM id statsapi uses, so the join is a dict lookup.
+Every board is fetched down to a single PA / inning / throw — small samples
+are needed in order to shrink them — and the `*_MIN_*` constants in
+`statcast.py` define the **reference pool** a percentile is measured against.
+Three seasons are loaded (this one and two priors, cached a week) in parallel;
+`ratings.warm()` runs at startup so the first card does not wait ~20 s.
 
-| board | gives | pool |
-|---|---|---|
-| `custom` (batter) | xBA, xSLG, xwOBA, AVG, SLG, barrel%, hard-hit%, K%, BB% | 100+ PA |
-| `custom` (pitcher) | xERA, K%, BB%, whiff%, edge%, zone%, fastball velo | 25+ IP |
-| `sprint_speed` | sprint speed, home-to-first, bolts | 10+ runs |
-| `outs_above_average` | OAA, runs prevented, position | fielders, 50+ chances |
-| `catcher-framing` + `-blocking` + `-throwing` | catcher run value, split three ways | 500+ pitches |
-| `pitch-arsenals` + `pitch-arsenal-stats` | usage, velocity, whiff, xwOBA per pitch | 100+ pitches |
+| board | gives |
+|---|---|
+| `custom` (batter) | xwOBA, xwOBAcon, ISO, best-half EV, barrel%, sweet-spot%, zone contact, whiff, chase, K%, BB%, meatball swing%, pull/FB/GB%, samples |
+| `custom` (pitcher) | xERA, whiff, zone contact, K%, chase, BB%, edge%, xwOBAcon, barrel%, GB%, FB velo, games/starts |
+| `bat-tracking` | bat speed, squared-up per contact |
+| `sprint_speed`, `baserunning-run-value` | sprint speed; baserunning runs and opportunities |
+| `outs_above_average`, `fielding-run-value`, `arm-strength`, `outfield_jump` | position; range and arm runs, defensive outs; arm mph; jump |
+| `catcher-framing` / `-blocking` / `-throwing`, `poptime` | catcher run values; pop time |
+| `pitch-arsenals` + `pitch-arsenal-stats`, `pitch-movement` (one per type) | usage, velo, run value per pitch; per-type speed and break for Stuff |
 
 Things established by probing the live boards rather than assumed:
 
-* **`min` means different units per board.** Plate appearances on the batter
-  board, *innings* on the pitcher board — `min=150` returns 11 pitchers while
-  `min=100` returns 105.
-* **`min=q` is far too strict for a player card**: 137 hitters and 54 pitchers
-  league-wide, so most of the nine names in a box score would have no ratings.
-  The pools above are wider on purpose.
-* **The fielding board has no catchers or pitchers.** A missing OAA is normal.
-* Responses are UTF-8 with a BOM, and numbers arrive quoted and
-  baseball-formatted (`".227"`).
+* **An unknown `selections` column still comes back — empty.** `bip`,
+  `swing_count`, `p_gs` and `release_extension` all do. `batted_ball`,
+  `p_starting_p` and pitches × `swing_percent` are the ones that fill. So a
+  header check proves nothing; check values. (Extension is on no board, which
+  is why Velocity is fastball velo alone.)
+* **The catcher boards ignore `year`** and always answer with the current
+  season. Framing takes `seasonStart`/`seasonEnd`; blocking and throwing take
+  `season_start`/`season_end`. Unnoticed while only the current season was
+  asked for.
+* **`min` means different units per board**: PA on the batter board, innings
+  on the pitcher board.
+* **Some rates arrive display-formatted** (`"-3%"`); `_num` strips the sign.
+* Responses are UTF-8 with a BOM, and numbers arrive quoted (`".227"`).
 
-Cached six hours per season with the same stale-serving contract as the
-scoreboard, and every board is fetched independently: one failing board costs
-its own ability bar, not the whole card. `ratings.profile()` never raises, so if
-Savant is unreachable the card keeps its bio and season line and says why the
-bars are missing.
+Every board is fetched independently: one failing board costs its own
+attributes, not the card, and `ratings.profile()` never raises.
 
-### Two gaps, stated rather than filled
+### Gaps, stated rather than filled
 
-* **SIERA is not available.** It is a FanGraphs stat with no public API, and
-  neither statsapi nor Savant exposes it. Run prevention is built on **xERA**
-  instead — a real Statcast metric measuring the same thing, fetched rather
-  than estimated — with **FIP**, **xFIP** and **ERA-** shown alongside it on
-  the back. Implementing SIERA from its published regression would mean
-  shipping coefficients that cannot be checked against a reference value, which
-  is the sort of plausible-but-wrong number worth refusing to produce. Getting
-  it properly would need per-pitcher GB/FB/PU rates plus a verified set of
-  coefficients.
-* **Command has no public ground truth.** The real models (Location+ and
-  friends) are proprietary. Walk avoidance plus edge% — the share of pitches on
-  the black — is the best proxy the public data supports, and the card labels
-  it as a proxy rather than implying a scouted grade. In-zone% is deliberately
-  excluded: a pitcher who grooves everything posts a high one.
-
-FIP additionally comes from the **qualified-only** sabermetrics endpoint, which
-ignores a larger `limit`, so a reliever legitimately has none and the card shows
-a dash.
+* **Command has no public ground truth.** Walk avoidance plus edge% is the best
+  proxy the public data supports, and the card labels it as one.
+* **Swing/take run value** — the cleanest swing-decision measure — returned no
+  rows when probed, so Swing Decisions uses chase, walks and meatball swings.
+* **SIERA** is a FanGraphs stat with no public API; xERA anchors pitcher value,
+  with FIP, xFIP and ERA- shown on the back.
+* Extension and spin would add a little to Stuff (0.53 vs 0.49 against whiff
+  rate) but are on no season board, so the shipped model leaves them out.
+* Deferred: pitcher platoon gap and stamina, hitter ratings by pitch type, and
+  similar players against PAST seasons ("his 2026 looks like X's 2019").
 
 ### Adding to the card later
 
-The pieces are separate on purpose. A new ability is a ladder plus a weight in
-`ratings.py` and a row in the front's ability list. A new block on the back is a
-`<Section>` in `PlayerCardBack.jsx`. A new Savant board is a loader in
-`statcast.py` registered in `_LOADERS`, which gets the caching, the per-board
-failure isolation and the `sources` reporting for free. Pitch **movement**
-characteristics are the obvious next addition: they need one more Savant board,
-joined the way velocity already is.
+An input is one `Input(...)` in `HITTER_INPUTS` / `PITCHER_INPUTS` (how to
+read it, its sample, its pool, its polarity, its scope); an attribute is one
+`Attribute(...)` naming inputs and weights. k, the band and the grade come for
+free. A new Savant board is a loader in `statcast.py` registered in
+`_LOADERS`.
 
 ## Team colours and logos
 
@@ -1845,7 +1920,5 @@ and why it is left blank rather than filled in.
   playback, so the controls are laid out but inert.
 * `feed/live/diffPatch?startTimecode=…` would fetch deltas instead of full
   snapshots; we still pull the whole feed each poll.
-* Pitch **movement** characteristics (horizontal/vertical break) are not on the
-  card yet — one more Savant board, joined the way velocity already is.
 * SIERA, and a real command model. Both are explained under
   [Player cards](#player-cards); neither is faked in the meantime.
