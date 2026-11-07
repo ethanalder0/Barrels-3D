@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useReducer } from 'react
 import { atBats, defaultGameId } from '../data/stubs.js';
 import { readReplayOptions } from '../data/liveClient.js';
 import { readFavorites, toggleFavorite, writeFavorites } from '../data/favorites.js';
+import { INITIAL_VIEW } from '../data/playerBoard.js';
 
 /* ---------------------------------------------------------------------------
    One store for everything that crosses a screen boundary: which screen is up,
@@ -13,7 +14,7 @@ import { readFavorites, toggleFavorite, writeFavorites } from '../data/favorites
 --------------------------------------------------------------------------- */
 
 const initialState = {
-  screen: 'home', // 'home' | 'live' | 'games' | 'settings' | 'leaderboard'
+  screen: 'home', // 'home' | 'live' | 'games' | 'players' | 'settings' | 'leaderboard'
   entered: false, // past the splash; nothing is fetched until then
   selectedGameId: defaultGameId,
   selectedAtBatId: atBats[0].id,
@@ -40,6 +41,9 @@ const initialState = {
   // Which leaderboard the full-page view is showing, as { groupId, categoryId }.
   // Set by expanding one of the home page's top-five boards.
   leaderboard: null,
+  // What the Players page is showing, kept here so a trip to a live game does
+  // not lose the filters. See data/playerBoard.js.
+  playersView: INITIAL_VIEW,
   /* Favourite clubs, as feed abbreviations, most recently picked last. Seeded
      from localStorage so the app opens already following them — the only state
      here that outlives the tab. See data/favorites.js. */
@@ -121,6 +125,8 @@ function reducer(state, action) {
         screen: 'leaderboard',
         leaderboard: { groupId: action.groupId, categoryId: action.categoryId },
       };
+    case 'setPlayersView':
+      return { ...state, playersView: { ...state.playersView, ...action.patch } };
     case 'openPlayer':
       return { ...state, playerCardId: action.playerId };
     case 'closePlayer':
@@ -162,6 +168,7 @@ export function AppStateProvider({ children }) {
       stopHighlights: () => dispatch({ type: 'stopHighlights' }),
       openLeaderboard: (groupId, categoryId) =>
         dispatch({ type: 'openLeaderboard', groupId, categoryId }),
+      setPlayersView: (patch) => dispatch({ type: 'setPlayersView', patch }),
       openPlayer: (playerId) => dispatch({ type: 'openPlayer', playerId }),
       closePlayer: () => dispatch({ type: 'closePlayer' }),
       setSetting: (key, value) => dispatch({ type: 'setSetting', key, value }),

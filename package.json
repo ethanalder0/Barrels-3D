@@ -11,7 +11,8 @@
     "selftest": "node src/replay/ball/selftest.js",
     "selftest:parks": "node src/replay/field/selftest.js",
     "selftest:follow": "node src/replay/follow.selftest.js",
-    "selftest:search": "node src/data/playerSearch.selftest.js"
+    "selftest:search": "node src/data/playerSearch.selftest.js",
+    "selftest:players": "node src/data/playerBoard.selftest.js"
   },
   "dependencies": {
     "@fontsource-variable/newsreader": "^5.3.0",

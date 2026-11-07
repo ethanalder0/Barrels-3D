@@ -8,6 +8,7 @@ const NAV = [
   { id: 'home', label: 'Home' },
   { id: 'live', label: 'Live' },
   { id: 'games', label: 'Games' },
+  { id: 'players', label: 'Players' },
   { id: 'settings', label: 'Settings' },
 ];
 

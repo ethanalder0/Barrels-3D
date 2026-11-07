@@ -5,6 +5,7 @@ import HomeScreen from './screens/HomeScreen.jsx';
 import LiveGameScreen from './screens/LiveGameScreen.jsx';
 import GameListScreen from './screens/GameListScreen.jsx';
 import LeaderboardScreen from './screens/LeaderboardScreen.jsx';
+import PlayersScreen from './screens/PlayersScreen.jsx';
 import SettingsScreen from './screens/SettingsScreen.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import PlayerCard from './components/PlayerCard.jsx';
@@ -15,6 +16,7 @@ const SCREENS = {
   live: LiveGameScreen,
   games: GameListScreen,
   leaderboard: LeaderboardScreen,
+  players: PlayersScreen,
   settings: SettingsScreen,
 };
 

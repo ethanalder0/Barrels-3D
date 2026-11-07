@@ -94,6 +94,12 @@
   --c-rating-low: #cbbda9;   /* under 40 */
   --c-rating-track: #e4ddcd;
 
+  /* The wheel's three groups, for rules on the page. The wheel itself keeps the
+     card's fixed colours; these lift on the dark page where those would vanish. */
+  --c-group-hitting: #17456f;
+  --c-group-running: #c8922f;
+  --c-group-fielding: #8a3d32;
+
   /* --- Surfaces that were hardcoded before dark mode ---------------------- */
   --c-glow: var(--c-paper);                 /* no glow: newsprint is flat */
   --c-glow-fade: rgba(243, 239, 230, 0);
@@ -233,6 +239,9 @@
   --c-rating-avg: #8a7357;
   --c-rating-low: #5f5142;
   --c-rating-track: #2a251c;
+  --c-group-hitting: #7ea6cc;
+  --c-group-running: #d9a441;
+  --c-group-fielding: #c9806f;
   --c-warn-soft: #3a2e1c;
   --c-warn-ink: #e5b877;
   --c-on-seam: #2a1512; /* seam lifts to a light red here, so the label darkens */

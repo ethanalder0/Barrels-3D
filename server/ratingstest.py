@@ -11,6 +11,7 @@ top of ratings.py.
 import math
 import random
 
+import projection
 import ratings
 import statcast
 
@@ -479,6 +480,27 @@ try:
     assert got[top_id]["top"]["pct"] == best_attr["pct"]
     assert got[ptop]["overall"]["pct"] == pt["overall"]["pct"], got[ptop]
     assert got["999999"] is None
+
+    # The Players page shows the numbers the card will show, and keeps "hidden"
+    # (too little data) apart from "not rated at his position".
+    board = ratings.player_board(
+        [{"id": top_id, "name": "Top", "team": "SEA", "pos": "SS", "bats": "R", "throws": "R"},
+         {"id": ptop, "name": "Ace", "team": "SEA", "pos": "P", "bats": "R", "throws": "R"},
+         {"id": "999999", "name": "Nobody", "team": "SEA", "pos": "SS", "bats": "L", "throws": "R"}],
+        2026)
+    row = board["players"][0]
+    assert row["kind"] == "hitter" and row["ovr"] == [top["overall"]["pct"], top["overall"]["grade"]]
+    keys = [a["key"] for a in board["attributes"]["hitter"]]
+    assert len(row["r"]) == len(keys), "one entry per attribute, in the listed order"
+    for attr in top["attributes"]:
+        entry = row["r"][keys.index(attr["key"])]
+        assert entry == ([attr["pct"], attr["grade"]] if attr["pct"] is not None else None), attr["key"]
+    rated = {a["key"] for a in top["attributes"]}
+    assert all(row["r"][i] == 0 for i, k in enumerate(keys) if k not in rated), "not rated is 0"
+    assert board["players"][1]["kind"] == "pitcher"
+    assert board["players"][1]["ovr"] == [pt["overall"]["pct"], pt["overall"]["grade"]]
+    nobody = board["players"][2]
+    assert nobody["ovr"] is None and nobody["r"] == [], "no data still lists him, unrated"
     assert ratings.playing_time(2026) == {}, "nothing in the Savant cache here, and it must not fetch"
     payload = ratings.profile(999999, is_pitcher=True, season_year=2026)
     assert payload["ratings"] is None and "No 2026" in payload["ratingsNote"]
@@ -494,5 +516,120 @@ finally:
     statcast.season, statcast.history = original_season, original_history
     ratings._models.clear()
 print("profile() survives outages and missing history, and explains itself OK")
+
+
+# --- team numbers: plain arithmetic on hand-made rows ------------------------
+attrs = {"hitter": [{"key": "speed"}, {"key": "range"}], "pitcher": [{"key": "stuff"}]}
+
+
+def _row(pid, team, kind, ovr, r):
+    return {"id": pid, "team": team, "kind": kind, "ovr": ovr, "r": r}
+
+
+rows = [
+    _row("1", "SEA", "hitter", [80, 60], [[90, 65], None]),   # hidden Range: not counted
+    _row("2", "SEA", "hitter", [40, 45], [[50, 50], [70, 55]]),
+    _row("3", "SEA", "hitter", [99, 80], [[99, 80], [99, 80]]),  # never played: no weight
+    _row("4", "SEA", "hitter", None, [[10, 30], 0]),          # no overall, still has a Speed
+    _row("5", "SEA", "pitcher", [60, 55], [[70, 55]]),
+    _row("6", "SEA", "pitcher", [20, 40], [[30, 45]]),
+    _row("7", None, "hitter", [99, 80], [[99, 80], 0]),       # no club: in nobody's numbers
+    _row("8", "TEX", "hitter", [50, 50], [[50, 50], 0]),      # no pitchers: no Overall
+]
+played = {"1": 300, "2": 100, "4": 100, "5": 150, "6": 50, "7": 600, "8": 500}
+got = ratings.team_numbers(rows, played, attrs)
+assert set(got) == {"SEA", "TEX"}, got
+sea = got["SEA"]
+assert sea["hitting"] == [70.0, 56.2], sea["hitting"]    # (80*300 + 40*100) / 400
+assert sea["pitching"] == [50.0, 51.2], sea["pitching"]  # (60*150 + 20*50) / 200
+assert sea["overall"] == [60.0, 53.7], sea["overall"]    # the two halves, evenly
+assert sea["hitters"] == 2 and sea["pitchers"] == 2, "only rated players who have played"
+# Speed: (90*300 + 50*100 + 10*100) / 500. Range: only the one who has it showing.
+assert sea["ratings"]["speed"] == [66.0, 55.0, 3], sea["ratings"]["speed"]
+assert sea["ratings"]["range"] == [70.0, 55.0, 1], sea["ratings"]["range"]
+assert sea["ratings"]["stuff"] == [60.0, 52.5, 2], sea["ratings"]["stuff"]
+assert got["TEX"]["hitting"] == [50.0, 50.0] and got["TEX"]["overall"] is None
+print("team numbers are weighted by playing time and average the two halves OK")
+
+# --- who plays for whom ------------------------------------------------------
+teams = {136: {"abbreviation": "SEA"}, 147: {"abbreviation": "NYY"}}
+people = [
+    {"id": 1, "fullName": "Stays", "currentTeam": {"id": 136}, "primaryPosition": {"abbreviation": "C"},
+     "batSide": {"code": "S"}, "pitchHand": {"code": "R"}},
+    {"id": 2, "fullName": "Sent down", "currentTeam": {"id": 136}, "primaryPosition": {"abbreviation": "P"}},
+    {"id": 3, "fullName": "Moved", "currentTeam": {"id": 136}},
+    {"id": 4, "fullName": "Unlisted", "currentTeam": {"id": 136}},
+]
+got = projection.board_rows(people, teams, {"1": 136, "2": 531, "3": 147})
+assert [r["team"] for r in got] == ["SEA", None, "NYY", None], "the card's club, not the season list's"
+assert got[0]["bats"] == "S" and got[0]["throws"] == "R" and got[0]["pos"] == "C"
+assert got[1]["bats"] is None
+assert [r["team"] for r in projection.board_rows(people, teams, None)] == ["SEA"] * 4
+print("a player's club comes from his own record, as on his card OK")
+
+# --- the Players page's build: off the request thread, one at a time ----------
+import gzip  # noqa: E402
+import json  # noqa: E402
+import threading  # noqa: E402
+import time  # noqa: E402
+
+import app  # noqa: E402
+
+release = threading.Event()
+builds = []
+
+
+def _slow_build(season):
+    builds.append(season)
+    if not release.wait(5):
+        raise AssertionError("never released")
+    if len(builds) == 2:
+        raise RuntimeError("Savant is down")
+    return {"season": season, "players": ["é"]}
+
+
+def _settle(board, season):
+    for _ in range(200):
+        with board._lock:
+            if season not in board._running:
+                return
+        time.sleep(0.01)
+    raise AssertionError("the build never finished")
+
+
+original_build = app._build_player_board
+app._build_player_board = _slow_build
+try:
+    board = app.PlayerBoard()
+    assert board.get(2026) is None, "the first request is told to come back, not made to wait"
+    assert board.get(2026) is None and not board.failed(2026)
+    release.set()
+    _settle(board, 2026)
+    assert builds == [2026], "two requests, one build"
+    plain, packed = board.get(2026)
+    assert json.loads(plain) == {"season": 2026, "players": ["é"]}
+    assert gzip.decompress(packed) == plain
+
+    # Past its time, the old copy is served while a new one is built. When that
+    # build fails, the old copy stays: a Savant outage must not empty the page.
+    with board._lock:
+        at, *rest = board._built[2026]
+        board._built[2026] = (at - app.BOARD_TTL - 1, *rest)
+    release.clear()
+    assert board.get(2026) == (plain, packed)
+    release.set()
+    _settle(board, 2026)
+    assert builds == [2026, 2026]
+    assert board.get(2026) == (plain, packed) and not board.failed(2026)
+
+    # Nothing to fall back on: say so, and do not retry on every request.
+    builds[:] = [2025]
+    assert board.get(2025) is None
+    _settle(board, 2025)
+    assert board.failed(2025)
+    assert board.get(2025) is None and builds == [2025, 2025], "waits before trying again"
+finally:
+    app._build_player_board = original_build
+print("the Players page builds in the background and keeps its last good copy OK")
 
 print("\nAll assertions passed.")

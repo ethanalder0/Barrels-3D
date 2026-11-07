@@ -74,10 +74,10 @@ export const groupStyle = (group) => GROUP_STYLES[group] ?? GROUP_STYLES.hitting
 
 const W = 328;
 const H = 268;
-const CX = W / 2;
-const CY = H / 2;
-const HUB = 26; // the centre, where the overall sits
-const R = 112; // the end of the scale
+export const CX = W / 2;
+export const CY = H / 2;
+export const HUB = 26; // the centre, where the overall sits
+export const R = 112; // the end of the scale
 // Label baselines. Top-half labels stand on their circle and grow outward;
 // bottom-half labels are flipped to stay upright, so they hang from theirs and
 // grow inward -- hence the larger radius, which sets both the same distance
@@ -100,7 +100,7 @@ function bandOf(score, scale) {
 }
 
 /* Radius for a value: percentiles run 0-100, grades 20-80. */
-function radius(v, scale) {
+export function radius(v, scale) {
   const t = scale === 'grade' ? (v - 20) / 60 : v / 100;
   return HUB + (R - HUB) * Math.max(0, Math.min(1, t));
 }
@@ -109,7 +109,7 @@ const point = (r, a) => [CX + r * Math.sin(a), CY - r * Math.cos(a)];
 const fmt = (n) => n.toFixed(2);
 
 /* An annular sector from r0 to r1, between angles a0 and a1 (clockwise from 12). */
-function sector(r0, r1, a0, a1) {
+export function sector(r0, r1, a0, a1) {
   const large = a1 - a0 > Math.PI ? 1 : 0;
   const [x0, y0] = point(r1, a0);
   const [x1, y1] = point(r1, a1);
@@ -134,7 +134,7 @@ function labelArc(mid) {
 }
 
 /** Equal slices, the first group centred on 12 o'clock so the wheel sits symmetric. */
-function layout(attributes) {
+export function layout(attributes, gap = GAP) {
   const n = attributes.length;
   const each = (2 * Math.PI) / n;
   const multi = new Set(attributes.map((a) => a.group)).size > 1;
@@ -143,7 +143,7 @@ function layout(attributes) {
   const start = multi ? (-first * each) / 2 : -each / 2;
   return attributes.map((_, i) => {
     const c0 = start + i * each;
-    return { a0: c0 + GAP / 2, a1: c0 + each - GAP / 2, mid: c0 + each / 2 };
+    return { a0: c0 + gap / 2, a1: c0 + each - gap / 2, mid: c0 + each / 2 };
   });
 }
 

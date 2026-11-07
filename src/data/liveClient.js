@@ -118,6 +118,36 @@ export async function fetchPlayerSummaries(ids, { signal } = {}) {
   return payload.summaries ?? {};
 }
 
+/**
+ * Every player's ratings and every club's numbers, for the Players page. About
+ * 60 KB gzipped, asked for once per page load, on the first visit to the page.
+ *
+ * Rating the whole league takes the server a while after a restart. Until it is
+ * done it answers `{ building: true }` and this keeps asking.
+ */
+const BOARD_POLL_MS = 3000;
+const BOARD_POLLS = 60;
+let playerBoard = null;
+
+async function pollPlayerBoard() {
+  for (let i = 0; i < BOARD_POLLS; i += 1) {
+    const payload = await getJSON('/players/ratings');
+    if (!payload.building) return payload;
+    await new Promise((resolve) => setTimeout(resolve, BOARD_POLL_MS));
+  }
+  throw new Error('the ratings are taking too long');
+}
+
+export function loadPlayerBoard() {
+  if (!playerBoard) {
+    playerBoard = pollPlayerBoard().catch((err) => {
+      playerBoard = null; // a later visit may try again
+      throw err;
+    });
+  }
+  return playerBoard;
+}
+
 /** One player card for someone outside the current game (e.g. a league leader). */
 export function fetchPlayer(personId, { season, signal } = {}) {
   const qs = season ? `?season=${encodeURIComponent(season)}` : '';

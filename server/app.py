@@ -8,6 +8,9 @@ backend stays `python server/app.py` with no extra install.
     GET /api/leaders?season=YYYY        advanced-stat league leaders
     GET /api/players                    everyone on a roster, for player search
     GET /api/players/summary?ids=1,2    overall and top rating, for search results
+    GET /api/players/ratings            every player's ratings and every club's
+                                        numbers, for the Players page. 202 while
+                                        it is still being worked out.
     GET /api/player/<personId>          one player card: bio, season line,
                                         percentile ability ratings, season
                                         Statcast, and a pitcher's arsenal
@@ -31,6 +34,7 @@ and the server listens on every interface.
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import os
 import re
@@ -85,6 +89,10 @@ PLAYER_TTL = 600.0
 PLAYERS_TTL = 3600.0
 # A page of search results. Each id is a rating to work out, so it stays small.
 SUMMARY_MAX_IDS = 12
+# The Players page's data. Rebuilt in the background at most this often, and the
+# last good copy is served meanwhile. After a failure, wait before trying again.
+BOARD_TTL = 3600.0
+BOARD_RETRY = 60.0
 
 # One game's snapshot, for a first paint. Short, because a live game moves; the
 # point is only that a burst of visitors arriving together costs one fetch.
@@ -315,6 +323,82 @@ def _player_summaries(ids: list[str], season: int) -> dict:
     return ratings_mod.summaries({i: positions.get(i) == "P" for i in ids}, season)
 
 
+class PlayerBoard:
+    """The Players page's data for one season, built off the request thread.
+
+    Rating everyone takes about 20 s of CPU, far too long for a request to wait
+    on and more than one copy should ever be doing, so at most one build runs at
+    a time. Requests get the last good copy straight away, or are told to come
+    back. The body is encoded once, gzip included, because it goes out unchanged
+    to everyone.
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._built: dict[int, tuple[float, bytes, bytes]] = {}
+        self._running: set[int] = set()
+        self._failed: dict[int, float] = {}
+
+    def get(self, season: int) -> tuple[bytes, bytes] | None:
+        """(json, gzipped json), or None while the first build is still going."""
+        now = time.monotonic()
+        with self._lock:
+            hit = self._built.get(season)
+            due = (not hit or now - hit[0] >= BOARD_TTL) and season not in self._running
+            if due and now - self._failed.get(season, -BOARD_RETRY) >= BOARD_RETRY:
+                self._running.add(season)
+                threading.Thread(target=self.build, args=(season,),
+                                 name="player-board", daemon=True).start()
+        return (hit[1], hit[2]) if hit else None
+
+    def failed(self, season: int) -> bool:
+        """The last build failed and there is nothing to serve in its place."""
+        with self._lock:
+            return (season in self._failed and season not in self._running
+                    and season not in self._built)
+
+    def build(self, season: int) -> None:
+        try:
+            payload = _build_player_board(season)
+            body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+            packed = gzip.compress(body, compresslevel=6)
+            with self._lock:
+                self._built[season] = (time.monotonic(), body, packed)
+                self._failed.pop(season, None)
+        except Exception as exc:
+            sys.stderr.write(f"[players] board for {season} failed: {type(exc).__name__}: {exc}\n")
+            with self._lock:
+                self._failed[season] = time.monotonic()
+        finally:
+            with self._lock:
+                self._running.discard(season)
+
+
+BOARD = PlayerBoard()
+
+
+def _build_player_board(season: int) -> dict:
+    people = _roster_people(season)
+    try:
+        clubs = mlb_api.get_current_teams([p.get("id") for p in people if p.get("id")])
+    except Exception as exc:
+        sys.stderr.write(f"[players] current teams failed ({type(exc).__name__}); "
+                         "using the season list\n")
+        clubs = None
+    rows = projection.board_rows(people, _teams(season), clubs)
+    board = ratings_mod.player_board(rows, season)
+    # Over the winter the new season has rosters but nothing to rate them on.
+    if not any(row["r"] for row in board["players"]) and season > FIRST_SEASON:
+        return ratings_mod.player_board(rows, season - 1)
+    return board
+
+
+def _warm(season: int) -> None:
+    """Have everything ready before the first visitor asks: card ratings, then the page."""
+    ratings_mod.warm(season)
+    BOARD.get(season)
+
+
 def _player(person_id: int, season: int) -> dict | None:
     """One player card, cached. None if statsapi has no such player."""
     key = (person_id, season)
@@ -374,6 +458,21 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         for name, value in (headers or {}).items():
             self.send_header(name, value)
+        self._cors()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _encoded_json(self, plain: bytes, packed: bytes) -> None:
+        """A body already encoded once, gzipped for whoever accepts that."""
+        gzipped = "gzip" in self.headers.get("Accept-Encoding", "")
+        body = packed if gzipped else plain
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Vary", "Accept-Encoding")
+        if gzipped:
+            self.send_header("Content-Encoding", "gzip")
         self._cors()
         self.end_headers()
         self.wfile.write(body)
@@ -450,6 +549,16 @@ class Handler(BaseHTTPRequestHandler):
                 if not ids or len(ids) > SUMMARY_MAX_IDS:
                     return self._json({"error": f"ids must be 1-{SUMMARY_MAX_IDS} player ids"}, status=400)
                 return self._json({"summaries": _player_summaries(ids, _season(query))})
+
+            if path == "/api/players/ratings":
+                season = _season(query)
+                ready = BOARD.get(season)
+                if ready:
+                    return self._encoded_json(*ready)
+                if BOARD.failed(season):
+                    return self._json({"error": "ratings are unavailable right now"}, status=503,
+                                      headers={"Retry-After": "60"})
+                return self._json({"building": True}, status=202, headers={"Retry-After": "3"})
 
             if path.startswith("/api/player/"):
                 person_id = int(path.rsplit("/", 1)[1])
@@ -580,7 +689,7 @@ def main() -> None:
     server = Server((args.host, args.port), Handler)
     # Player-card ratings need three seasons of Savant boards; fetch them now
     # rather than on the first card someone opens.
-    threading.Thread(target=ratings_mod.warm, args=(datetime.now().year,),
+    threading.Thread(target=_warm, args=(datetime.now().year,),
                      name="ratings-warm", daemon=True).start()
     print(f"Barrels 3D backend on http://{args.host}:{args.port}")
     if static_files.available():

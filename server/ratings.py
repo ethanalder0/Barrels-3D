@@ -90,6 +90,7 @@ import math
 import random
 import statistics
 import sys
+import time
 import zlib
 from bisect import bisect_left, bisect_right
 from statistics import NormalDist
@@ -1195,9 +1196,10 @@ def playing_time(season_year: int) -> dict[str, float]:
     is simply empty and the order falls back to alphabetical.
     """
     hit = statcast._cache.get(season_year)
-    if not hit:
-        return {}
-    sc = hit[1]
+    return _time_played(hit[1]) if hit else {}
+
+
+def _time_played(sc) -> dict[str, float]:
     out = {pid: r.get("pa") or 0 for pid, r in sc.batting.items()}
     for pid, r in sc.pitching.items():
         # Pitches over ~3.9 per batter: the same unit as a hitter's PA.
@@ -1234,6 +1236,127 @@ def summaries(people: dict[str, bool], season_year: int) -> dict[str, dict | Non
             "top": top and {k: top[k] for k in ("key", "label", "pct", "grade")},
         }
     return out
+
+
+def _attribute_list(attributes) -> list[dict]:
+    return [{"key": a.key, "label": a.label, "group": a.group, "question": a.question,
+             "roles": sorted(a.roles) if a.roles else None} for a in attributes]
+
+
+def _board_row(person: dict, model, attributes) -> dict:
+    """One player for the Players page.
+
+    `r` lines up with the attribute list for his kind, one entry each: [pct,
+    grade], None for hidden (too little data), 0 for not rated at his position.
+    Hidden and not rated are different answers: a filter can offer to show the
+    first, and the second was never a question.
+    """
+    rated = model.rate(person["id"])
+    row = {**person, "kind": "pitcher" if model.kind == "pitcher" else "hitter",
+           "ovr": None, "r": []}
+    if not rated:
+        return row
+    overall = rated["overall"]
+    if overall.get("pct") is not None:
+        row["ovr"] = [overall["pct"], overall["grade"]]
+    scores = {a["key"]: a for a in rated["attributes"]}
+    for attr in attributes:
+        score = scores.get(attr.key)
+        if score is None:
+            row["r"].append(0)
+        elif score.get("pct") is None:
+            row["r"].append(None)
+        else:
+            row["r"].append([score["pct"], score["grade"]])
+    return row
+
+
+def _weighted(pairs: list[tuple[float, float]]) -> float | None:
+    total = sum(w for _, w in pairs)
+    return round(sum(v * w for v, w in pairs) / total, 1) if total > 0 else None
+
+
+def _weighted_pair(pairs: list[tuple[list, float]]) -> list | None:
+    """[pct, grade] averages from ([pct, grade], weight) pairs. None without any weight."""
+    pct = _weighted([(v[0], w) for v, w in pairs])
+    return None if pct is None else [pct, _weighted([(v[1], w) for v, w in pairs])]
+
+
+def team_numbers(rows: list[dict], played: dict, attributes: dict) -> dict:
+    """{club: its Overall, Hitting, Pitching and every rating}, from board rows.
+
+    Hitting is the average Overall of a club's rated hitters, weighted by plate
+    appearances, and Pitching the same for its pitchers by batters faced. A
+    plain average counts a September call-up the same as an everyday starter,
+    which put the 2026 Phillies 11th when weighting has them 2nd. Team Overall
+    is the plain average of those two halves.
+
+    Anyone who has not played this season carries no weight, so he is not
+    counted. Someone with no club is in no club's numbers.
+    """
+    clubs: dict[str, dict] = {}
+    for row in rows:
+        weight = played.get(row["id"]) or 0
+        if not row.get("team") or weight <= 0:
+            continue
+        club = clubs.setdefault(row["team"], {"hitter": [], "pitcher": [], "ratings": {}})
+        if row.get("ovr"):
+            club[row["kind"]].append((row["ovr"], weight))
+        for attr, score in zip(attributes[row["kind"]], row["r"]):
+            if score:
+                club["ratings"].setdefault(attr["key"], []).append((score, weight))
+
+    out = {}
+    for team, club in clubs.items():
+        hitting = _weighted_pair(club["hitter"])
+        pitching = _weighted_pair(club["pitcher"])
+        overall = None
+        if hitting and pitching:
+            overall = [round((hitting[0] + pitching[0]) / 2, 1),
+                       round((hitting[1] + pitching[1]) / 2, 1)]
+        out[team] = {
+            "overall": overall,
+            "hitting": hitting,
+            "pitching": pitching,
+            "hitters": len(club["hitter"]),
+            "pitchers": len(club["pitcher"]),
+            "ratings": {key: [*_weighted_pair(pairs), len(pairs)]
+                        for key, pairs in club["ratings"].items()
+                        if _weighted_pair(pairs)},
+        }
+    return out
+
+
+def player_board(people: list[dict], season_year: int) -> dict:
+    """Every player's ratings and every club's numbers, for the Players page.
+
+    The browser filters this itself, so a slider answers without a request per
+    move. Each number is the one on that player's card, from the same rate().
+
+    Expensive: about 20 s of CPU cold for 1,560 players, though the results are
+    kept with the model, so it is only that slow when the Savant data has
+    changed. It naps between players so the live feeds keep their turn. Run it
+    in the background. Raises if Savant is unavailable; the caller keeps
+    whatever it last built.
+    """
+    sc, _ = statcast.season(season_year)
+    hitters, pitchers = _models_for(sc, statcast.history(season_year - 1),
+                                    statcast.history(season_year - 2))
+    rows = []
+    for person in people:
+        pitcher = person.get("pos") == "P"
+        model = pitchers if pitcher else hitters
+        rows.append(_board_row(person, model, PITCHER_ATTRIBUTES if pitcher else HITTER_ATTRIBUTES))
+        time.sleep(0.001)
+    attributes = {"hitter": _attribute_list(HITTER_ATTRIBUTES),
+                  "pitcher": _attribute_list(PITCHER_ATTRIBUTES)}
+    return {
+        "season": season_year,
+        "attributes": attributes,
+        "groups": GROUPS,
+        "players": rows,
+        "teams": team_numbers(rows, _time_played(sc), attributes),
+    }
 
 
 def _unavailable(reason: str) -> dict:

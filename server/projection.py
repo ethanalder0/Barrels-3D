@@ -192,6 +192,33 @@ def player_index(people: list[dict], teams: dict, playing_time: dict | None = No
     return rows
 
 
+def board_rows(people: list[dict], teams: dict, clubs: dict | None = None) -> list[dict]:
+    """statsapi's roster list -> who the Players page lists, and on which club.
+
+    `clubs` is get_current_teams(), so a player's club here is the one on his
+    card. A minor-league affiliate is not in `teams`, which leaves him with no
+    club: he is still a rated player, but on no roster and in no team's numbers.
+    Without `clubs` (that lookup failed) the season list has to do.
+    """
+    rows = []
+    for person in people:
+        pid = person.get("id")
+        name = person.get("fullName")
+        if not pid or not name:
+            continue
+        team_id = (clubs.get(str(pid)) if clubs is not None
+                   else (person.get("currentTeam") or {}).get("id"))
+        rows.append({
+            "id": str(pid),
+            "name": name,
+            "team": (teams.get(team_id) or {}).get("abbreviation"),
+            "pos": (person.get("primaryPosition") or {}).get("abbreviation"),
+            "bats": (person.get("batSide") or {}).get("code"),
+            "throws": (person.get("pitchHand") or {}).get("code"),
+        })
+    return rows
+
+
 # --- line score -------------------------------------------------------------
 
 def _line_score(feed: dict, game_id: str) -> dict:

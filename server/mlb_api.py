@@ -19,6 +19,7 @@ from urllib3.util.retry import Retry
 
 BASE = "https://statsapi.mlb.com/api"
 TIMEOUT = 10  # seconds per request
+PEOPLE_BATCH = 200  # ids per /people request, which keeps the URL a sensible length
 
 # statsapi drops connections now and then (WinError 10054). With the default
 # adapter that is max_retries=0, so a single blip surfaced as a 502 and the
@@ -149,11 +150,37 @@ def get_players(season: int) -> list[dict]:
     url = f"{BASE}/v1/sports/1/players"
     params = {
         "season": season,
-        "fields": "people,id,fullName,primaryNumber,currentTeam,primaryPosition,abbreviation",
+        "fields": "people,id,fullName,primaryNumber,currentTeam,primaryPosition,abbreviation,"
+                  "batSide,pitchHand,code",
     }
     resp = session().get(url, params=params, timeout=TIMEOUT)
     resp.raise_for_status()
     return resp.json().get("people") or []
+
+
+def get_current_teams(person_ids: list) -> dict[str, int]:
+    """{person id: team id} from each person's own record, for the ones who have a team.
+
+    Not the same answer as get_players(), and this is the one the player card
+    shows. The season list keeps a player on the club he finished with: in
+    November it still had Mitch Garver on Seattle when his own record had him at
+    the Yankees' Triple-A club. The team id here can be a minor-league affiliate.
+    """
+    out: dict[str, int] = {}
+    ids = [str(i) for i in person_ids]
+    for start in range(0, len(ids), PEOPLE_BATCH):
+        params = {
+            "personIds": ",".join(ids[start:start + PEOPLE_BATCH]),
+            "hydrate": "currentTeam",
+            "fields": "people,id,currentTeam,id",
+        }
+        resp = session().get(f"{BASE}/v1/people", params=params, timeout=TIMEOUT)
+        resp.raise_for_status()
+        for person in resp.json().get("people") or []:
+            team_id = (person.get("currentTeam") or {}).get("id")
+            if team_id:
+                out[str(person.get("id"))] = team_id
+    return out
 
 
 def get_person(person_id: int, season: int) -> dict | None:

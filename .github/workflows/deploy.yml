@@ -55,6 +55,7 @@ jobs:
           npm run selftest:parks
           npm run selftest:follow
           npm run selftest:search
+          npm run selftest:players
           pip install -r server/requirements.txt
           python server/selftest.py
           python server/ratingstest.py
