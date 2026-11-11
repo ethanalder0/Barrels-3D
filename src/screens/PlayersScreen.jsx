@@ -94,6 +94,9 @@ export default function PlayersScreen() {
         <div>
           <h1>Players</h1>
           <p className="page-head__deck">Every rated big leaguer, found by what he can do.</p>
+          <button type="button" className="players__how" onClick={() => actions.navigate('ratings')}>
+            How Overall works <span aria-hidden="true">→</span>
+          </button>
         </div>
         <div className="page-head__aside players__aside">
           {board && <span className="players__season">{board.season} season</span>}

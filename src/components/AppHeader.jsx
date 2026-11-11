@@ -15,7 +15,7 @@ const NAV = [
 // Screens reached from another screen rather than from the nav. They keep
 // their parent's tab lit, so the header still says where you are instead of
 // going blank on a page that has no tab of its own.
-const NAV_PARENT = { leaderboard: 'home' };
+const NAV_PARENT = { leaderboard: 'home', ratings: 'players' };
 
 /* Feed tone → chip variant. Live is the red fill; anything still waiting on
    the feed gets the amber dot; settled states (final, pre-game) are a plain
@@ -54,14 +54,16 @@ export default function AppHeader() {
           ))}
         </nav>
 
+        <div className="appbar__spacer" />
+
+        {/* Search, feed status and game picker sit together on the right:
+            the tabs say where you are, the right side is what you can do. */}
         <PlayerSearch
           variant="header"
           suggestions
           onPick={actions.openPlayer}
           onJump={actions.selectGame}
         />
-
-        <div className="appbar__spacer" />
 
         {/* Feed state, not game state — this is the answer to "is it actually
             streaming?", which matters as soon as there is a backend. */}

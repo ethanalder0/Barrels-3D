@@ -14,7 +14,7 @@ import { INITIAL_VIEW } from '../data/playerBoard.js';
 --------------------------------------------------------------------------- */
 
 const initialState = {
-  screen: 'home', // 'home' | 'live' | 'games' | 'players' | 'settings' | 'leaderboard'
+  screen: 'home', // 'home' | 'live' | 'games' | 'players' | 'ratings' | 'settings' | 'leaderboard'
   entered: false, // past the splash; nothing is fetched until then
   selectedGameId: defaultGameId,
   selectedAtBatId: atBats[0].id,

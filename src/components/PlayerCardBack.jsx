@@ -348,6 +348,37 @@ export default function PlayerCardBack({
 /* The ratings, in full: the wheel, then every attribute as a row with its band,
    then what the numbers are measured against. The wheel is for the shape of a
    player; the rows are for the exact numbers and for screen readers. */
+/* Where a hitter's overall comes from: his bat, his defence and his legs in runs
+   over a full season against an average hitter. These three, added, are what
+   the overall ranks. Defence is two things -- how well he fields his position,
+   and the standard credit for the position itself -- so it shows both. */
+const runs = (n) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toFixed(1)}`;
+
+function ValueStrip({ value }) {
+  const parts = [
+    { key: 'bat', label: 'Bat', runs: value.bat, note: 'from xwOBA' },
+    {
+      key: 'defense',
+      label: 'Defense',
+      runs: value.defense,
+      note: `glove ${runs(value.fielding)} · position ${runs(value.position)}`,
+    },
+    { key: 'legs', label: 'Legs', runs: value.legs, note: 'speed, baserunning' },
+  ];
+  return (
+    <div className="valuestrip" aria-label="Overall, in runs per full season">
+      {parts.map((p) => (
+        <div key={p.key} className="valuestrip__part" data-sign={p.runs >= 0 ? 'up' : 'down'}>
+          <span className="valuestrip__label">{p.label}</span>
+          <span className="valuestrip__runs">{runs(p.runs)}</span>
+          <span className="valuestrip__note">{p.note}</span>
+        </div>
+      ))}
+      <p className="valuestrip__foot">Runs per full season against an average hitter. Added up, they make the overall.</p>
+    </div>
+  );
+}
+
 function RatingsSection({ ratings, note, season, scale, onScale, compare }) {
   if (!ratings) {
     return (
@@ -417,6 +448,8 @@ function RatingsSection({ ratings, note, season, scale, onScale, compare }) {
           </span>
         )}
       </div>
+
+      {ratings.value && <ValueStrip value={ratings.value} />}
 
       <div className="ratinggroups">
         {groups.map((g) => (

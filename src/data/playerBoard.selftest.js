@@ -24,6 +24,7 @@ import {
   positionPatch,
   prepareBoard,
   presetPatch,
+  presetsFor,
   presetSummary,
   rankOf,
   ratingPatch,
@@ -177,15 +178,25 @@ PRESETS.forEach((preset) => {
   const view = { ...INITIAL_VIEW, ...presetPatch(preset) };
   check(`${preset.name} recognises itself`, activePreset(view)?.id === preset.id);
 });
-const tto = { ...INITIAL_VIEW, ...presetPatch(PRESETS[2]) };
+const byId = (id) => PRESETS.find((p) => p.id === id);
+const tto = { ...INITIAL_VIEW, ...presetPatch(byId('tto')) };
 check('touching a filter ends the preset', !activePreset({ ...tto, ...ratingPatch(tto, 'gamePower', 75, 'pct') }));
 check('adding a position ends the preset', !activePreset({ ...tto, pos: 'SS' }));
-const summary = presetSummary(board, PRESETS[2], 'pct');
+const summary = presetSummary(board, byId('tto'), 'pct');
 check('a preset prints what it means', summary.definition === 'Game Power 70+ · Swing Decisions 60+ · Bat-to-Ball ≤40'
   .replace('Swing Decisions', 'swingDecisions'), summary.definition);
-check('Best Stuff says it is pitchers', presetSummary(board, PRESETS[1], 'pct').definition.startsWith('Pitchers · Stuff 90+'));
-check('on the toggle, in grades', presetSummary(board, PRESETS[1], 'grade').definition.endsWith('Stuff 65+'));
-check('and counts who fits', presetSummary(board, PRESETS[1], 'pct').count === 1);
+check('Best Stuff says it is pitchers', presetSummary(board, byId('stuff'), 'pct').definition.startsWith('Pitchers · Stuff 90+'));
+check('on the toggle, in grades', presetSummary(board, byId('stuff'), 'grade').definition.endsWith('Stuff 65+'));
+check('and counts who fits', presetSummary(board, byId('stuff'), 'pct').count === 1);
+check('each pool lists its own presets', presetsFor('pitchers').every((p) => p.pool === 'pitchers')
+  && presetsFor('hitters').every((p) => p.pool === 'hitters') && presetsFor(null).length === presetsFor('hitters').length);
+check('every preset has a unique id', new Set(PRESETS.map((p) => p.id)).size === PRESETS.length);
+const framers = { ...INITIAL_VIEW, ...presetPatch(byId('framers')) };
+check('a catcher preset opens on catchers', framers.pos === 'C' && activePreset(framers)?.id === 'framers');
+check('and says so', presetSummary(board, byId('framers'), 'pct').definition === 'C · Framing 85+');
+check('it counts only catchers', presetSummary(board, byId('framers'), 'pct').count === 0, 'Gone has hidden framing; Raleigh is 60');
+check('a preset sorts on what it looks for, not on its cap', presetPatch(byId('junk')).sort.key === 'stuff' && presetPatch(byId('junk')).sort.dir === -1);
+check('junkballers need "at most" on velocity', byId('junk').filters.some(([k, op]) => k === 'velocity' && op === 'max'));
 
 console.log('sentence');
 const said = (view, scale = 'pct', team = '') => sentenceOf(board, view, scale, team).map((p) => p.text).join('');

@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   POSITIONS,
   PRESETS,
   TEAM_CATS,
+  presetsFor,
   activePreset,
   catDefinition,
   catLabel,
@@ -26,15 +27,25 @@ import { IconClose } from './Icons.jsx';
 
 /* One-click starting points. Each prints exactly which filters it sets, so what
    it means is never a guess, and it switches off the moment you change one. */
-export function Presets({ board, view, scale, onChange, className = '' }) {
+const PRESETS_SHOWN = 6;
+
+export function Presets({ board, view, scale, onChange, className = '', collapse = false }) {
+  const [more, setMore] = useState(false);
   const summaries = useMemo(
     () => Object.fromEntries(PRESETS.map((p) => [p.id, presetSummary(board, p, scale)])),
     [board, scale],
   );
   const active = activePreset(view)?.id;
+  // The hitters' or the pitchers', whichever list is showing.
+  const list = presetsFor(view.pool);
+  // A preset in use is never tucked away behind the button.
+  const open = !collapse || more || list.findIndex((p) => p.id === active) >= PRESETS_SHOWN;
+  const shown = open ? list : list.slice(0, PRESETS_SHOWN);
+  const hidden = list.length - PRESETS_SHOWN;
   return (
+    <>
     <ul className={`ppresets ${className}`}>
-      {PRESETS.map((preset) => (
+      {shown.map((preset) => (
         <li key={preset.id}>
           <button
             type="button"
@@ -51,6 +62,12 @@ export function Presets({ board, view, scale, onChange, className = '' }) {
         </li>
       ))}
     </ul>
+    {collapse && hidden > 0 && (
+      <button type="button" className="ppresets__more" aria-expanded={open} onClick={() => setMore(!open)}>
+        {open ? 'Fewer presets' : `More presets (${hidden})`}
+      </button>
+    )}
+    </>
   );
 }
 
@@ -187,7 +204,7 @@ export default function PlayersFilters({ board, view, scale, onChange, open, onC
 
       <section className="prail__section prail__section--presets">
         <p className="u-kicker prail__kicker">Start from</p>
-        <Presets board={board} view={view} scale={scale} onChange={onChange} />
+        <Presets board={board} view={view} scale={scale} onChange={onChange} collapse />
       </section>
 
       <section className="prail__section">

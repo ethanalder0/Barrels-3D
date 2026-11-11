@@ -544,6 +544,9 @@ def _load_poptime(sc: SeasonStatcast) -> None:
         }
 
 
+_POSITION_NUMBERS = {2: "C", 3: "1B", 4: "2B", 5: "3B", 6: "SS", 7: "LF", 8: "CF", 9: "RF"}
+
+
 def _load_frv(sc: SeasonStatcast) -> None:
     """Fielding run value, by component. Arm runs and defensive outs live here."""
     for row in _rows("fielding-run-value", {
@@ -561,6 +564,9 @@ def _load_frv(sc: SeasonStatcast) -> None:
             "framingRuns": _num(row, "framing_runs"),
             "blockingRuns": _num(row, "blocking_runs"),
             "throwingRuns": _num(row, "throwing_runs"),
+            # Defensive outs at each position (Savant numbers them 2 C .. 9 RF),
+            # which is what a positional adjustment is prorated by.
+            "outsByPos": {pos: _num(row, f"outs_{n}") or 0 for n, pos in _POSITION_NUMBERS.items()},
         }
 
 

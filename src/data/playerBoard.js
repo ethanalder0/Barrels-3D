@@ -58,11 +58,19 @@ export function divisionOf(abbr) {
 }
 
 /* Each preset is nothing but saved filters, printed where you click it. The
-   values are percentiles. Three of the five need "at most": a Glove-first
-   player who can also hit is just a good player. */
+   values are percentiles; `pos` opens it on one position, for a rating only
+   that position has. The page lists the hitters' or the pitchers' presets,
+   whichever pool is showing. Several need "at most": a Glove-first player who
+   can also hit is just a good player. */
 export const PRESETS = [
+  // Hitters
   { id: 'speed', name: 'Elite speed', pool: 'hitters', filters: [['speed', 'min', 90]] },
-  { id: 'stuff', name: 'Best Stuff', pool: 'pitchers', filters: [['stuff', 'min', 90]] },
+  {
+    id: 'fiveTool',
+    name: 'Five-tool',
+    pool: 'hitters',
+    filters: [['gamePower', 'min', 55], ['batToBall', 'min', 55], ['speed', 'min', 55], ['range', 'min', 55], ['arm', 'min', 55]],
+  },
   {
     id: 'tto',
     name: 'Three True Outcomes',
@@ -71,7 +79,51 @@ export const PRESETS = [
   },
   { id: 'glove', name: 'Glove-first', pool: 'hitters', filters: [['range', 'min', 75], ['gamePower', 'max', 40]] },
   { id: 'contact', name: 'Contact artists', pool: 'hitters', filters: [['batToBall', 'min', 85], ['rawPower', 'max', 50]] },
+  {
+    id: 'slap',
+    name: 'Slap hitters',
+    pool: 'hitters',
+    filters: [['rawPower', 'max', 25], ['batToBall', 'min', 75], ['speed', 'min', 75]],
+  },
+  {
+    id: 'tableSetters',
+    name: 'Table setters',
+    pool: 'hitters',
+    filters: [['swingDecisions', 'min', 75], ['batToBall', 'min', 70], ['speed', 'min', 60]],
+  },
+  { id: 'untapped', name: 'Untapped power', pool: 'hitters', filters: [['rawPower', 'min', 80], ['gamePower', 'max', 50]] },
+  { id: 'patient', name: 'Patient eyes', pool: 'hitters', filters: [['swingDecisions', 'min', 90]] },
+  { id: 'allOrNothing', name: 'All or nothing', pool: 'hitters', filters: [['gamePower', 'min', 80], ['batToBall', 'max', 25]] },
+  { id: 'range', name: 'Range for days', pool: 'hitters', filters: [['range', 'min', 90]] },
+  { id: 'arms', name: 'Cannon arms', pool: 'hitters', filters: [['arm', 'min', 90]] },
+  { id: 'framers', name: 'Elite framers', pool: 'hitters', pos: 'C', filters: [['framing', 'min', 85]] },
+  // Pitchers
+  { id: 'stuff', name: 'Best Stuff', pool: 'pitchers', filters: [['stuff', 'min', 90]] },
+  { id: 'flame', name: 'Flamethrowers', pool: 'pitchers', filters: [['velocity', 'min', 90]] },
+  { id: 'strikeouts', name: 'Strikeout artists', pool: 'pitchers', filters: [['batMissing', 'min', 90]] },
+  { id: 'strikes', name: 'Strike throwers', pool: 'pitchers', filters: [['command', 'min', 85]] },
+  // Soft velocity, nasty shape: movement and arm angle beating hitters without the radar gun.
+  { id: 'junk', name: 'Junkballers', pool: 'pitchers', filters: [['velocity', 'max', 50], ['stuff', 'min', 75]] },
+  // The classic soft-tosser: no velocity, gets by on location and weak contact.
+  {
+    id: 'crafty',
+    name: 'Crafty',
+    pool: 'pitchers',
+    filters: [['velocity', 'max', 40], ['command', 'min', 70], ['contactManagement', 'min', 70]],
+  },
+  { id: 'chase', name: 'Chase merchants', pool: 'pitchers', filters: [['chase', 'min', 85]] },
+  { id: 'depth', name: 'Deep arsenals', pool: 'pitchers', filters: [['depth', 'min', 85]] },
+  { id: 'wild', name: 'Effectively wild', pool: 'pitchers', filters: [['stuff', 'min', 80], ['command', 'max', 30]] },
+  {
+    id: 'contactPitchers',
+    name: 'Pitch to contact',
+    pool: 'pitchers',
+    filters: [['contactManagement', 'min', 75], ['batMissing', 'max', 40]],
+  },
 ];
+
+/** The presets for one pool, in the order the page lists them. */
+export const presetsFor = (pool) => PRESETS.filter((p) => p.pool === (pool ?? 'hitters'));
 
 /* --- the two scales -------------------------------------------------------
    grade = 50 + 10 * inverse-normal(pct), rounded to 5. These are its cut points.
@@ -273,8 +325,11 @@ export function presetPatch(preset) {
   return {
     ...INITIAL_VIEW,
     pool: preset.pool,
+    pos: preset.pos ?? 'All',
     ratings: preset.filters.map(([key, op, pct]) => makeFilter(key, op, pct)),
-    sort: { key: preset.filters[0][0], dir: preset.filters[0][1] === 'max' ? 1 : -1 },
+    // Best first on what it looks for: its first "at least", not a cap like
+    // Junkballers' velocity, which would list the softest throwers first.
+    sort: { key: (preset.filters.find(([, op]) => op === 'min') ?? preset.filters[0])[0], dir: -1 },
   };
 }
 
@@ -301,17 +356,18 @@ export const handPatch = (view, field, value) => ({
 
 export function activePreset(view) {
   return PRESETS.find((p) =>
-    view.pool === p.pool && view.pos === 'All' && !view.team && view.bats === 'Any' && view.throws === 'Any'
+    view.pool === p.pool && view.pos === (p.pos ?? 'All') && !view.team && view.bats === 'Any' && view.throws === 'Any'
     && view.ratings.length === p.filters.length
     && p.filters.every(([key, op, pct]) => view.ratings.some((f) => f.key === key && f.op === op && f.pct === pct)));
 }
 
 export function presetSummary(board, preset, scale) {
   const filters = preset.filters.map(([key, op, pct]) => makeFilter(key, op, pct));
-  const prefix = preset.pool === 'pitchers' ? 'Pitchers · ' : '';
+  const prefix = preset.pool === 'pitchers' ? 'Pitchers · ' : (preset.pos ? `${preset.pos} · ` : '');
   return {
     count: board.players.filter((p) =>
       (preset.pool === 'pitchers' ? p.isPitcher : !p.isPitcher)
+      && (!preset.pos || p.pos === preset.pos)
       && filters.every((f) => passes(p, f, scale))).length,
     definition: prefix + filters.map((f) => shortClause(board, f, scale)).join(' · '),
   };

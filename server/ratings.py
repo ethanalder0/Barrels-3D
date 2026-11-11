@@ -56,9 +56,10 @@ seasons it falls back to "half reliable at the pool's typical sample", and the
 payload says so.
 
 MISSING INPUTS ARE DROPPED, NEVER DEFAULTED. A designated hitter has no
-fielding sample, so he has no fielding attributes and his overall renormalises
-over what he does have. Scoring the glove 0 would call every DH the worst
-fielder alive; scoring it 50 would invent an average defender.
+fielding sample, so he has no fielding attributes: scoring the glove 0 would
+call every DH the worst fielder alive. In his overall the glove counts as
+average within position, as in WAR, and the DH positional adjustment is what
+charges him for not playing the field.
 
 FIELDING IS RANKED WITHIN POSITION. A shortstop and a first baseman do not get
 comparable chances, so Range is ranked within position, Arm within infield or
@@ -66,9 +67,12 @@ outfield, Jump among outfielders, and catchers on framing, blocking and
 throwing against other catchers. A position with too thin a pool falls back to
 its infield/outfield group.
 
-OVERALL IS THE VALUE LAYER, NOT THE AVERAGE OF THE SLICES. A hitter's is
-anchored on xwOBA (what his bat is worth in runs) plus his fielding and running
-groups; a pitcher's on xERA plus the skills that drive it. Velocity and
+OVERALL IS THE VALUE LAYER, NOT THE AVERAGE OF THE SLICES. A hitter's is Bat +
+Defense + Legs in runs over a full season, added up the way WAR adds its parts
+and ranked only as a total: Bat from xwOBA, Defense from Statcast's fielding
+run value (framing included) plus the standard positional adjustment (see
+POSITION_RUNS), and Legs from sprint speed and baserunning. A pitcher's is
+anchored on xERA plus the skills that drive it. Velocity and
 arsenal depth are deliberately left out of the pitcher's: they are ingredients
 of his whiffs and weak contact, which are already in it. Stuff is in at a
 modest weight, because it predicts next season's run value as well as this
@@ -134,6 +138,13 @@ SIM_MIN_OVERLAP = 0.7
 SIM_RIDGE = 0.05
 
 _NORMAL = NormalDist()
+
+
+def _z(pct) -> float:
+    """A percentile as standard deviations from average. None is average."""
+    if pct is None:
+        return 0.0
+    return _NORMAL.inv_cdf(min(max(pct / 100.0, 0.005), 0.995))
 
 
 def grade_of(pct):
@@ -436,6 +447,12 @@ HITTER_INPUTS = {i.key: i for i in (
           _min("frv", "outs", statcast.FIELDING_MIN_OUTS), scope=_scope_group),
     Input("jump", "Jump (ft vs avg)", _field("jump", "jumpFeet", "plays"),
           _min("jump", "plays", statcast.JUMP_MIN_PLAYS), scope=_scope_of),
+    # Statcast's fielding run value over every play he made: range and arm for
+    # everyone, and framing, blocking and throwing for a catcher. Already
+    # measured against the average fielder at his position, so it is the glove
+    # half of Defense in Overall. Not on the card as an attribute of its own.
+    Input("fieldRuns", "Fielding runs / 1000 outs", _per("frv", "totalRuns", "frv", "outs", 1000.0),
+          _min("frv", "outs", statcast.FIELDING_MIN_OUTS)),
     Input("framing", "Framing runs / 1000 pitches",
           _per("catching", "framingRuns", "catching", "pitches", 1000.0), _catcher_pool, scope=_scope_c),
     Input("blocking", "Blocking runs / 1000 pitches",
@@ -537,10 +554,43 @@ FIELDING_WEIGHTS = {
     "C": {"framing": .6, "blocking": .2, "throwing": .2},
 }
 RUNNING_WEIGHTS = {"speed": .5, "baserunning": .5}
-# Hitter OVERALL: the bat's run value carries most of it, defence most of the
-# rest, baserunning the smallest slice, matching the ordering of WAR's parts.
-HITTER_WEIGHTS = {"bat": .70, "fielding": .20, "running": .10}
-HITTER_REQUIRED = ("bat",)
+# Hitter OVERALL is three parts in runs over a full season, added up the way
+# WAR adds its own: BAT from xwOBA, DEFENSE from fielding run value plus the
+# positional adjustment, and LEGS. Legs are the one part still built from
+# percentiles (sprint speed is not a run value), at a seventh of the bat's
+# spread per standard deviation -- the share they had when the parts were
+# weighted 70 / 20 / 10.
+LEGS_SHARE = 1 / 7
+
+# POSITIONAL ADJUSTMENT, the standard one (FanGraphs' WAR): runs per 162 games
+# for where a player plays, before he makes a single play there. It is half of
+# DEFENSE. Fielding run value already pays for how well he plays a position --
+# a great shortstop saves about twice the runs of a great first baseman, since
+# more of the game comes his way -- but it measures him against others at the
+# position, so an average shortstop scores 0, the same as an average first
+# baseman. This is the credit for being able to play shortstop at all. Without
+# it, 2026 shortstops and center fielders sat 0.9 WAR above the Overall-vs-WAR
+# line and first basemen and DHs 0.7 below.
+POSITION_RUNS = {"C": 12.5, "1B": -12.5, "2B": 2.5, "3B": 2.5, "SS": 7.5,
+                 "LF": -7.5, "CF": 2.5, "RF": -7.5, "DH": -17.5}
+# A full season at one position: 162 games of 27 outs. A lineup slot gets about
+# 688 plate appearances in that time, so a hitter whose defensive outs fall short
+# of OUTS_PER_PA a PA spent the rest of his time at DH (or on the bench).
+SEASON_OUTS = 162 * 27
+SEASON_PA = 688
+OUTS_PER_PA = SEASON_OUTS / SEASON_PA
+# A CATCHER'S full season is shorter. Nobody catches 162 games: the most anyone
+# caught was 121 to 128 games in each of 2024-26, and the tenth-busiest caught
+# 92 to 105. Projecting a catcher's framing and his +12.5 over 162 games behind
+# the plate credited even backups with a workload no starter carries, so for
+# the part of a player's time spent catching, his glove and his positional
+# credit count over this many games instead.
+CATCHER_GAMES = 125
+# Runs per point of wOBA over a PA (FanGraphs' wOBA scale, about 1.24 in recent
+# seasons). Turns the spread of true-talent xwOBA into a spread of batting runs.
+WOBA_SCALE = 1.24
+# Used only when the xwOBA spread cannot be measured (no prior seasons).
+DEFAULT_BAT_RUNS_SD = 15.0
 # Pitcher OVERALL leans on the outcome: preventing runs is the job.
 # Stuff gets a modest share: it overlaps Bat-Missing, but it is the one input
 # that knows next season as well as this season's results do.
@@ -647,6 +697,11 @@ class Model:
         self.settle = {key: fit_settle(inp, prev2, prev1, sc) for key, inp in inputs.items()}
         self._roles = {}
         self._rated = {}
+        self._positions: dict[str, float] = {}
+        # One standard deviation of true-talent bat, in runs per full season.
+        tau2 = self.settle["xwoba"].tau2 if "xwoba" in self.settle else 0.0
+        self._bat_runs_sd = (math.sqrt(tau2) * SEASON_PA / WOBA_SCALE if tau2 > 0
+                             else DEFAULT_BAT_RUNS_SD)
 
         # League average per input and scope, over this season's pool.
         self.mu: dict[str, dict] = {}
@@ -816,9 +871,9 @@ class Model:
                 raw = self._attr_raw(attr, self._input_pcts(pid, drawn, attr.weights))
                 attr_pcts[attr.key] = self._attr_pct(attr, pid, raw)
         anchor = self._input_pct(self._anchor_key(), pid, drawn.get(self._anchor_key()))
-        return attr_pcts, self._overall_raw(pid, attr_pcts, anchor)
+        return attr_pcts, self._overall_raw(pid, attr_pcts, anchor, drawn)
 
-    def _overall_raw(self, pid, attr_pcts, anchor):
+    def _overall_raw(self, pid, attr_pcts, anchor, drawn=None):
         """The value layer: the anchor's percentile plus the groups that add to it."""
         if self.kind == "pitcher":
             parts = {"runPrevention": anchor,
@@ -827,15 +882,70 @@ class Model:
                 return None
             return _blend(parts, PITCHER_WEIGHTS)
 
-        role = self._role(pid)
-        fielding = _blend(attr_pcts, FIELDING_WEIGHTS[role]) if role in FIELDING_WEIGHTS else None
-        if self._low_glove(pid):
-            fielding = None   # not shown, so not counted either
-        parts = {"bat": anchor, "fielding": fielding,
-                 "running": _blend(attr_pcts, RUNNING_WEIGHTS)}
-        if any(parts.get(k) is None for k in HITTER_REQUIRED):
+        # Bat + Defense + Legs, in runs over a full season. Nothing is turned
+        # into a percentile on the way, so nothing is capped: the best bat in
+        # the league is worth what its xwOBA says, not the 99th percentile's
+        # worth. Only the total is ranked.
+        drawn = drawn or {}
+        if anchor is None or drawn.get("xwoba") is None:
             return None
-        return _blend(parts, HITTER_WEIGHTS)
+        parts = self.value_parts(pid, drawn.get("xwoba"), drawn.get("fieldRuns"),
+                                 _blend(attr_pcts, RUNNING_WEIGHTS))
+        return parts["bat"] + parts["defense"] + parts["legs"]
+
+    def value_parts(self, pid, xwoba, field_rate, running_pct) -> dict:
+        """His three parts in runs per full season, from one set of values.
+
+        BAT: xwOBA above the league's, over a full season's plate appearances.
+        DEFENSE: fielding run value per out over a full season's outs, plus the
+        positional adjustment. No fielding data (a DH) is an average glove at 0,
+        and the DH adjustment is what charges him for it, as in WAR. A small
+        sample needs no special case: it is shrunk toward 0 like any input.
+        LEGS: his running percentile as standard deviations from average.
+        """
+        mu = (self.mu.get("xwoba") or {}).get(None) or 0.0
+        bat = (xwoba - mu) * SEASON_PA / WOBA_SCALE
+        position, share, catching = self._position(pid)
+        # Only the part of his season he spent in the field: a DH who played a
+        # few games in right is not charged a full season of his right field.
+        # And the part of that spent catching counts over a catcher's season.
+        workload = 1.0 - catching * (1.0 - CATCHER_GAMES / 162)
+        fielding = (field_rate or 0.0) / 1000.0 * SEASON_OUTS * share * workload
+        legs = self._bat_runs_sd * LEGS_SHARE * _z(running_pct)
+        return {"bat": bat, "fielding": fielding, "position": position,
+                "defense": fielding + position, "legs": legs}
+
+    def position_runs(self, pid) -> float:
+        """His positional adjustment in runs per full season, prorated by where he played."""
+        return self._position(pid)[0]
+
+    def _position(self, pid) -> tuple[float, float, float]:
+        """(positional runs per full season, share of his time spent in the
+        field, share of that spent catching).
+
+        From his defensive outs at each position in the latest season he has
+        any plate appearances in. The share of his playing time with no outs
+        behind it is DH time. Cached: it does not change between draws.
+        """
+        if pid in self._positions:
+            return self._positions[pid]
+        runs, share, catching = POSITION_RUNS["DH"], 0.0, 0.0
+        for season in (self.sc, *self.prev):
+            if season is None:
+                continue
+            pa = (season.batting.get(pid) or {}).get("pa") or 0
+            outs = (season.frv.get(pid) or {}).get("outsByPos") or {}
+            fielded = sum(outs.values())
+            if pa <= 0 and fielded <= 0:
+                continue
+            share = min(1.0, fielded / (OUTS_PER_PA * pa)) if pa > 0 else 1.0
+            credit = {**POSITION_RUNS, "C": POSITION_RUNS["C"] * CATCHER_GAMES / 162}
+            glove = (sum(n * credit[p] for p, n in outs.items()) / fielded) if fielded else 0.0
+            catching = (outs.get("C", 0) / fielded) if fielded else 0.0
+            runs = share * glove + (1.0 - share) * POSITION_RUNS["DH"]
+            break
+        self._positions[pid] = (runs, share, catching)
+        return runs, share, catching
 
     def _anchor_key(self):
         return "xera" if self.kind == "pitcher" else "xwoba"
@@ -937,7 +1047,18 @@ class Model:
                               self.reliability(pid, {self._anchor_key(): 1.0}))
         overall["pool"] = len(self.overall) // POOL_DRAWS
         overall["basis"] = ("xERA, bat-missing, command, stuff, contact management, chase"
-                            if self.kind == "pitcher" else "xwOBA, fielding, baserunning")
+                            if self.kind == "pitcher"
+                            else "bat (xwOBA), defense (fielding run value and position), legs")
+
+        # Where a hitter's overall comes from, in runs per full season, at his
+        # best estimate of each input. The card prints it under the wheel.
+        value = None
+        if self.kind == "hitter" and anchor is not None and overall.get("pct") is not None:
+            field = self.post["fieldRuns"].get(pid)
+            pcts = {x["key"]: x["pct"] for x in attributes if x.get("pct") is not None}
+            parts = self.value_parts(pid, anchor.mean, field.mean if field else None,
+                                     _blend(pcts, RUNNING_WEIGHTS))
+            value = {k: round(v, 1) for k, v in parts.items()}
 
         present = {x["key"] for x in attributes}
         if self.kind == "pitcher":
@@ -952,6 +1073,7 @@ class Model:
             "position": pos,
             "role": role,
             "overall": overall,
+            "value": value,
             "attributes": attributes,
             "groups": [{"key": g, "label": GROUPS[g]}
                        for g in dict.fromkeys(x["group"] for x in attributes)],

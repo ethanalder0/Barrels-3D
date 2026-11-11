@@ -518,6 +518,59 @@ finally:
 print("profile() survives outages and missing history, and explains itself OK")
 
 
+# --- the positional adjustment ------------------------------------------------
+class _Season:
+    def __init__(self, batting, frv):
+        self.batting, self.frv = batting, frv
+
+
+full = ratings.SEASON_PA
+model = ratings.HitterModel.__new__(ratings.HitterModel)
+model._positions = {}
+model.prev = (None, None)
+model.sc = _Season(
+    {"ss": {"pa": full}, "util": {"pa": full}, "half": {"pa": full}, "dh": {"pa": full},
+     "c": {"pa": full // 2}, "old": {"pa": 0}},
+    {"ss": {"outsByPos": {"SS": ratings.SEASON_OUTS}},
+     "util": {"outsByPos": {"SS": ratings.SEASON_OUTS / 2, "RF": ratings.SEASON_OUTS / 2}},
+     "half": {"outsByPos": {"1B": ratings.SEASON_OUTS / 2}},
+     "c": {"outsByPos": {"C": ratings.SEASON_OUTS / 2}}})
+model.prev = (_Season({"old": {"pa": 400}}, {"old": {"outsByPos": {"CF": ratings.OUTS_PER_PA * 400}}}), None)
+near = lambda a, b: abs(a - b) < 1e-9  # noqa: E731
+assert near(model.position_runs("ss"), 7.5), "a full-time shortstop gets the shortstop's"
+assert near(model.position_runs("util"), (7.5 - 7.5) / 2), "split by where he played"
+assert near(model.position_runs("half"), (-12.5 - 17.5) / 2), "the time he did not field is DH time"
+assert near(model.position_runs("dh"), -17.5), "no outs at all is a DH"
+assert near(model.position_runs("c"), 12.5 * ratings.CATCHER_GAMES / 162),     "half a season, all of it behind the plate: a catcher, on a catcher's workload"
+assert near(model.position_runs("old"), 2.5), "no PA this season: where he played last season"
+print("the positional adjustment is prorated by defensive outs, with the rest as DH OK")
+
+# --- overall is Bat + Defense + Legs, in runs ---------------------------------
+model.mu = {"xwoba": {None: 0.310}}
+model._bat_runs_sd = 16.0
+v = model.value_parts("ss", 0.310 + 0.031, 15 / ratings.SEASON_OUTS * 1000, 50)
+assert near(v["bat"], 0.031 * ratings.SEASON_PA / ratings.WOBA_SCALE), v
+assert near(v["fielding"], 15.0) and near(v["position"], 7.5) and near(v["defense"], 22.5), v
+assert abs(v["legs"]) < 1e-9, "an average runner adds nothing"
+elite = model.value_parts("dh", 0.430, None, 50)["bat"]
+great = model.value_parts("dh", 0.390, None, 50)["bat"]
+assert near(elite - great, 0.040 * ratings.SEASON_PA / ratings.WOBA_SCALE), \
+    "no ceiling: the best bat keeps all of its lead"
+dh = model.value_parts("dh", 0.310, None, 50)
+assert near(dh["fielding"], 0) and near(dh["defense"], -17.5), "a DH: an average glove, charged by position"
+# The same fielding runs are worth the same at any position; the position is
+# what differs, and it does not touch the bat.
+c = model.value_parts("c", 0.350, 10 / ratings.SEASON_OUTS * 1000, 50)
+first = model.value_parts("half", 0.350, 10 / ratings.SEASON_OUTS * 1000, 50)
+assert near(c["bat"], first["bat"]) and c["defense"] > first["defense"]
+# A catcher's glove counts over a catcher's season, not 162 games behind the plate.
+assert near(c["fielding"], 10.0 * ratings.CATCHER_GAMES / 162), c
+ss = model.value_parts("ss", 0.350, 10 / ratings.SEASON_OUTS * 1000, 50)
+assert near(ss["fielding"], 10.0), "every other position keeps the full season"
+half = model.value_parts("half", 0.310, 10 / ratings.SEASON_OUTS * 1000, 50)
+assert near(half["fielding"], 5.0), "half a season in the field: half a season of glove"
+print("overall is bat + defense + legs in runs, with no ceiling on the bat OK")
+
 # --- team numbers: plain arithmetic on hand-made rows ------------------------
 attrs = {"hitter": [{"key": "speed"}, {"key": "range"}], "pitcher": [{"key": "stuff"}]}
 
