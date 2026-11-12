@@ -569,6 +569,11 @@ ss = model.value_parts("ss", 0.350, 10 / ratings.SEASON_OUTS * 1000, 50)
 assert near(ss["fielding"], 10.0), "every other position keeps the full season"
 half = model.value_parts("half", 0.310, 10 / ratings.SEASON_OUTS * 1000, 50)
 assert near(half["fielding"], 5.0), "half a season in the field: half a season of glove"
+model.kind = "hitter"
+raw = model._overall_raw("ss", {}, 50.0, {"xwoba": 0.341, "fieldRuns": 15 / ratings.SEASON_OUTS * 1000})
+v = model.value_parts("ss", 0.341, 15 / ratings.SEASON_OUTS * 1000, None)
+assert near(raw, ratings.BAT_WEIGHT * v["bat"] + v["defense"] + v["legs"]), (raw, v)
+assert ratings.BAT_WEIGHT > 1, "the bat leans a little: it is the more reliable skill"
 print("overall is bat + defense + legs in runs, with no ceiling on the bat OK")
 
 # --- team numbers: plain arithmetic on hand-made rows ------------------------

@@ -119,6 +119,11 @@ export default function RatingsAboutScreen() {
           then ranked as a percentile among every rated hitter, {report.ratedHitters} of them this season. The back of
           each player card shows his three parts.
         </p>
+        <p className="about__text">
+          The bat counts a little more than the rest: each run of it counts as 1.1. A bat repeats from season to season
+          far more reliably than a glove does, and that leans the rating toward the surer skill. So a great hitter at
+          first base rates ahead of a great fielder at shortstop who struggles at the plate.
+        </p>
         <div className="about__tablewrap">
           <table className="about__table">
             <thead>

@@ -561,6 +561,14 @@ RUNNING_WEIGHTS = {"speed": .5, "baserunning": .5}
 # spread per standard deviation -- the share they had when the parts were
 # weighted 70 / 20 / 10.
 LEGS_SHARE = 1 / 7
+# The bat counts a tenth more than a run of defense or running. A choice, not a
+# measurement: by WAR the parts are worth about the same per run, but a bat is
+# the more reliable skill -- it repeats from season to season far better than a
+# glove does -- and teams pay for the surer thing. It is what puts a Ben Rice
+# (a great bat at first base) ahead of a Masyn Winn (a great glove at short
+# with a poor bat). It cost almost nothing against WAR: 0.689 to 0.684 in the
+# same season, 0.279 to 0.271 for the next. The card shows the bat's real runs.
+BAT_WEIGHT = 1.1
 
 # POSITIONAL ADJUSTMENT, the standard one (FanGraphs' WAR): runs per 162 games
 # for where a player plays, before he makes a single play there. It is half of
@@ -891,7 +899,7 @@ class Model:
             return None
         parts = self.value_parts(pid, drawn.get("xwoba"), drawn.get("fieldRuns"),
                                  _blend(attr_pcts, RUNNING_WEIGHTS))
-        return parts["bat"] + parts["defense"] + parts["legs"]
+        return BAT_WEIGHT * parts["bat"] + parts["defense"] + parts["legs"]
 
     def value_parts(self, pid, xwoba, field_rate, running_pct) -> dict:
         """His three parts in runs per full season, from one set of values.

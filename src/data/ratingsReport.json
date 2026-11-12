@@ -1,11 +1,11 @@
 {
  "season": 2026,
- "built": "2026-11-10",
+ "built": "2026-11-12",
  "clubs": [
   {
    "team": "ATH",
-   "overall": 45.2,
-   "hitting": 45.5,
+   "overall": 45.5,
+   "hitting": 46.0,
    "pitching": 44.9,
    "w": 64,
    "l": 98,
@@ -15,7 +15,7 @@
   {
    "team": "ATL",
    "overall": 53.2,
-   "hitting": 59.6,
+   "hitting": 59.7,
    "pitching": 46.8,
    "w": 94,
    "l": 68,
@@ -24,8 +24,8 @@
   },
   {
    "team": "AZ",
-   "overall": 52.5,
-   "hitting": 66.8,
+   "overall": 52.4,
+   "hitting": 66.6,
    "pitching": 38.3,
    "w": 86,
    "l": 76,
@@ -34,8 +34,8 @@
   },
   {
    "team": "BAL",
-   "overall": 55.0,
-   "hitting": 59.5,
+   "overall": 55.2,
+   "hitting": 59.7,
    "pitching": 50.6,
    "w": 79,
    "l": 82,
@@ -44,8 +44,8 @@
   },
   {
    "team": "BOS",
-   "overall": 63.1,
-   "hitting": 56.2,
+   "overall": 63.0,
+   "hitting": 56.0,
    "pitching": 70.0,
    "w": 87,
    "l": 75,
@@ -54,8 +54,8 @@
   },
   {
    "team": "CHC",
-   "overall": 58.8,
-   "hitting": 72.2,
+   "overall": 58.9,
+   "hitting": 72.5,
    "pitching": 45.3,
    "w": 89,
    "l": 73,
@@ -65,7 +65,7 @@
   {
    "team": "CIN",
    "overall": 45.4,
-   "hitting": 54.6,
+   "hitting": 54.7,
    "pitching": 36.1,
    "w": 75,
    "l": 87,
@@ -84,8 +84,8 @@
   },
   {
    "team": "COL",
-   "overall": 33.9,
-   "hitting": 45.9,
+   "overall": 34.2,
+   "hitting": 46.5,
    "pitching": 21.9,
    "w": 58,
    "l": 104,
@@ -95,7 +95,7 @@
   {
    "team": "CWS",
    "overall": 48.8,
-   "hitting": 58.8,
+   "hitting": 58.9,
    "pitching": 38.8,
    "w": 84,
    "l": 78,
@@ -104,8 +104,8 @@
   },
   {
    "team": "DET",
-   "overall": 57.6,
-   "hitting": 58.8,
+   "overall": 57.8,
+   "hitting": 59.2,
    "pitching": 56.4,
    "w": 76,
    "l": 86,
@@ -114,8 +114,8 @@
   },
   {
    "team": "HOU",
-   "overall": 53.8,
-   "hitting": 51.3,
+   "overall": 53.5,
+   "hitting": 50.7,
    "pitching": 56.2,
    "w": 81,
    "l": 81,
@@ -124,8 +124,8 @@
   },
   {
    "team": "KC",
-   "overall": 45.6,
-   "hitting": 54.0,
+   "overall": 45.8,
+   "hitting": 54.3,
    "pitching": 37.3,
    "w": 69,
    "l": 93,
@@ -135,7 +135,7 @@
   {
    "team": "LAA",
    "overall": 44.9,
-   "hitting": 41.6,
+   "hitting": 41.5,
    "pitching": 48.2,
    "w": 62,
    "l": 100,
@@ -144,8 +144,8 @@
   },
   {
    "team": "LAD",
-   "overall": 72.4,
-   "hitting": 73.9,
+   "overall": 72.6,
+   "hitting": 74.2,
    "pitching": 70.9,
    "w": 100,
    "l": 62,
@@ -155,7 +155,7 @@
   {
    "team": "MIA",
    "overall": 55.0,
-   "hitting": 59.5,
+   "hitting": 59.4,
    "pitching": 50.5,
    "w": 80,
    "l": 82,
@@ -164,8 +164,8 @@
   },
   {
    "team": "MIL",
-   "overall": 58.6,
-   "hitting": 61.0,
+   "overall": 58.8,
+   "hitting": 61.3,
    "pitching": 56.2,
    "w": 103,
    "l": 59,
@@ -174,8 +174,8 @@
   },
   {
    "team": "MIN",
-   "overall": 48.6,
-   "hitting": 47.8,
+   "overall": 49.0,
+   "hitting": 48.7,
    "pitching": 49.4,
    "w": 77,
    "l": 85,
@@ -184,8 +184,8 @@
   },
   {
    "team": "NYM",
-   "overall": 59.0,
-   "hitting": 68.0,
+   "overall": 59.2,
+   "hitting": 68.4,
    "pitching": 49.9,
    "w": 74,
    "l": 88,
@@ -194,8 +194,8 @@
   },
   {
    "team": "NYY",
-   "overall": 63.9,
-   "hitting": 62.6,
+   "overall": 64.2,
+   "hitting": 63.1,
    "pitching": 65.2,
    "w": 93,
    "l": 68,
@@ -205,7 +205,7 @@
   {
    "team": "PHI",
    "overall": 66.8,
-   "hitting": 59.0,
+   "hitting": 59.1,
    "pitching": 74.6,
    "w": 88,
    "l": 74,
@@ -214,8 +214,8 @@
   },
   {
    "team": "PIT",
-   "overall": 60.2,
-   "hitting": 54.9,
+   "overall": 60.3,
+   "hitting": 55.1,
    "pitching": 65.5,
    "w": 82,
    "l": 80,
@@ -224,9 +224,9 @@
   },
   {
    "team": "SD",
-   "overall": 57.5,
-   "hitting": 63.1,
-   "pitching": 51.8,
+   "overall": 56.6,
+   "hitting": 62.4,
+   "pitching": 50.8,
    "w": 91,
    "l": 71,
    "rs": 722,
@@ -234,8 +234,8 @@
   },
   {
    "team": "SEA",
-   "overall": 60.3,
-   "hitting": 55.4,
+   "overall": 60.8,
+   "hitting": 56.4,
    "pitching": 65.3,
    "w": 76,
    "l": 86,
@@ -244,8 +244,8 @@
   },
   {
    "team": "SF",
-   "overall": 51.5,
-   "hitting": 57.0,
+   "overall": 51.8,
+   "hitting": 57.5,
    "pitching": 46.1,
    "w": 65,
    "l": 97,
@@ -255,7 +255,7 @@
   {
    "team": "STL",
    "overall": 41.8,
-   "hitting": 56.8,
+   "hitting": 56.7,
    "pitching": 26.8,
    "w": 77,
    "l": 85,
@@ -264,8 +264,8 @@
   },
   {
    "team": "TB",
-   "overall": 55.0,
-   "hitting": 43.9,
+   "overall": 55.1,
+   "hitting": 44.1,
    "pitching": 66.1,
    "w": 98,
    "l": 64,
@@ -274,8 +274,8 @@
   },
   {
    "team": "TEX",
-   "overall": 49.7,
-   "hitting": 51.4,
+   "overall": 49.6,
+   "hitting": 51.3,
    "pitching": 48.0,
    "w": 80,
    "l": 82,
@@ -284,8 +284,8 @@
   },
   {
    "team": "TOR",
-   "overall": 55.6,
-   "hitting": 56.9,
+   "overall": 55.7,
+   "hitting": 57.0,
    "pitching": 54.4,
    "w": 79,
    "l": 83,
@@ -294,8 +294,8 @@
   },
   {
    "team": "WSH",
-   "overall": 49.1,
-   "hitting": 59.3,
+   "overall": 48.9,
+   "hitting": 58.8,
    "pitching": 39.0,
    "w": 77,
    "l": 85,
@@ -325,13 +325,13 @@
   {
    "name": "Elly De La Cruz",
    "pos": "SS",
-   "overall": 97,
+   "overall": 96,
    "war": 6.4
   },
   {
    "name": "Brice Turang",
    "pos": "2B",
-   "overall": 92,
+   "overall": 91,
    "war": 5.9
   },
   {
@@ -349,7 +349,7 @@
   {
    "name": "Randy Arozarena",
    "pos": "LF",
-   "overall": 51,
+   "overall": 53,
    "war": 5.5
   },
   {
@@ -373,7 +373,7 @@
   {
    "name": "Miguel Vargas",
    "pos": "3B",
-   "overall": 86,
+   "overall": 87,
    "war": 5.3
   },
   {
@@ -385,13 +385,13 @@
   {
    "name": "Pete Alonso",
    "pos": "1B",
-   "overall": 89,
+   "overall": 91,
    "war": 5.0
   },
   {
    "name": "Geraldo Perdomo",
    "pos": "SS",
-   "overall": 95,
+   "overall": 94,
    "war": 5.0
   },
   {
@@ -403,7 +403,7 @@
   {
    "name": "Brandon Lowe",
    "pos": "2B",
-   "overall": 82,
+   "overall": 83,
    "war": 4.9
   },
   {
@@ -415,19 +415,19 @@
   {
    "name": "JJ Wetherholt",
    "pos": "2B",
-   "overall": 97,
+   "overall": 96,
    "war": 4.6
   },
   {
    "name": "Seiya Suzuki",
    "pos": "RF",
-   "overall": 72,
+   "overall": 74,
    "war": 4.5
   },
   {
    "name": "Michael Harris II",
    "pos": "CF",
-   "overall": 91,
+   "overall": 90,
    "war": 4.5
   },
   {
@@ -439,7 +439,7 @@
   {
    "name": "Chase Meidroth",
    "pos": "2B",
-   "overall": 61,
+   "overall": 59,
    "war": 4.5
   },
   {
@@ -451,7 +451,7 @@
   {
    "name": "Ezequiel Duran",
    "pos": "SS",
-   "overall": 60,
+   "overall": 56,
    "war": 4.4
   },
   {
@@ -469,7 +469,7 @@
   {
    "name": "Ben Rice",
    "pos": "DH",
-   "overall": 83,
+   "overall": 86,
    "war": 4.2
   },
   {
@@ -487,43 +487,43 @@
   {
    "name": "Ceddanne Rafaela",
    "pos": "CF",
-   "overall": 72,
+   "overall": 69,
    "war": 4.1
   },
   {
    "name": "Luis Arraez",
    "pos": "2B",
-   "overall": 53,
+   "overall": 52,
    "war": 4.1
   },
   {
    "name": "Willson Contreras",
    "pos": "1B",
-   "overall": 85,
+   "overall": 87,
    "war": 4.0
   },
   {
    "name": "James Wood",
    "pos": "RF",
-   "overall": 88,
+   "overall": 89,
    "war": 4.0
   },
   {
    "name": "Matt Olson",
    "pos": "1B",
-   "overall": 79,
+   "overall": 81,
    "war": 4.0
   },
   {
    "name": "Zach Neto",
    "pos": "SS",
-   "overall": 78,
+   "overall": 77,
    "war": 3.9
   },
   {
    "name": "Bryson Stott",
    "pos": "2B",
-   "overall": 83,
+   "overall": 82,
    "war": 3.8
   },
   {
@@ -535,7 +535,7 @@
   {
    "name": "Carter Jensen",
    "pos": "C",
-   "overall": 72,
+   "overall": 71,
    "war": 3.7
   },
   {
@@ -547,25 +547,25 @@
   {
    "name": "CJ Abrams",
    "pos": "SS",
-   "overall": 61,
+   "overall": 62,
    "war": 3.7
   },
   {
    "name": "Mookie Betts",
    "pos": "SS",
-   "overall": 92,
+   "overall": 91,
    "war": 3.7
   },
   {
    "name": "Jake Bauers",
    "pos": "1B",
-   "overall": 66,
+   "overall": 69,
    "war": 3.6
   },
   {
    "name": "Brayan Rocchio",
    "pos": "SS",
-   "overall": 64,
+   "overall": 61,
    "war": 3.6
   },
   {
@@ -583,31 +583,31 @@
   {
    "name": "Nolan Arenado",
    "pos": "3B",
-   "overall": 43,
+   "overall": 41,
    "war": 3.5
   },
   {
    "name": "Chase DeLauter",
    "pos": "RF",
-   "overall": 58,
+   "overall": 60,
    "war": 3.5
   },
   {
    "name": "Jazz Chisholm Jr.",
    "pos": "2B",
-   "overall": 80,
+   "overall": 79,
    "war": 3.5
   },
   {
    "name": "Rafael Devers",
    "pos": "1B",
-   "overall": 56,
+   "overall": 60,
    "war": 3.5
   },
   {
    "name": "Drake Baldwin",
    "pos": "C",
-   "overall": 88,
+   "overall": 89,
    "war": 3.3
   },
   {
@@ -619,31 +619,31 @@
   {
    "name": "Wilyer Abreu",
    "pos": "RF",
-   "overall": 77,
+   "overall": 78,
    "war": 3.3
   },
   {
    "name": "Bryce Harper",
    "pos": "1B",
-   "overall": 79,
+   "overall": 82,
    "war": 3.3
   },
   {
    "name": "Alec Burleson",
    "pos": "1B",
-   "overall": 75,
+   "overall": 78,
    "war": 3.2
   },
   {
    "name": "Riley Greene",
    "pos": "LF",
-   "overall": 71,
+   "overall": 73,
    "war": 3.2
   },
   {
    "name": "Caleb Durbin",
    "pos": "3B",
-   "overall": 56,
+   "overall": 53,
    "war": 3.1
   },
   {
@@ -661,79 +661,79 @@
   {
    "name": "Luke Keaschall",
    "pos": "2B",
-   "overall": 50,
+   "overall": 51,
    "war": 3.0
   },
   {
    "name": "Liam Hicks",
    "pos": "C",
-   "overall": 46,
+   "overall": 47,
    "war": 3.0
   },
   {
    "name": "Jonathan Aranda",
    "pos": "1B",
-   "overall": 63,
+   "overall": 67,
    "war": 3.0
   },
   {
    "name": "Kazuma Okamoto",
    "pos": "3B",
-   "overall": 65,
+   "overall": 66,
    "war": 3.0
   },
   {
    "name": "Munetaka Murakami",
    "pos": "1B",
-   "overall": 54,
+   "overall": 57,
    "war": 2.9
   },
   {
    "name": "Bryan Reynolds",
    "pos": "LF",
-   "overall": 67,
+   "overall": 69,
    "war": 2.9
   },
   {
    "name": "Kyle Schwarber",
    "pos": "DH",
-   "overall": 80,
+   "overall": 83,
    "war": 2.9
   },
   {
    "name": "Andrés Giménez",
    "pos": "SS",
-   "overall": 77,
+   "overall": 73,
    "war": 2.8
   },
   {
    "name": "Colson Montgomery",
    "pos": "SS",
-   "overall": 72,
+   "overall": 70,
    "war": 2.8
   },
   {
    "name": "Brooks Lee",
    "pos": "3B",
-   "overall": 27,
+   "overall": 26,
    "war": 2.8
   },
   {
    "name": "Dominic Canzone",
    "pos": "DH",
-   "overall": 65,
+   "overall": 69,
    "war": 2.8
   },
   {
    "name": "Nico Hoerner",
    "pos": "2B",
-   "overall": 90,
+   "overall": 88,
    "war": 2.8
   },
   {
    "name": "Travis Bazzana",
    "pos": "2B",
-   "overall": 45,
+   "overall": 44,
    "war": 2.8
   },
   {
@@ -745,37 +745,37 @@
   {
    "name": "Jordan Walker",
    "pos": "RF",
-   "overall": 32,
+   "overall": 33,
    "war": 2.7
   },
   {
    "name": "Xander Bogaerts",
    "pos": "SS",
-   "overall": 89,
+   "overall": 88,
    "war": 2.6
   },
   {
    "name": "Ian Happ",
    "pos": "LF",
-   "overall": 64,
+   "overall": 66,
    "war": 2.6
   },
   {
    "name": "Freddie Freeman",
    "pos": "1B",
-   "overall": 78,
+   "overall": 80,
    "war": 2.6
   },
   {
    "name": "Jac Caglianone",
    "pos": "RF",
-   "overall": 52,
+   "overall": 55,
    "war": 2.6
   },
   {
    "name": "Luis García Jr.",
    "pos": "1B",
-   "overall": 50,
+   "overall": 53,
    "war": 2.6
   },
   {
@@ -787,7 +787,7 @@
   {
    "name": "TJ Rumfield",
    "pos": "1B",
-   "overall": 39,
+   "overall": 42,
    "war": 2.6
   },
   {
@@ -799,13 +799,13 @@
   {
    "name": "Kody Clemens",
    "pos": "2B",
-   "overall": 68,
+   "overall": 69,
    "war": 2.5
   },
   {
    "name": "Yandy Díaz",
    "pos": "DH",
-   "overall": 46,
+   "overall": 51,
    "war": 2.5
   },
   {
@@ -817,7 +817,7 @@
   {
    "name": "Jakob Marsee",
    "pos": "CF",
-   "overall": 78,
+   "overall": 77,
    "war": 2.5
   },
   {
@@ -829,13 +829,13 @@
   {
    "name": "Mauricio Dubón",
    "pos": "2B",
-   "overall": 54,
+   "overall": 52,
    "war": 2.4
   },
   {
    "name": "Xavier Edwards",
    "pos": "2B",
-   "overall": 54,
+   "overall": 52,
    "war": 2.3
   },
   {
@@ -847,19 +847,19 @@
   {
    "name": "Sam Antonacci",
    "pos": "LF",
-   "overall": 55,
+   "overall": 58,
    "war": 2.3
   },
   {
    "name": "Masyn Winn",
    "pos": "SS",
-   "overall": 86,
+   "overall": 83,
    "war": 2.3
   },
   {
    "name": "Michael Busch",
    "pos": "1B",
-   "overall": 58,
+   "overall": 60,
    "war": 2.3
   },
   {
@@ -871,13 +871,13 @@
   {
    "name": "Nick Gonzales",
    "pos": "3B",
-   "overall": 55,
+   "overall": 56,
    "war": 2.2
   },
   {
    "name": "Sal Stewart",
    "pos": "1B",
-   "overall": 58,
+   "overall": 61,
    "war": 2.0
   },
   {
@@ -895,43 +895,43 @@
   {
    "name": "Bo Bichette",
    "pos": "3B",
-   "overall": 73,
+   "overall": 75,
    "war": 1.9
   },
   {
    "name": "Brandon Nimmo",
    "pos": "RF",
-   "overall": 52,
+   "overall": 53,
    "war": 1.7
   },
   {
    "name": "Heriberto Hernández",
    "pos": "LF",
-   "overall": 74,
+   "overall": 75,
    "war": 1.7
   },
   {
    "name": "Christian Walker",
    "pos": "1B",
-   "overall": 39,
+   "overall": 40,
    "war": 1.6
   },
   {
    "name": "Kyle Stowers",
    "pos": "1B",
-   "overall": 49,
+   "overall": 52,
    "war": 1.6
   },
   {
    "name": "Jake Burger",
    "pos": "1B",
-   "overall": 37,
+   "overall": 39,
    "war": 1.5
   },
   {
    "name": "Daylen Lile",
    "pos": "LF",
-   "overall": 50,
+   "overall": 51,
    "war": 1.5
   },
   {
@@ -943,109 +943,109 @@
   {
    "name": "Iván Herrera",
    "pos": "DH",
-   "overall": 64,
+   "overall": 66,
    "war": 1.4
   },
   {
    "name": "JJ Bleday",
    "pos": "LF",
-   "overall": 38,
+   "overall": 41,
    "war": 1.3
   },
   {
    "name": "Spencer Torkelson",
    "pos": "1B",
-   "overall": 22,
+   "overall": 24,
    "war": 1.2
   },
   {
    "name": "Trea Turner",
    "pos": "SS",
-   "overall": 65,
+   "overall": 63,
    "war": 1.1
   },
   {
    "name": "Cedric Mullins",
    "pos": "CF",
-   "overall": 32,
+   "overall": 29,
    "war": 1.1
   },
   {
    "name": "Ozzie Albies",
    "pos": "2B",
-   "overall": 20,
+   "overall": 19,
    "war": 1.1
   },
   {
    "name": "Taylor Ward",
    "pos": "LF",
-   "overall": 56,
+   "overall": 58,
    "war": 1.0
   },
   {
    "name": "Austin Riley",
    "pos": "3B",
-   "overall": 67,
+   "overall": 66,
    "war": 1.0
   },
   {
    "name": "Vladimir Guerrero Jr.",
    "pos": "1B",
-   "overall": 74,
+   "overall": 77,
    "war": 1.0
   },
   {
    "name": "Jung Hoo Lee",
    "pos": "RF",
-   "overall": 37,
+   "overall": 39,
    "war": 1.0
   },
   {
    "name": "George Springer",
    "pos": "RF",
-   "overall": 50,
+   "overall": 53,
    "war": 0.9
   },
   {
    "name": "Kyle Tucker",
    "pos": "RF",
-   "overall": 68,
+   "overall": 71,
    "war": 0.9
   },
   {
    "name": "Jose Altuve",
    "pos": "2B",
-   "overall": 16,
+   "overall": 15,
    "war": 0.9
   },
   {
    "name": "Daulton Varsho",
    "pos": "CF",
-   "overall": 57,
+   "overall": 54,
    "war": 0.8
   },
   {
    "name": "Josh Bell",
    "pos": "DH",
-   "overall": 34,
+   "overall": 38,
    "war": 0.7
   },
   {
    "name": "Ernie Clement",
    "pos": "2B",
-   "overall": 27,
+   "overall": 25,
    "war": 0.6
   },
   {
    "name": "Jo Adell",
    "pos": "RF",
-   "overall": 46,
+   "overall": 49,
    "war": 0.6
   },
   {
    "name": "Josh Naylor",
    "pos": "1B",
-   "overall": 30,
+   "overall": 32,
    "war": 0.6
   },
   {
@@ -1069,19 +1069,19 @@
   {
    "name": "Brandon Marsh",
    "pos": "LF",
-   "overall": 39,
+   "overall": 40,
    "war": 0.3
   },
   {
    "name": "Alec Bohm",
    "pos": "3B",
-   "overall": 52,
+   "overall": 54,
    "war": 0.2
   },
   {
    "name": "Isaac Collins",
    "pos": "LF",
-   "overall": 25,
+   "overall": 26,
    "war": 0.1
   },
   {
@@ -1093,25 +1093,25 @@
   {
    "name": "Lawrence Butler",
    "pos": "RF",
-   "overall": 34,
+   "overall": 36,
    "war": -0.1
   },
   {
    "name": "Ezequiel Tovar",
    "pos": "SS",
-   "overall": 64,
+   "overall": 61,
    "war": -0.4
   },
   {
    "name": "Marcus Semien",
    "pos": "2B",
-   "overall": 62,
+   "overall": 61,
    "war": -0.5
   },
   {
    "name": "Salvador Perez",
    "pos": "DH",
-   "overall": 46,
+   "overall": 49,
    "war": -1.1
   }
  ],
@@ -1350,27 +1350,27 @@
  "fits": {
   "wins": {
    "n": 30,
-   "r": 0.69,
-   "slope": 0.9576,
-   "intercept": 29.408
+   "r": 0.682,
+   "slope": 0.9466,
+   "intercept": 29.94
   },
   "runsScored": {
    "n": 30,
-   "r": 0.476,
-   "slope": 3.1405,
-   "intercept": 547.517
+   "r": 0.475,
+   "slope": 3.1414,
+   "intercept": 546.995
   },
   "runsAllowed": {
    "n": 30,
-   "r": -0.667,
-   "slope": -4.462,
-   "intercept": 953.046
+   "r": -0.665,
+   "slope": -4.4532,
+   "intercept": 952.451
   },
   "hitters": {
    "n": 135,
-   "r": 0.652,
-   "slope": 0.0534,
-   "intercept": -0.628
+   "r": 0.646,
+   "slope": 0.0536,
+   "intercept": -0.668
   },
   "pitchers": {
    "n": 46,
@@ -1380,32 +1380,32 @@
   }
  },
  "runDifferentialVsWins": 0.892,
- "defenseVsRunsAllowed": -0.265,
+ "defenseVsRunsAllowed": -0.268,
  "positionGroups": {
   "C": {
    "n": 8,
-   "aboveLine": -0.08
+   "aboveLine": -0.06
   },
   "SS/CF": {
    "n": 29,
-   "aboveLine": -0.03
+   "aboveLine": 0.06
   },
   "2B/3B": {
    "n": 35,
-   "aboveLine": 0.13
+   "aboveLine": 0.18
   },
   "LF/RF": {
    "n": 33,
-   "aboveLine": -0.03
+   "aboveLine": -0.07
   },
   "1B/DH": {
    "n": 30,
-   "aboveLine": -0.07
+   "aboveLine": -0.18
   }
  },
  "hitterParts": {
   "bat": {
-   "sd": 11.9,
+   "sd": 12.0,
    "min": -21.8,
    "max": 58.6
   },
@@ -1430,5 +1430,5 @@
    "max": 5.3
   }
  },
- "ratedHitters": 454
+ "ratedHitters": 455
 }

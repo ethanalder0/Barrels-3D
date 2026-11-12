@@ -374,7 +374,9 @@ function ValueStrip({ value }) {
           <span className="valuestrip__note">{p.note}</span>
         </div>
       ))}
-      <p className="valuestrip__foot">Runs per full season against an average hitter. Added up, they make the overall.</p>
+      <p className="valuestrip__foot">
+        Runs per full season against an average hitter. Overall adds them up, with the bat counted 1.1 times.
+      </p>
     </div>
   );
 }
