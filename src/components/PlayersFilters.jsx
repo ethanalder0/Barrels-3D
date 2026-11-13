@@ -11,6 +11,10 @@ import {
   columnsFor,
   flipPatch,
   handPatch,
+  FULL_SEASON,
+  PAGE_SIZE,
+  PLAYING_TIME,
+  regularBar,
   isFiltered,
   isRoster,
   poolPatch,
@@ -263,6 +267,26 @@ export default function PlayersFilters({ board, view, scale, onChange, open, onC
               onPick={(next) => onChange(handPatch(view, 'throws', next))}
             />
           </div>
+        </div>
+
+        {/* Who plays every day. On a roster it filters the roster, and a list
+            stays a list: neither one turns into the other. */}
+        <div className="pplaying">
+          <p className="pplaying__label">Playing time</p>
+          <Choice
+            label="Playing time"
+            value={view.pt ?? 'all'}
+            options={PLAYING_TIME}
+            onPick={(next) => onChange({ pt: next, limit: PAGE_SIZE })}
+            className="pchoice--three"
+          />
+          <p className="pplaying__note">
+            Regulars: {pool === 'pitchers' || roster
+              ? `${regularBar(board, true)}+ batters faced`
+              : `${regularBar(board, false)}+ plate appearances`}
+            {roster && `, or ${regularBar(board, false)}+ plate appearances for a hitter`}
+            {board.games < FULL_SEASON ? `, ${board.games} games in` : ' this season'}
+          </p>
         </div>
       </section>
 

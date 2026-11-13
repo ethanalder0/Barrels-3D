@@ -57,6 +57,7 @@ jobs:
           npm run selftest:search
           npm run selftest:players
           npm run selftest:report
+          npm run selftest:url
           pip install -r server/requirements.txt
           python server/selftest.py
           python server/ratingstest.py

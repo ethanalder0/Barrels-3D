@@ -88,6 +88,24 @@ export default function PlayersScreen() {
 
   const found = useMemo(() => (board ? search(board, view, scale) : null), [board, view, scale]);
 
+  // A shared link can name a rating this page has no column for (a typo, or
+  // Framing with every position). Drop it rather than filter on nothing.
+  useEffect(() => {
+    if (!board || view.view === 'teams') return;
+    const keys = columnsFor(board, view.pool ?? 'hitters', view.pos);
+    const kept = view.ratings.filter((f) => keys.includes(f.key));
+    if (kept.length !== view.ratings.length) change({ ratings: kept });
+  }, [board, view.view, view.pool, view.pos, view.ratings, change]);
+
+  const [copied, setCopied] = useState(false);
+  const copyLink = () => {
+    const done = () => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+    navigator.clipboard?.writeText(window.location.href).then(done, () => window.prompt?.('Copy this link', window.location.href));
+  };
+
   return (
     <div className="players">
       <div className="page-head">
@@ -100,6 +118,9 @@ export default function PlayersScreen() {
         </div>
         <div className="page-head__aside players__aside">
           {board && <span className="players__season">{board.season} season</span>}
+          <button type="button" className="players__copy" onClick={copyLink} aria-live="polite">
+            {copied ? 'Link copied' : 'Copy link'}
+          </button>
           <div className="segmented" role="group" aria-label="Rating scale">
             <button type="button" aria-pressed={scale === 'pct'} onClick={() => pickScale('pct')}>
               Percentile

@@ -13,7 +13,8 @@
     "selftest:follow": "node src/replay/follow.selftest.js",
     "selftest:search": "node src/data/playerSearch.selftest.js",
     "selftest:players": "node src/data/playerBoard.selftest.js",
-    "selftest:report": "node src/data/ratingsReport.selftest.js"
+    "selftest:report": "node src/data/ratingsReport.selftest.js",
+    "selftest:url": "node src/state/urlState.selftest.js"
   },
   "dependencies": {
     "@fontsource-variable/newsreader": "^5.3.0",

@@ -126,8 +126,11 @@ export function LiveDataProvider({ children }) {
     hydratedRef.current = true;
 
     const requested = replayOptions.gamePk && games.find((g) => g.id === String(replayOptions.gamePk));
+    // A shared /live?game= link names its game too, already in the app's state.
+    const linked = games.find((g) => g.id === String(state.selectedGameId));
     const target =
       requested ||
+      linked ||
       games.find((g) => g.status === 'live') ||
       /* On a past date nothing is live and nothing is upcoming, so prefer a
          completed game — it is the only kind that carries tracked at-bats. */

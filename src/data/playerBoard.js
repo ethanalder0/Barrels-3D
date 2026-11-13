@@ -12,6 +12,33 @@
 
 export const PAGE_SIZE = 50;
 
+/* A regular plays most days: 2.5 plate appearances per team game for a hitter
+   (about 405 over a full season, some seven per club), 1.5 batters faced per
+   team game for a pitcher (about 243: a rotation and its main relievers).
+   Scaled by how many games have been played, so it means the same in May. */
+export const REGULAR_PA_PER_GAME = 2.5;
+export const REGULAR_BF_PER_GAME = 1.5;
+export const FULL_SEASON = 162;
+
+export const PLAYING_TIME = [
+  ['all', 'All'],
+  ['regulars', 'Regulars'],
+  ['nonregulars', 'Non-regulars'],
+];
+
+/** The playing time that makes a regular so far this season. */
+export function regularBar(board, pitcher) {
+  return Math.round((pitcher ? REGULAR_BF_PER_GAME : REGULAR_PA_PER_GAME) * board.games);
+}
+
+export const isRegular = (board, player) => (player.pt ?? 0) >= regularBar(board, player.isPitcher);
+
+function fitsPlayingTime(board, player, pt) {
+  if (pt === 'regulars') return isRegular(board, player);
+  if (pt === 'nonregulars') return !isRegular(board, player);
+  return true;
+}
+
 export const INITIAL_VIEW = {
   pool: 'hitters', // 'hitters' | 'pitchers' | null (a club's roster)
   pos: 'All',
@@ -22,6 +49,7 @@ export const INITIAL_VIEW = {
   sort: { key: 'ovr', dir: -1 },
   limit: PAGE_SIZE,
   includeThin: false,
+  pt: 'all', // 'all' | 'regulars' | 'nonregulars'
   view: 'players', // 'players' | 'teams' (the team leaderboard)
   cat: 'overall', // what the team leaderboard ranks by
 };
@@ -185,6 +213,7 @@ export function prepareBoard(payload) {
     meta,
     players: (payload.players ?? []).map((row) => preparePlayer(row, attributes)),
     teams: payload.teams ?? {},
+    games: payload.games || FULL_SEASON,
     orders: new Map(),
   };
 }
@@ -226,8 +255,9 @@ export function passes(player, filter, scale) {
   return filter.op === 'max' ? value <= want : value >= want;
 }
 
-function inBase(player, view, pool, pos) {
+function inBase(board, player, view, pool, pos) {
   if (pool === 'pitchers' ? !player.isPitcher : player.isPitcher) return false;
+  if (!fitsPlayingTime(board, player, view.pt ?? 'all')) return false;
   if (pos !== 'All' && player.pos !== pos) return false;
   if (view.team && player.team !== view.team) return false;
   if (pool !== 'pitchers' && view.bats !== 'Any' && player.bats !== view.bats) return false;
@@ -241,7 +271,7 @@ function inBase(player, view, pool, pos) {
  */
 export function search(board, view, scale) {
   const pool = view.pool ?? 'hitters';
-  const base = board.players.filter((p) => inBase(p, view, pool, view.pos));
+  const base = board.players.filter((p) => inBase(board, p, view, pool, view.pos));
   const matches = [];
   const thin = [];
   base.forEach((p) => {
@@ -252,7 +282,11 @@ export function search(board, view, scale) {
 }
 
 export function sortPlayers(rows, sort) {
-  const value = (p) => (sort.key === 'ovr' ? pick(p.ovr, 'pct') : pick(p.scores[sort.key], 'pct'));
+  const value = (p) => {
+    if (sort.key === 'ovr') return pick(p.ovr, 'pct');
+    if (sort.key === 'pt') return p.pt ?? 0;
+    return pick(p.scores[sort.key], 'pct');
+  };
   return rows.slice().sort((x, y) => {
     if (sort.key === 'name') return sort.dir * x.name.localeCompare(y.name);
     const a = value(x);
@@ -267,7 +301,8 @@ export function sortPlayers(rows, sort) {
 /** Everything that stops a page showing everyone. */
 export function isFiltered(view) {
   return view.ratings.length > 0 || view.pos !== 'All' || !!view.team
-    || view.bats !== 'Any' || view.throws !== 'Any' || view.pool === 'pitchers';
+    || view.bats !== 'Any' || view.throws !== 'Any' || view.pool === 'pitchers'
+    || (view.pt ?? 'all') !== 'all';
 }
 
 /** A club picked and nothing else: the page is its roster. */
@@ -356,7 +391,7 @@ export const handPatch = (view, field, value) => ({
 
 export function activePreset(view) {
   return PRESETS.find((p) =>
-    view.pool === p.pool && view.pos === (p.pos ?? 'All') && !view.team && view.bats === 'Any' && view.throws === 'Any'
+    view.pool === p.pool && view.pos === (p.pos ?? 'All') && !view.team && (view.pt ?? 'all') === 'all' && view.bats === 'Any' && view.throws === 'Any'
     && view.ratings.length === p.filters.length
     && p.filters.every(([key, op, pct]) => view.ratings.some((f) => f.key === key && f.op === op && f.pct === pct)));
 }
@@ -393,6 +428,8 @@ const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 export function subjectOf(view, teamName) {
   const pool = view.pool ?? 'hitters';
   const words = [];
+  if (view.pt === 'regulars') words.push('regular');
+  if (view.pt === 'nonregulars') words.push('part-time');
   if (pool === 'pitchers') {
     if (view.throws === 'L') words.push('left-handed');
     if (view.throws === 'R') words.push('right-handed');
@@ -430,7 +467,7 @@ export function sentenceOf(board, view, scale, teamName) {
 export function loosenings(board, view, scale) {
   const pool = view.pool ?? 'hitters';
   const count = (ratings, pos = view.pos) =>
-    board.players.filter((p) => inBase(p, view, pool, pos) && ratings.every((f) => passes(p, f, scale))).length;
+    board.players.filter((p) => inBase(board, p, view, pool, pos) && ratings.every((f) => passes(p, f, scale))).length;
   const out = view.ratings.map((f) => {
     const others = view.ratings.filter((x) => x !== f);
     return { label: `Drop ${longClause(board, f, scale)}`, count: count(others), patch: { ratings: others } };
@@ -440,8 +477,13 @@ export function loosenings(board, view, scale) {
   }
   if (view.team) {
     const n = board.players.filter((p) =>
-      inBase(p, { ...view, team: null }, pool, view.pos) && view.ratings.every((f) => passes(p, f, scale))).length;
+      inBase(board, p, { ...view, team: null }, pool, view.pos) && view.ratings.every((f) => passes(p, f, scale))).length;
     out.push({ label: 'Look at every club', count: n, patch: { team: null } });
+  }
+  if ((view.pt ?? 'all') !== 'all') {
+    const n = board.players.filter((p) =>
+      inBase(board, p, { ...view, pt: 'all' }, pool, view.pos) && view.ratings.every((f) => passes(p, f, scale))).length;
+    out.push({ label: 'Include every player, regular or not', count: n, patch: { pt: 'all' } });
   }
   return out;
 }
@@ -466,8 +508,8 @@ const UNITS = [
 ];
 
 /** One club, in the sections a roster reads in, each with its own columns. */
-export function rosterSections(board, team, sort) {
-  const club = board.players.filter((p) => p.team === team);
+export function rosterSections(board, team, sort, pt = 'all') {
+  const club = board.players.filter((p) => p.team === team && fitsPlayingTime(board, p, pt));
   const sections = UNITS.map((unit) => ({
     title: unit.title,
     keys: columnsFor(board, unit.pool, unit.pos),

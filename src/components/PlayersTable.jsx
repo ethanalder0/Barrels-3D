@@ -1,5 +1,5 @@
 import { useAppState } from '../state/AppState.jsx';
-import { keyline, overallOf, scoreOf, thresholdOf } from '../data/playerBoard.js';
+import { isRegular, keyline, overallOf, scoreOf, thresholdOf } from '../data/playerBoard.js';
 import MiniWheel from './MiniWheel.jsx';
 import { SHORT_LABELS, groupStyle } from './RatingsWheel.jsx';
 import TeamLogo from './TeamLogo.jsx';
@@ -47,6 +47,7 @@ export default function PlayersTable({ board, keys, rows, view, scale, onSort })
   const { actions } = useAppState();
   const filters = Object.fromEntries(view.ratings.map((f) => [f.key, f]));
   const narrow = keys.length <= 8;
+  const pitchers = rows.length > 0 && rows.every((p) => p.isPitcher);
 
   const SortHeader = ({ sortKey, label, title, className = '' }) => {
     const sorted = view.sort.key === sortKey;
@@ -80,7 +81,7 @@ export default function PlayersTable({ board, keys, rows, view, scale, onSort })
       <table className="ptable" data-narrow={narrow}>
         <thead>
           <tr className="ptable__groups">
-            <th colSpan={2} aria-hidden="true" className="ptable__groupblank" />
+            <th colSpan={3} aria-hidden="true" className="ptable__groupblank" />
             {columnGroups(board, keys).map(({ group, span }, i) => (
               <th key={`${group}-${i}`} colSpan={span} scope="colgroup" data-group={group}>
                 {groupStyle(group).name}
@@ -90,6 +91,12 @@ export default function PlayersTable({ board, keys, rows, view, scale, onSort })
           <tr>
             <SortHeader sortKey="name" label="Player" title="Player name" className="ptable__th--who" />
             <SortHeader sortKey="ovr" label="OVR" title="Overall" />
+            <SortHeader
+              sortKey="pt"
+              label={pitchers ? 'BF' : 'PA'}
+              title={pitchers ? 'Batters faced this season' : 'Plate appearances this season'}
+              className="ptable__th--pt"
+            />
             {keys.map((key) => (
               <SortHeader
                 key={key}
@@ -122,6 +129,9 @@ export default function PlayersTable({ board, keys, rows, view, scale, onSort })
                 </td>
                 <td className="ptable__ovr" data-empty={overall == null}>
                   {overall ?? '—'}
+                </td>
+                <td className="ptable__pt" data-regular={isRegular(board, player)}>
+                  {player.pt || '—'}
                 </td>
                 {keys.map((key) => {
                   const pct = scoreOf(player, key, 'pct');

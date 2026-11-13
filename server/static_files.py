@@ -14,8 +14,9 @@ the next load. Everything else (the player model, fonts, audio) keeps its
 name across builds, so it carries an ETag and is revalidated rather than
 downloaded again.
 
-Anything that is not a file falls back to index.html. The app keeps its screen
-in state rather than in the URL, so in practice that is "/" with a query string.
+Anything that is not a file falls back to index.html. That is what makes the
+app's own addresses work -- /players?pos=SS, /teams, /ratings and the rest
+(see src/state/urlState.js) -- when one is opened from a shared link.
 """
 
 from __future__ import annotations

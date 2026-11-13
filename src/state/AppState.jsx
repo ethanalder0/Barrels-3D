@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
+import { KEPT, pageOf, readUrl, writeUrl } from './urlState.js';
 import { atBats, defaultGameId } from '../data/stubs.js';
 import { readReplayOptions } from '../data/liveClient.js';
 import { readFavorites, toggleFavorite, writeFavorites } from '../data/favorites.js';
@@ -13,10 +14,14 @@ import { INITIAL_VIEW } from '../data/playerBoard.js';
    the engine never has to import React.
 --------------------------------------------------------------------------- */
 
+/* Where the address bar says to start. A shared link (anything but the bare
+   home page) opens straight on what it names, past the splash. */
+const fromAddress = typeof window === 'undefined' ? {} : readUrl(window.location.pathname, window.location.search);
+
 const initialState = {
-  screen: 'home', // 'home' | 'live' | 'games' | 'players' | 'ratings' | 'settings' | 'leaderboard'
-  entered: false, // past the splash; nothing is fetched until then
-  selectedGameId: defaultGameId,
+  screen: fromAddress.screen ?? 'home', // 'home' | 'live' | 'games' | 'players' | 'ratings' | 'settings' | 'leaderboard'
+  entered: fromAddress.entered ?? false, // past the splash; nothing is fetched until then
+  selectedGameId: fromAddress.selectedGameId ?? defaultGameId,
   selectedAtBatId: atBats[0].id,
   /* One pitch of the selected at-bat to replay instead of the whole thing, by
      its number; null for the at-bat as it ended. Set by the game leaders,
@@ -26,7 +31,7 @@ const initialState = {
   /* Which day's scoreboard the games screen is showing. null means today, so
      the common case needs no date in state and the app opens on today without
      having to know what today is. Seeded from ?date= so the URL still works. */
-  scoreboardDate: readReplayOptions().date,
+  scoreboardDate: fromAddress.scoreboardDate ?? readReplayOptions().date,
   // While true the newest at-bat is selected automatically as the game moves on.
   // Picking one by hand turns it off; the at-bat panel offers it back.
   followLatest: true,
@@ -37,13 +42,13 @@ const initialState = {
      stops them. See ReplayViewport. */
   highlights: null,
   highlightRuns: 0,
-  playerCardId: null, // non-null → player modal is open
+  playerCardId: fromAddress.playerCardId ?? null, // non-null → player modal is open
   // Which leaderboard the full-page view is showing, as { groupId, categoryId }.
   // Set by expanding one of the home page's top-five boards.
-  leaderboard: null,
+  leaderboard: fromAddress.leaderboard ?? null,
   // What the Players page is showing, kept here so a trip to a live game does
   // not lose the filters. See data/playerBoard.js.
-  playersView: INITIAL_VIEW,
+  playersView: fromAddress.playersView ?? INITIAL_VIEW,
   /* Favourite clubs, as feed abbreviations, most recently picked last. Seeded
      from localStorage so the app opens already following them — the only state
      here that outlives the tab. See data/favorites.js. */
@@ -125,6 +130,19 @@ function reducer(state, action) {
         screen: 'leaderboard',
         leaderboard: { groupId: action.groupId, categoryId: action.categoryId },
       };
+    /* Back or forward: show what that address names. Never back to the
+       splash, which is a welcome, not a page. */
+    case 'fromUrl':
+      return {
+        ...state,
+        ...action.patch,
+        entered: state.entered || action.patch.entered,
+        playersView: action.patch.playersView ?? state.playersView,
+        leaderboard: action.patch.leaderboard ?? state.leaderboard,
+        selectedGameId: action.patch.selectedGameId ?? state.selectedGameId,
+        scoreboardDate: action.patch.scoreboardDate ?? state.scoreboardDate,
+        highlights: null,
+      };
     case 'setPlayersView':
       return { ...state, playersView: { ...state.playersView, ...action.patch } };
     case 'openPlayer':
@@ -153,6 +171,29 @@ export function AppStateProvider({ children }) {
   useEffect(() => {
     writeFavorites(state.favorites);
   }, [state.favorites]);
+
+  /* The address bar follows the app. A new page -- another screen, club,
+     preset or player card -- is a new history entry, so Back returns to it;
+     moving a slider just updates the one you are on. */
+  const kept = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return Object.fromEntries(KEPT.filter((k) => params.has(k)).map((k) => [k, params.get(k)]));
+  }, []);
+  useEffect(() => {
+    if (!state.entered) return;
+    const url = writeUrl(state, kept);
+    const here = window.location.pathname + window.location.search;
+    if (url === here) return;
+    if (pageOf(url) !== pageOf(here)) window.history.pushState(null, '', url);
+    else window.history.replaceState(null, '', url);
+  }, [state.entered, state.screen, state.playersView, state.playerCardId, state.leaderboard,
+    state.selectedGameId, state.scoreboardDate, kept]);
+
+  useEffect(() => {
+    const onPop = () => dispatch({ type: 'fromUrl', patch: readUrl(window.location.pathname, window.location.search) });
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   const value = useMemo(() => {
     const actions = {

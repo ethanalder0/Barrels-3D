@@ -1383,7 +1383,7 @@ def _board_row(person: dict, model, attributes) -> dict:
     """
     rated = model.rate(person["id"])
     row = {**person, "kind": "pitcher" if model.kind == "pitcher" else "hitter",
-           "ovr": None, "r": []}
+           "ovr": None, "r": [], "pt": 0}
     if not rated:
         return row
     overall = rated["overall"]
@@ -1476,7 +1476,14 @@ def player_board(people: list[dict], season_year: int) -> dict:
     for person in people:
         pitcher = person.get("pos") == "P"
         model = pitchers if pitcher else hitters
-        rows.append(_board_row(person, model, PITCHER_ATTRIBUTES if pitcher else HITTER_ATTRIBUTES))
+        row = _board_row(person, model, PITCHER_ATTRIBUTES if pitcher else HITTER_ATTRIBUTES)
+        # Playing time this season, for the page's Regulars switch: plate
+        # appearances for a hitter, batters faced for a pitcher.
+        if pitcher:
+            row["pt"] = round(((sc.pitching.get(person["id"]) or {}).get("pitches") or 0) / 3.9)
+        else:
+            row["pt"] = (sc.batting.get(person["id"]) or {}).get("pa") or 0
+        rows.append(row)
         time.sleep(0.001)
     attributes = {"hitter": _attribute_list(HITTER_ATTRIBUTES),
                   "pitcher": _attribute_list(PITCHER_ATTRIBUTES)}

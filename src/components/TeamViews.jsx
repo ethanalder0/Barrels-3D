@@ -73,7 +73,7 @@ export function TeamRoster({ board, view, scale, onChange, onSort }) {
   const stats = board.teams[abbr];
   const club = board.players.filter((p) => p.team === abbr);
   const pitchers = club.filter((p) => p.isPitcher).length;
-  const sections = rosterSections(board, abbr, view.sort);
+  const sections = rosterSections(board, abbr, view.sort, view.pt);
   const leading = strengths(board, abbr, scale);
   const label = (key) => board.meta[key]?.label ?? key;
 

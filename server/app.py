@@ -389,7 +389,14 @@ def _build_player_board(season: int) -> dict:
     board = ratings_mod.player_board(rows, season)
     # Over the winter the new season has rosters but nothing to rate them on.
     if not any(row["r"] for row in board["players"]) and season > FIRST_SEASON:
-        return ratings_mod.player_board(rows, season - 1)
+        board = ratings_mod.player_board(rows, season - 1)
+    # How far the season has got, so "a regular" can mean the same thing in May
+    # as in September. Without it the page assumes a full season.
+    try:
+        board["games"] = mlb_api.get_team_games(board["season"])
+    except Exception as exc:
+        sys.stderr.write(f"[players] team games failed ({type(exc).__name__})\n")
+        board["games"] = None
     return board
 
 

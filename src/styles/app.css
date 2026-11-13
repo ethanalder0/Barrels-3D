@@ -7533,3 +7533,65 @@ button.psentence__term:hover {
   color: var(--c-ink);
   background: var(--c-paper-2);
 }
+
+/* Playing time: the three-way switch, and the PA / BF column. */
+.pplaying {
+  margin-top: 12px;
+}
+
+.pplaying__label {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--c-muted);
+}
+
+.pchoice--three {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pchoice--three button {
+  min-height: 36px;
+  font-size: 13px;
+}
+
+.pplaying__note {
+  margin-top: 6px;
+  font-family: var(--font-num);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--c-muted);
+}
+
+.ptable__pt {
+  width: 54px;
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ptable__pt[data-regular='false'] {
+  color: var(--c-muted);
+}
+
+.players__copy {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--c-line-strong);
+  font-family: var(--font-num);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.players__copy:hover {
+  border-color: var(--c-ink);
+}
+
+@media (max-width: 760px) {
+  .ptable__pt {
+    display: none;
+  }
+}

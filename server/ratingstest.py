@@ -501,6 +501,8 @@ try:
     assert board["players"][1]["ovr"] == [pt["overall"]["pct"], pt["overall"]["grade"]]
     nobody = board["players"][2]
     assert nobody["ovr"] is None and nobody["r"] == [], "no data still lists him, unrated"
+    assert row["pt"] == (cur.batting.get(top_id) or {}).get("pa"), "a hitter's playing time is his PA"
+    assert nobody["pt"] == 0
     assert ratings.playing_time(2026) == {}, "nothing in the Savant cache here, and it must not fetch"
     payload = ratings.profile(999999, is_pitcher=True, season_year=2026)
     assert payload["ratings"] is None and "No 2026" in payload["ratingsNote"]

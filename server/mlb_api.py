@@ -158,6 +158,19 @@ def get_players(season: int) -> list[dict]:
     return resp.json().get("people") or []
 
 
+def get_team_games(season: int) -> int | None:
+    """The most games any club has played this season: how far the season has got."""
+    resp = session().get(f"{BASE}/v1/standings",
+                         params={"leagueId": "103,104", "season": season,
+                                 "standingsTypes": "regularSeason",
+                                 "fields": "records,teamRecords,wins,losses"},
+                         timeout=TIMEOUT)
+    resp.raise_for_status()
+    played = [(t.get("wins") or 0) + (t.get("losses") or 0)
+              for record in resp.json().get("records") or [] for t in record.get("teamRecords") or []]
+    return max(played) if played else None
+
+
 def get_current_teams(person_ids: list) -> dict[str, int]:
     """{person id: team id} from each person's own record, for the ones who have a team.
 
