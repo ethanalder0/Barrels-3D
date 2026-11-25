@@ -953,16 +953,15 @@ How the cloth was built, in `player_build.blend`, so it can be rebuilt:
 
 Cloth is one sheet with open hems, so `CLOTH` regions render double-sided — and
 cast shadows from their back face only, or they shadow themselves in contour
-rings. Earlier stages are kept beside `player_build.blend` in
+rings. Two earlier stages are kept beside `player_build.blend` in
 `assets/animations/`: `player_build_pre_uniforms.blend` and
-`player_pre_uniforms.glb` (before any cloth), `player_build_pre_pants_refit.blend`
-(the cloth as first lofted — the file `refit_pants.py` is written for),
-`player_build_pre_trim.blend` (refitted, no trim),
-`player_build_pre_jersey_cut.blend` (trimmed, jersey still the straight tube —
-the file `fit_jersey.py` is written for),
-`player_build_pre_sock_stripes.blend` (jersey recut, plain socks),
-`player_build_pre_cap_rebuild.blend` (striped socks, the old cap) and
-`player_build_pre_glove.blend` (new cap, no glove).
+`player_pre_uniforms.glb` (before any cloth), and
+`player_build_pre_pants_refit.blend` (the cloth as first lofted — the file
+the rebuild below starts from). Every step after it is a script stored in
+`player_build.blend`, so the intermediate stages are not kept: each is a
+4.5 MB copy of the whole file, every blend is in Git LFS, and the deploy
+pulls all of LFS on every run. To redo a single step, rebuild from
+`player_build_pre_pants_refit.blend` up to the step before it.
 
 **To rebuild the refit and the trim**, open
 `player_build_pre_pants_refit.blend`, append the text blocks `refit_pants.py`,
@@ -980,9 +979,9 @@ exec(bpy.data.texts['anim_check.py'].as_string())
 anim_check('Pants', body_materials={'region_sock', 'region_shoe'}, cover=(0.39, 0.46))
 ```
 
-Run that way it comes out as `player_build_pre_jersey_cut.blend` does: `Pants`
-7,833 vertices with 433 trim faces, `Jersey` 7,842 with 692, no degenerate
-faces. The jersey recut goes on top of that (append `fit_jersey.py` the same
+Run that way it gives `Pants` 7,833 vertices with 433 trim faces and
+`Jersey` 7,842 with 692, no degenerate faces. The jersey recut goes on top of
+that (append `fit_jersey.py` the same
 way):
 
 ```python
@@ -992,7 +991,7 @@ fit_jersey(apply=True)       # apply=False returns the plan; gathers=False leave
 
 which gives a `Jersey` of 7,952 vertices, vertex for vertex the one in
 `player_build.blend`. `fit_jersey` is not safe to run twice — a
-second pass lengthens the sleeves again — so start from the backup. The sock
+second pass lengthens the sleeves again — so run it once, in this sequence. The sock
 stripes go on last, with the current `cut_trim.py`:
 
 ```python
