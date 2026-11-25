@@ -31,6 +31,14 @@
    coloured the painted body before. The cap and the helmet are both in the
    GLB — the player decides which one is worn (see player.js).
 
+   THE TRIM IS A REGION TOO. The stripe down the trouser leg, the band round
+   each sleeve, the collar and the piping down the placket are faces of the
+   jersey and the trousers that carry `region_trim` instead of the garment's
+   own material — cut into the cloth in Blender, so their edges are clean lines
+   and there is still nothing to texture. One design serves every club: only
+   the colour changes. The two bands round each sock are the same idea on the
+   body's own shin, as `region_sock_stripe`.
+
    THE NUMBER is the one thing that genuinely needs a texture, and therefore the
    one thing that needed usable UVs. The back-of-jersey faces get their own
    projection in Blender — straight on from behind, normalised over that panel's
@@ -45,7 +53,8 @@ export const MATERIALS = [
   'region_skin', 'region_jersey', 'region_jersey_back', 'region_cap',
   'region_face', 'region_sleeve', 'region_forearm', 'region_pants',
   'region_sock', 'region_shoe', 'region_hand', 'region_joints',
-  'region_belt', 'region_helmet',
+  'region_belt', 'region_helmet', 'region_trim', 'region_sock_stripe',
+  'region_cap_bill', 'region_glove',
 ];
 
 /* The regions that are loose cloth rather than body. They are single sheets
@@ -53,6 +62,9 @@ export const MATERIALS = [
    collar — so they are drawn from both sides. */
 export const CLOTH = new Set([
   'region_jersey', 'region_jersey_back', 'region_pants',
+  // Trim is the same sheet as the garment it is cut into, seen from the same
+  // two sides: a single-sided stripe would vanish inside a sleeve or a cuff.
+  'region_trim',
 ]);
 
 /* Skin, and the parts no club colours. Deliberately neutral — this character
@@ -61,12 +73,25 @@ export const CLOTH = new Set([
 const SKIN = '#b98a63';
 const SHOE = '#1c1c1e';
 const JOINTS = '#3a3a3e';
+const GLOVE = '#7b4b27';   // tanned leather: a glove is the player's own, not the club's
+const WHITE = '#f4f4f2';   // home cloth, and the stripe on a sock nothing else shows on
+
+/* How far apart two #rrggbb colours are: a straight line through RGB, 0 to 441.
+   Crude, and enough for the one question palette() asks of it. */
+function rgbDistance(a, b) {
+  const rgb = (hex) => {
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+  const [p, q] = [rgb(a), rgb(b)];
+  return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+}
 
 /**
  * A club's kit, as a colour per material.
  *
  * Home is white and away is grey, as they really are, and the club's colour
- * arrives on the cap, the sleeves and the socks. That is both accurate and the
+ * arrives on the cap, the sleeves, the trim and the socks. That is both accurate and the
  * only thing that reads at replay distance, where a crest would be four pixels
  * across and the silhouette is most of what you have to go on.
  */
@@ -77,7 +102,7 @@ export function palette(abbr, side = 'home') {
   /* Home white, road grey — jersey and trousers alike. The grey is a real
      road grey, not a tint: a lighter one (#c9ccd1 was tried) reads as white
      under the stadium light, and then both sides look like the home team. */
-  const cloth = side === 'away' ? '#9fa4ab' : '#f4f4f2';
+  const cloth = side === 'away' ? '#9fa4ab' : WHITE;
 
   return {
     region_skin: SKIN,
@@ -87,13 +112,33 @@ export function palette(abbr, side = 'home') {
     region_jersey: cloth,
     region_jersey_back: cloth,
     region_pants: cloth,
+    /* The club's primary, home and away alike, like the cap and the belt it
+       runs into. Against road grey an orange or a red is close in lightness
+       (SF 1.26:1, MIA 1.6:1) but nowhere near it in hue, which is how those
+       clubs' real road trim reads too — so no fallback to `ink` here. */
+    region_trim: primary,
     region_cap: primary,
+    /* The cap's bill is its own region so that it can differ from the crown,
+       and for now it does not. Which clubs wear a contrasting bill is a fact
+       about each club, not something `primary` and `secondary` can say — give
+       all thirty a `secondary` bill and it is wrong for most of them. If
+       teams.js ever carries it, this is the one line to change. */
+    region_cap_bill: primary,
     region_helmet: primary,
     region_belt: primary,
     region_sleeve: primary,
     region_sock: secondary,
+    /* Two bands round the calf, in the club's other colour: the sock is the
+       secondary, so the stripe is the primary. Three clubs' two colours are
+       too alike to stripe one with the other — CWS (the same black twice), SEA
+       (navy on dark teal) and TOR (blue on navy), all under 60 apart where the
+       next closest pair is 178 — and they get white, which is what a dark sock
+       is striped with anyway. White on the road as well: it is the sock's
+       stripe, not the cloth's colour. */
+    region_sock_stripe: rgbDistance(primary, secondary) < 100 ? WHITE : primary,
     region_shoe: SHOE,
     region_joints: JOINTS,
+    region_glove: GLOVE,
   };
 }
 

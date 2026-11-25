@@ -180,6 +180,13 @@ class Player {
     if (cap) cap.visible = kind !== 'batter';
     if (helmet) helmet.visible = kind === 'batter';
 
+    /* The glove is in the GLB as well, rigid on the model's left hand, and only
+       the pitcher wears it: a batter's hands are on the bat. A left-handed
+       pitcher is the mirror image of this model, so his is on his right hand
+       with no extra work — the same way the helmet's flap changes ears. */
+    const glove = this.model.getObjectByName('Glove');
+    if (glove) glove.visible = kind === 'pitcher';
+
     /* Only the batter carries one. It is parented to a hand bone rather than
        posed each frame, so it follows the swing at no cost and inherits a
        left-hander's mirror along with the rest of him. */

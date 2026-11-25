@@ -588,6 +588,49 @@ the bat is built in feet at true size and divided by the bone's own world scale,
 read off the matrix rather than assumed, so rescaling the character cannot
 silently resize the bat.
 
+#### The glove
+
+The pitcher wears a fielder's glove on the model's left hand. Unlike the bat it
+**ships in `player.glb`**, as `Glove`, skinned 100% to `mixamorig:LeftHand`: a
+glove is not a solid of revolution, and what decides its shape is how the hand
+inside it moves, which is measured in Blender where the clips are. `player.js`
+shows it on the pitcher and hides it on the batter, the same way it picks cap
+or helmet. A left-handed pitcher is a mirror image of the model, so his is on
+his right hand with no extra work. It takes `region_glove`, which `palette()`
+gives one tanned-leather colour for every club: a glove is the player's own.
+
+It is built by **`build_glove.py`**, a text block in `player_build.blend`; run
+it to build or rebuild `Glove` in place. It works in the hand bone's own space
+(centimetres, +y wrist to fingers, +z out of the palm, -x the thumb side),
+where the glove is a constant shape.
+
+* **Shape.** One closed surface lofted along a spine: straight up the palm,
+  then turning 25° toward the palm past the knuckles, because a glove on a
+  relaxed hand is cupped. Across the spine each of 26 stations is two half
+  superellipses sharing a width — leather behind the spine, pocket in front —
+  and the width follows a glove's outline: narrow at the heel, out to the tip
+  of the thumb, a step back in, then up the edge of the web to the fingertips.
+  Without that step the first version had the outline of a boxing glove. Three
+  grooves down the back separate the four finger stalls, one more marks where
+  the web joins the first finger, and a crease follows the thumb.
+* **Size is the hand's swept volume, not its rest pose.** The pitcher's glove
+  hand is never open: through his two clips its fingers travel up to 12 cm from
+  where the T-pose has them. So every left-hand vertex is followed through
+  `pitcher_idle` and `pitcher_pitch` in the hand bone's space, and each station
+  is opened until all of them are inside it with 0.5 cm to spare — by up to
+  1.95 cm behind the spine, 3.87 in the pocket and 1.01 in width over the
+  drawn outline. Checked at full resolution afterwards: 933,480 samples (all
+  5,186 hand vertices at all 180 frames), none outside. It comes out 28 cm
+  long, 23 wide and 14 deep, which is a half-closed glove.
+* **It fits those two clips and nothing else.** In the rest pose the straight
+  fingers come through the grooves on the back. That is not a pose the pitcher
+  is ever in, but a new pitcher clip with an open glove hand would need its
+  name added to `CLIPS` at the top of the script and the glove rebuilt.
+
+1,562 vertices and 114 KB. The forearm comes in through the closed heel, and at
+the set position the ball hand goes into the pocket; both are meant to
+intersect.
+
 #### Moving a player: `replay/player/stance.js`
 
 Every position and angle a player has lives in that one file, in **degrees and
@@ -644,9 +687,9 @@ stance then becomes a plain rotation and the number needs no pre-flip.
 #### Uniforms are materials, not textures
 
 The kit comes from `teams.js` — `primary`, `secondary` and `ink` — with home in
-white, away in grey, and the club's colour on the cap, sleeves and socks, which
-is both accurate and the only thing that reads at the distances this engine
-uses.
+white, away in grey, and the club's colour on the cap, sleeves, trim and socks,
+which is both accurate and the only thing that reads at the distances this
+engine uses.
 
 It is painted as **one material per region** (11 of them, assigned per face in
 Blender off the bone weights that drive that face) rather than as a texture, and
@@ -677,12 +720,47 @@ at-bat names, so `LiveGameScreen` joins them on and no request is added. A
 player the map has not got yet leaves the jersey blank, which is the right
 answer — a wrong number on a real player's back is worse than no number.
 
+**The trim is a region too**, `region_trim`: a stripe down the outside of each
+trouser leg, a band round each sleeve, a collar band and two lines of piping
+down the placket. They are faces of `Jersey` and `Pants` that carry a different
+material, so they need no UVs and no texture, and one design serves all thirty
+clubs — only the colour changes. `palette()` gives it the club's `primary`,
+home and away alike, the same as the cap and the belt it runs into. Against
+road grey an orange or a red is close in lightness (SF 1.26:1, MIA 1.6:1, every
+other club 1.67:1 or better) but nowhere near it in hue, which is how those
+clubs' real road trim reads; on home white the worst is SF at 2.86:1. It is in
+`CLOTH`, so it is drawn from both sides like the garment it is cut into. Adding
+a region is three lines in `uniform.js` (`MATERIALS`, `CLOTH` if it is cloth,
+and `palette()`); `player.js` builds its materials from whatever names the GLB
+carries and needs no change.
+
+**The sock stripes are `region_sock_stripe`**, two bands round each calf, cut
+into the body's own shin. The sock is the club's `secondary`, so the stripe is
+its `primary` — except where the two are too alike to show on each other.
+`palette()` measures that as a straight-line distance in RGB and falls back to
+white under 100: CWS (the same black twice, 0), SEA (navy on dark teal, 50) and
+TOR (blue on navy, 59). The next closest pair is BOS at 178, so the threshold
+has room either side. White is used on the road as well; it is the sock's
+stripe, not the cloth's colour. It is not in `CLOTH` — the shin is body, drawn
+from one side like the sock around it.
+
+**The cap's bill is `region_cap_bill`**, separate from the crown's
+`region_cap` so that the two can differ — and `palette()` gives them the same
+`primary`. Which clubs wear a contrasting bill is a fact about each club that
+`primary` and `secondary` cannot express: a `secondary` bill for all thirty
+would be wrong for most of them. If `teams.js` ever carries it, that one line
+is the place. `Cap` is therefore two primitives, which three.js loads as a
+group of two meshes under the `Cap` node; `player.js` hides and shows the node,
+so both go together.
+
 #### The uniform is cloth, not paint
 
 The kit used to be colour on the body segments, which read as coloured skin.
 It is now real geometry over the body: `Jersey` (short sleeves, crew neck,
-tucked in), `Pants` (knickers, bloused over a cuff below the knee, high socks
-showing), `Belt`, and two pieces of headwear — `Cap` and `Helmet` — all
+taken in at the waist and tucked in), `Pants` (knickers, tapered to the knee
+and bloused over a cuff
+band below it, high socks showing), `Belt`, and two pieces of headwear — `Cap`
+and `Helmet` — all
 skinned to the same 65-bone rig and exported in the same `player.glb`.
 `player.js` shows the cap on the pitcher and the helmet on the batter. The
 home side is white top and bottom and the road side grey (`#9fa4ab` — a
@@ -700,7 +778,9 @@ How the cloth was built, in `player_build.blend`, so it can be rebuilt:
   The thigh and the torso are then **straightened** between hip and knee and
   between chest and belt, because this mannequin is hourglass-shaped and cloth
   that follows it looks sprayed on. Inner-thigh ease is capped at 1 cm so the
-  legs do not web together.
+  legs do not web together. (The trouser leg was later taken in below the
+  crotch, and the torso given a waist again — see the refit and the recut
+  further down.)
 * **Merge.** The tubes of a garment are joined with a voxel remesh (1.2 cm),
   Laplacian-smoothed, then Taubin-relaxed to take out voxel terracing.
 * **Openings.** Waist, cuffs, hem and sleeves are cut with planes (clean
@@ -730,6 +810,35 @@ How the cloth was built, in `player_build.blend`, so it can be rebuilt:
   (1.4 cm to the outer surface), checked by nearest-point distance in rest
   pose; the script prints it. Both UV layers are seam-free (planar `map1`,
   constant `num_uv`), so the 6,154 vertices export as 6,154.
+* **The cap is built by a script too, `build_cap.py`**, in the same local
+  space and run the same way; it rebuilds `Cap` in place and can be run again.
+  The cap it replaced was a smooth dome 2 cm over the head with a thick, wide
+  bill, which read as a skullcap with a peak.
+  * **Crown.** One sheet. Its foot is the head's own outline at the band,
+    found by ray at each of 72 azimuths, plus 0.5 cm, made the same on both
+    sides and smoothed. The band is a spline in azimuth: 170.8 cm across the
+    front, 169.4 at the sides, 166.4 at the nape. From the foot each azimuth
+    rises to the top at 183.3 cm (2.4 over the skull) on a superellipse, with
+    exponent 2.8 in front and 2.2 behind — so the front panels stand up
+    almost straight, the way a structured cap's do, and the back slopes. That
+    difference in exponent is most of what makes it a cap and not a dome. Six
+    seams, 1.2% deep, run from the band to the button; 72 columns puts one on
+    each. No vertex is allowed within 0.3 cm of the skull. The foot is turned
+    in to 0.08 cm off the head, with its ring marked sharp, so the cap's edge
+    is an edge and nothing shows under it.
+  * **Bill.** A thin solid visor, 7 cm long, 17.5 wide and 0.45 thick: a sheet
+    bent like a piece of a cylinder (the sides 1.5 cm lower than the middle),
+    tilted down 10°, cut to a visor outline in plan, with a rounded edge. Its
+    root starts 0.2 cm inside the crown. 0.4 was tried first and put the root
+    on the skull: the crown is only about 0.35 cm off the forehead.
+  * **Button.** A flattened dome 1.5 cm across on top.
+
+  1,443 vertices, from 2,444, and a mirror image of itself to the last digit.
+  Nearest-point clearance from the head is 0.08 cm at the turned-in foot and
+  0.19 at the bill, nothing inside; `anim_check` finds nothing inside in any
+  clip either, as it should not — the cap and the skull above 160 cm are both
+  on the head bone alone. The 72 sharp edges at the foot are the only splits
+  on export (1,515 vertices).
 * **Export with only the active scene.** The blend's second scene holds the
   stray `Cube`, and the glTF exporter includes every scene unless told not
   to. Use `use_selection` on `Player` and its children, `use_active_scene`,
@@ -745,19 +854,191 @@ How the cloth was built, in `player_build.blend`, so it can be rebuilt:
 * **The number** moved to the new jersey: faces facing backward between
   x = ±13.5 cm and y = 124.5–148.5 cm take `region_jersey_back`, with the same
   `num_uv` projection as before (u right-to-left, v up, over 0.1–0.9).
+* **The trouser leg was refitted, by `refit_pants.py`** (a text block in the
+  blend, like the helmet's). The first loft straightened the thigh into a tube
+  that kept a 9.5 cm radius from mid-thigh to below the knee, which is as wide
+  as the blouse it was meant to gather into — so there was no blouse, only a
+  balloon. The script scales each vertex radially about its leg bone, by the
+  ratio of a target mean-radius profile to the measured one: untouched at the
+  crotch (81.5 cm) and above, 9.6 → 8.4 cm above the knee, 9.3 → 8.0 at the
+  knee, then back out to an 8.8 cm blouse at 44.5 cm. It moves vertices and
+  changes no topology, so weights and regions survive it. No vertex is allowed
+  closer than 0.4 cm to the **original** body, loaded from the pre-uniform
+  blend because the body under the clothes is deleted here; 237 of the 4,791
+  leg vertices hit that limit, and the excess is smoothed over the mesh so it
+  does not print through as a lump.
+* **The cuff is a band.** The old hem ring at 41.6 cm is pulled in to about
+  half a centimetre off the sock and extruded 2.8 cm straight down, weighted
+  100% to the shin, with the ring's edges marked sharp so the blouse meets the
+  band on a crisp line. The band is placed by casting a ray **outward from the
+  leg bone** to the calf. Casting inward from outside is the obvious way round
+  and is wrong: on the inner side of the calf the ray meets the other leg
+  first, and those vertices land some 20 cm from their own leg.
+* **The trim is cut in by `cut_trim.py`**, also a text block. Selecting faces
+  for a stripe on a voxel-remeshed garment gives a staircase, so each piece is
+  a scalar field and a level instead: every edge that crosses the level is
+  split there, the faces are split along the new vertices (`cut_iso`), and the
+  faces on the inside take `region_trim`. A vertex within 0.8 mm of the level
+  is taken to be on it, so no slivers. The splits interpolate weights and both
+  UV layers; nothing splits on export beyond the new material's own boundary.
+  * Trousers: |y − leg bone| < 1.5 cm on the outer half of each leg, waist to
+    the bottom of the cuff band. A 3 cm stripe — wider than a real one, for the
+    same reason the number is.
+  * Sleeves: a 2 cm band, 1.2 to 3.2 cm in from the hem. It is set in because
+    the undershirt sleeve below it is the club's primary as well, and a band
+    at the hem itself just reads as a longer undershirt.
+  * Collar: within 2 cm of the neck opening.
+  * Placket: two lines 1.4 cm wide, centred 2.2 cm either side of the centre
+    front, on forward-facing faces from the collar to the hem.
+  * Socks, by `cut_sock_stripes()` in the same script, into
+    `region_sock_stripe` on `Player_Surface`: two bands 2.5 cm wide and 2 cm
+    apart, at 33.5–36 and 29–31.5 cm up the shin bone and perpendicular to it.
+    That is the top third of the sock that shows (the cuff band ends at
+    38.8 cm, the shoe's ankle shell starts at 12.4), where the calf is widest
+    and a band covers the most area. 134 faces and 124 new vertices; no
+    existing vertex moves, and the shin is weighted to one bone, so there is
+    nothing for the clips to tear.
+
+  All of them are symmetric about x = 0, so a mirrored left-hander is correct
+  with no extra work. One trap: the meshes are in centimetres under a 0.01
+  armature, so a face normal taken through `matrix_world` is 0.01 long and has
+  to be normalised before it is compared with anything — the placket selected
+  no faces at all until it was.
+* **The jersey was recut, by `fit_jersey.py`** (a text block). Straightening
+  the torso cured "sprayed on" and left a barrel: 35 cm wide and 29–31 cm deep
+  all the way from belt to armpit, with sleeves that pinched in at the hem.
+  Three things, all moving vertices or extruding an open edge, so the trim cuts
+  and the number panel ride along untouched:
+  * **Torso.** Each height gets a target half-width, front and back. x is
+    scaled to the width and y is mapped from the measured front-to-back span
+    onto the target one. The waist comes in to 16.6 cm half-width and 26 cm
+    deep at 115–118 cm (from 17.6 and 29); the chest at 130 is 17.6 wide (from
+    17.1) and 2 cm shallower, half off the front and half off the back; and a
+    roll of cloth 18.1 wide is left standing over the belt at 106. It blends in
+    over 103–106 cm, because below that the shirt is tucked in and has to keep
+    fitting the waistband, and out over 131–136, where the armhole starts. This
+    is a centimetre of waist either side, not the mannequin's own, whose
+    half-width at that height is 6.5 cm.
+  * **Gathers.** Nine vertical folds above the belt, `cos(9θ)` round the body,
+    5 mm at 110 cm and gone by 127. Cosine is even in x, so they mirror.
+  * **Sleeves.** 3.5 cm longer — the hem moves from 31 to 34.5 cm off the
+    centre line and covers 69% of the upper arm, from 57%. The stretch (×1.44)
+    is taken between 19.5 and 27.5 cm; the last 3.5 cm, which carries the trim
+    band, is moved out whole so the band keeps its width. The hem's mean radius
+    goes from 6.75 to 7.7 cm, the same as the rest of the tube, and its section
+    is eased to a circle. Opening it further was tried first (8.8 cm at the
+    hem) and reads as a bell on an arm 4.5–5 cm in radius. The hem is then
+    turned: its ring is extruded 0.5 cm in toward the arm and 1.2 cm back up
+    the sleeve, so the edge has a thickness.
+
+  `anim_check` against the arms and hands: the count of jersey vertices inside
+  an arm fell in six of the seven clips (the narrower waist is out of the way
+  of an arm at the side — `pitcher_pitch` 180 → 144, `batter_swing_miss`
+  268 → 252, worst frame of each). The one new contact is the longer sleeve in
+  the batting stance, where 13 vertices at the front of the hem sit up to
+  10 mm inside the bent arm.
+* **Check a garment through the clips, not in the rest pose.**
+  `anim_check.py` (a text block) poses every clip and counts garment vertices
+  inside the body and body vertices outside the garment, and says where they
+  are in rest space. It is what flagged **the top of the shin outside the
+  trousers** at deep knee bends, by 22–28 mm in five of the seven clips: the
+  shin was left in up to 50 cm, where the cloth over it is already blending
+  toward the thigh while the shin itself is rigid. It is now cut off at
+  45.2 cm, below which the trousers are weighted to the shin alone, and no sock
+  vertex is outside the blouse or the cuff band in any clip (every second
+  frame, 332 poses). What the check still reports is the calf meeting the back
+  of the thigh at the deepest bends (the leg kick, the end of the swing) —
+  cloth into cloth of the same colour, in the fold behind the knee, and there
+  before the refit.
 
 Cloth is one sheet with open hems, so `CLOTH` regions render double-sided — and
 cast shadows from their back face only, or they shadow themselves in contour
-rings. The pre-cloth file and GLB are kept as
-`assets/animations/player_build_pre_uniforms.blend` and
-`player_pre_uniforms.glb`.
+rings. Earlier stages are kept beside `player_build.blend` in
+`assets/animations/`: `player_build_pre_uniforms.blend` and
+`player_pre_uniforms.glb` (before any cloth), `player_build_pre_pants_refit.blend`
+(the cloth as first lofted — the file `refit_pants.py` is written for),
+`player_build_pre_trim.blend` (refitted, no trim),
+`player_build_pre_jersey_cut.blend` (trimmed, jersey still the straight tube —
+the file `fit_jersey.py` is written for),
+`player_build_pre_sock_stripes.blend` (jersey recut, plain socks),
+`player_build_pre_cap_rebuild.blend` (striped socks, the old cap) and
+`player_build_pre_glove.blend` (new cap, no glove).
+
+**To rebuild the refit and the trim**, open
+`player_build_pre_pants_refit.blend`, append the text blocks `refit_pants.py`,
+`cut_trim.py` and `anim_check.py` from `player_build.blend` (File → Append →
+Text), and in the Python console:
+
+```python
+exec(bpy.data.texts['refit_pants.py'].as_string())
+load_ref_body(r'<repo>\assets\animations\player_build_pre_uniforms.blend')
+refit_pants(apply=True)      # apply=False is a dry run that returns the plan
+trim_shin(apply=True)
+exec(bpy.data.texts['cut_trim.py'].as_string())
+cut_trim(apply=True)
+exec(bpy.data.texts['anim_check.py'].as_string())
+anim_check('Pants', body_materials={'region_sock', 'region_shoe'}, cover=(0.39, 0.46))
+```
+
+Run that way it comes out as `player_build_pre_jersey_cut.blend` does: `Pants`
+7,833 vertices with 433 trim faces, `Jersey` 7,842 with 692, no degenerate
+faces. The jersey recut goes on top of that (append `fit_jersey.py` the same
+way):
+
+```python
+exec(bpy.data.texts['fit_jersey.py'].as_string())
+fit_jersey(apply=True)       # apply=False returns the plan; gathers=False leaves the folds out
+```
+
+which gives a `Jersey` of 7,952 vertices, vertex for vertex the one in
+`player_build.blend`. `fit_jersey` is not safe to run twice — a
+second pass lengthens the sleeves again — so start from the backup. The sock
+stripes go on last, with the current `cut_trim.py`:
+
+```python
+exec(bpy.data.texts['cut_trim.py'].as_string())
+cut_sock_stripes(apply=True)     # a second run finds nothing left to cut and changes nothing
+```
+
+That gives a `Player_Surface` of 10,583 vertices with 134 stripe faces — the
+same points and the same faces as this file's, though not in the same order:
+`cut_iso` walks a Python set of edges, so the vertices it creates are numbered
+differently from run to run, and a mesh it has cut will not export
+byte-identical twice. The cap is last and needs no backup to start from: run
+the `build_cap.py` text block and it replaces `Cap` with the same 1,443
+vertices every time. The glove is the same: run `build_glove.py` and it makes
+`Glove`, or replaces it, with the same 1,562 (see The glove, above). Then save
+it as `player_build.blend` and export as above — `Glove` is a child of `Player`
+like the rest, so the same selection picks it up.
+
+With all of it the GLB is 4.15 MB, from 3.95: 16 KB for the cuff bands, 101 KB
+for the trim's cuts and its two extra primitives, 8 KB for the turned sleeve
+hems, 20 KB for the sock stripes, 67 KB back from the cap, which is a thousand
+vertices lighter than the one it replaced, and 114 KB for the glove. Every mesh
+that was not touched, and all seven clips, still export byte-identical.
+
+**Seeing a kit in the replay lab.** The built-in fixtures name no clubs, so
+both players come out undyed grey. From the console:
+
+```js
+const { liveAtBats } = await import('/src/replay/ball/fixtures.js');
+__replay.setFollowLive(false);
+__replay.load({ ...liveAtBats[0], id: 'kit', homeTeam: 'LAD', awayTeam: 'SF',
+                batterNumber: 17, pitcherNumber: 45 });
+```
+
+`half: 'top'` puts the batter in the road kit. Following has to be off: while
+it is on, the engine takes a fixture that is already on screen for a repeat of
+the same play and does not dress anyone.
 
 #### Still rough
 
 * The joint shells are the Beta character's articulation pieces. They are
   coloured to match whatever they join, so they read as part of the body rather
   than as black spheres, but hiding them leaves gaps at the elbow and knee.
-* No glove yet. The bat is in (see above).
+* The pitcher's glove is a half-closed mitt: it has finger stalls and a thumb
+  but no open pocket or lacing, and it never opens or closes. The batter has
+  no batting gloves.
 * The cloth is skinned, not simulated: it bends with the body but does not
   swing or wrinkle. The belt can lift off the waistband a little at the top of
   the pitcher's leg kick.
