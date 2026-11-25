@@ -210,6 +210,8 @@ class SeasonStatcast:
         self.jump: dict[str, dict] = {}
         self.poptime: dict[str, dict] = {}
         self.frv: dict[str, dict] = {}
+        # Batted-ball direction by type: pulled air, for Game Power.
+        self.battedBall: dict[str, dict] = {}
         # pid -> pitch code -> {usage, pitches, diffX, diffZ}
         self.movement: dict[str, dict[str, dict]] = {}
         # Which pulls actually succeeded. The card reports honestly on what is
@@ -223,7 +225,8 @@ class SeasonStatcast:
                 f"ars={len(self.arsenal)} bt={len(self.batTracking)} "
                 f"arm={len(self.arm)} br={len(self.baserunning)} "
                 f"jump={len(self.jump)} pop={len(self.poptime)} "
-                f"frv={len(self.frv)} mov={len(self.movement)}>")
+                f"frv={len(self.frv)} bb={len(self.battedBall)} "
+                f"mov={len(self.movement)}>")
 
 
 def _load_batting(sc: SeasonStatcast) -> None:
@@ -258,6 +261,11 @@ def _load_batting(sc: SeasonStatcast) -> None:
             # ISO is not a Savant column; it is SLG minus AVG by definition, so
             # this is derived from two real numbers rather than estimated.
             "iso": None if avg is None or slg is None else round(slg - avg, 3),
+            # xISO the same way, from the expected pair: extra bases per at-bat
+            # judged on exit velocity and launch angle alone, so the park and
+            # the fielders behind the ball are out of it.
+            "xiso": (None if _num(row, "xba") is None or _num(row, "xslg") is None
+                     else round(_num(row, "xslg") - _num(row, "xba"), 3)),
             "exitVelo": _num(row, "exit_velocity_avg"),
             # Savant's "best speed": the average of his hardest-hit half.
             "bestSpeed": _num(row, "avg_best_speed"),
@@ -602,6 +610,22 @@ def _load_movement(sc: SeasonStatcast) -> None:
             }
 
 
+def _load_batted_ball(sc: SeasonStatcast) -> None:
+    """Pulled air: the share of a hitter's batted balls hit in the air to his
+    pull side. That is where home runs come from, and it is the one thing the
+    expected stats leave out -- they judge a ball on speed and angle, not on
+    direction, so a fly ball pulled down the line and one lifted to the deep
+    part of centre count the same. A ball's direction is the hitter's, not the
+    park's, so this measures an approach rather than an outcome.
+    """
+    rows = _rows("batted-ball", {"type": "batter", "year": sc.season, "min": 1})
+    for row in rows:
+        pid = _pid(row, "id")
+        rate, bbe = _num(row, "pull_air_rate"), _num(row, "bbe")
+        if pid and rate is not None:
+            sc.battedBall[pid] = {"pullAirPct": round(rate * 100, 2), "bbe": bbe}
+
+
 _LOADERS = (
     ("batting", _load_batting),
     ("pitching", _load_pitching),
@@ -615,6 +639,7 @@ _LOADERS = (
     ("jump", _load_jump),
     ("poptime", _load_poptime),
     ("frv", _load_frv),
+    ("battedBall", _load_batted_ball),
     ("movement", _load_movement),
 )
 

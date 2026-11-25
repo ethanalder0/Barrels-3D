@@ -422,7 +422,8 @@ HITTER_INPUTS = {i.key: i for i in (
           _min("batTracking", "swings", statcast.BAT_TRACKING_MIN_SWINGS)),
     Input("bestSpeed", "Best-half exit velo", _field("batting", "bestSpeed", "bip"), _hitter_pool),
     Input("barrel", "Barrel%", _field("batting", "barrelPct", "bip"), _hitter_pool),
-    Input("iso", "ISO", _field("batting", "iso", "pa"), _hitter_pool),
+    Input("xiso", "xISO", _field("batting", "xiso", "pa"), _hitter_pool),
+    Input("pullAir", "Pulled air%", _field("battedBall", "pullAirPct", "bbe"), _hitter_pool),
     Input("xwobacon", "xwOBAcon", _field("batting", "xwobacon", "bip"), _hitter_pool),
     Input("squaredUp", "Squared-up%", _field("batTracking", "squaredUpPerContact", "contacts"),
           _min("batTracking", "swings", statcast.BAT_TRACKING_MIN_SWINGS)),
@@ -497,7 +498,12 @@ class Attribute:
 HITTER_ATTRIBUTES = (
     Attribute("rawPower", "Raw Power", "hitting", {"batSpeed": .5, "bestSpeed": .5},
               "How hard can he hit it?"),
-    Attribute("gamePower", "Game Power", "hitting", {"barrel": .65, "iso": .35},
+    # Barrels and xISO are how hard and how high; pulled air is the direction
+    # neither of them sees. Nothing here depends on the park. The weights are
+    # the mix that best predicted next season's HR/PA and ISO over 2016-2026,
+    # held out a season at a time; it beat the old barrel .65 / ISO .35 in
+    # seven of eight held-out years.
+    Attribute("gamePower", "Game Power", "hitting", {"barrel": .40, "xiso": .35, "pullAir": .25},
               "How often does power turn into damage?"),
     Attribute("contactQuality", "Contact Quality", "hitting", {"xwobacon": 1.0},
               "What is each ball in play worth?"),

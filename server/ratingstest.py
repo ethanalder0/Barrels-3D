@@ -99,6 +99,7 @@ def season(year, pa_of=None, skip=()):
             "xwoba": obs(rng, .320, .030, z, pa, 250),
             "xwobacon": obs(rng, .370, .035, z, bip, 100),
             "iso": obs(rng, .160, .045, z, pa, 300),
+            "xiso": obs(rng, .165, .040, z, pa, 250),
             "bestSpeed": obs(rng, 100, 2.5, z, bip, 50),
             "barrelPct": obs(rng, 8, 3.5, z, bip, 100),
             "sweetSpotPct": obs(rng, 33, 4, z, bip, 400),
@@ -112,6 +113,7 @@ def season(year, pa_of=None, skip=()):
             "flyBallPct": 25 + 5 * rng.gauss(0, 1),
             "groundBallPct": 43 + 6 * rng.gauss(0, 1),
         }
+        sc.battedBall[pid] = {"bbe": bip, "pullAirPct": obs(rng, 17, 4, z, bip, 300)}
         sc.batTracking[pid] = {"swings": swings, "contacts": swings * 0.76,
                                "batSpeed": obs(rng, 72, 2.5, z, swings, 50),
                                "squaredUpPerContact": obs(rng, .25, .04, z, swings, 290)}

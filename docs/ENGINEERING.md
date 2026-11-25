@@ -1682,7 +1682,7 @@ per attribute underneath carrying the exact number and its band.
 | group | attribute | question | inputs (weight) |
 |---|---|---|---|
 | Hitting | Raw Power | How hard can he hit it? | bat speed .5, best-half exit velo .5 |
-| | Game Power | How often does power turn into damage? | barrel/BBE .65, ISO .35 |
+| | Game Power | How often does power turn into damage? | barrel/BBE .40, xISO .35, pulled air .25 |
 | | Contact Quality | What is each ball in play worth? | xwOBAcon |
 | | Contact Consistency | Does he square it up at a useful angle? | squared-up/contact .5, sweet-spot .5 |
 | | Bat-to-Ball | Does he avoid swinging and missing? | zone contact .5, whiff (inv) .3, K% (inv) .2 |
@@ -1828,11 +1828,12 @@ Three seasons are loaded (this one and two priors, cached a week) in parallel;
 
 | board | gives |
 |---|---|
-| `custom` (batter) | xwOBA, xwOBAcon, ISO, best-half EV, barrel%, sweet-spot%, zone contact, whiff, chase, K%, BB%, meatball swing%, pull/FB/GB%, samples |
+| `custom` (batter) | xwOBA, xwOBAcon, ISO, xISO (xSLG − xBA), best-half EV, barrel%, sweet-spot%, zone contact, whiff, chase, K%, BB%, meatball swing%, pull/FB/GB%, samples |
 | `custom` (pitcher) | xERA, whiff, zone contact, K%, chase, BB%, edge%, xwOBAcon, barrel%, GB%, FB velo, games/starts |
 | `bat-tracking` | bat speed, squared-up per contact |
 | `sprint_speed`, `baserunning-run-value` | sprint speed; baserunning runs and opportunities |
 | `outs_above_average`, `fielding-run-value`, `arm-strength`, `outfield_jump` | position; range and arm runs, defensive outs; arm mph; jump |
+| `batted-ball` (batter) | pulled-air rate (share of batted balls hit in the air to the pull side) |
 | `catcher-framing` / `-blocking` / `-throwing`, `poptime` | catcher run values; pop time |
 | `pitch-arsenals` + `pitch-arsenal-stats`, `pitch-movement` (one per type) | usage, velo, run value per pitch; per-type speed and break for Stuff |
 
